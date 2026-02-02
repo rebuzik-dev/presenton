@@ -6,7 +6,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     libreoffice \
     fontconfig \
-    chromium
+    chromium \
+    zstd \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 
 # Install Node.js 20 using NodeSource repository
