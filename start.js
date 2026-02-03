@@ -15,6 +15,7 @@ const args = process.argv.slice(2);
 const hasDevArg = args.includes("--dev") || args.includes("-d");
 const isDev = hasDevArg;
 const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
+console.log("DEBUG: TEMPLATE_API_KEY in start.js env:", !!process.env.TEMPLATE_API_KEY, "Length:", process.env.TEMPLATE_API_KEY ? process.env.TEMPLATE_API_KEY.length : 0);
 
 const fastapiPort = 8000;
 const nextjsPort = 3000;
@@ -103,6 +104,9 @@ const setupUserConfigFromEnv = () => {
       process.env.DALL_E_3_QUALITY || existingConfig.DALL_E_3_QUALITY,
     GPT_IMAGE_1_5_QUALITY:
       process.env.GPT_IMAGE_1_5_QUALITY || existingConfig.GPT_IMAGE_1_5_QUALITY,
+    TEMPLATE_API_KEY: process.env.TEMPLATE_API_KEY || existingConfig.TEMPLATE_API_KEY,
+    TEMPLATE_MODEL: process.env.TEMPLATE_MODEL || existingConfig.TEMPLATE_MODEL,
+    TEMPLATE_API_BASE: process.env.TEMPLATE_API_BASE || existingConfig.TEMPLATE_API_BASE,
   };
 
   writeFileSync(userConfigPath, JSON.stringify(userConfig));

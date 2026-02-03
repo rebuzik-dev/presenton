@@ -456,10 +456,10 @@ async def convert_slide_to_html(request: SlideToHtmlRequest):
     """
     try:
         # Get OpenAI API key from environment
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("TEMPLATE_API_KEY")
         if not api_key:
             raise HTTPException(
-                status_code=500, detail="OPENAI_API_KEY environment variable not set"
+                status_code=500, detail="TEMPLATE_API_KEY environment variable not set"
             )
 
         # Resolve image path to actual file system path
@@ -541,10 +541,10 @@ async def convert_html_to_react(request: HtmlToReactRequest):
     """
     try:
         # Get OpenAI API key from environment
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("TEMPLATE_API_KEY")
         if not api_key:
             raise HTTPException(
-                status_code=500, detail="OPENAI_API_KEY environment variable not set"
+                status_code=500, detail="TEMPLATE_API_KEY environment variable not set"
             )
 
         # Validate HTML content
@@ -631,10 +631,10 @@ async def edit_html_with_images_endpoint(
     """
     try:
         # Get OpenAI API key from environment
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("TEMPLATE_API_KEY")
         if not api_key:
             raise HTTPException(
-                status_code=500, detail="OPENAI_API_KEY environment variable not set"
+                status_code=500, detail="TEMPLATE_API_KEY environment variable not set"
             )
 
         # Validate inputs
