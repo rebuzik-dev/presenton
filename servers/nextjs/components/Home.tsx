@@ -86,6 +86,7 @@ export default function Home() {
         isDisabled: false,
         text: "Save Configuration"
       }));
+      toast.info("Navigating to creation page...");
       // Track navigation from -> to
       trackEvent(MixpanelEvent.Navigation, { from: pathname, to: "/upload" });
       router.push("/upload");

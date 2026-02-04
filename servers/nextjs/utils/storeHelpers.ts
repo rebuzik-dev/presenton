@@ -87,7 +87,10 @@ export const hasValidLLMConfig = (llmConfig: LLMConfig) => {
           llmConfig.IMAGE_GEN_BASE_URL !== undefined &&
           llmConfig.IMAGE_GEN_MODEL !== "" &&
           llmConfig.IMAGE_GEN_MODEL !== null &&
-          llmConfig.IMAGE_GEN_MODEL !== undefined
+          llmConfig.IMAGE_GEN_MODEL !== undefined &&
+          llmConfig.IMAGE_GEN_API_KEY !== "" &&
+          llmConfig.IMAGE_GEN_API_KEY !== null &&
+          llmConfig.IMAGE_GEN_API_KEY !== undefined
         );
       default:
         return false;
