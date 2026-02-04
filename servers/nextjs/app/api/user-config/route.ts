@@ -71,6 +71,11 @@ export async function POST(request: Request) {
       userConfig.DALL_E_3_QUALITY || existingConfig.DALL_E_3_QUALITY,
     GPT_IMAGE_1_5_QUALITY:
       userConfig.GPT_IMAGE_1_5_QUALITY || existingConfig.GPT_IMAGE_1_5_QUALITY,
+    IMAGE_GEN_API_KEY:
+      userConfig.IMAGE_GEN_API_KEY || existingConfig.IMAGE_GEN_API_KEY,
+    IMAGE_GEN_BASE_URL:
+      userConfig.IMAGE_GEN_BASE_URL || existingConfig.IMAGE_GEN_BASE_URL,
+    IMAGE_GEN_MODEL: userConfig.IMAGE_GEN_MODEL || existingConfig.IMAGE_GEN_MODEL,
     TOOL_CALLS:
       userConfig.TOOL_CALLS === undefined
         ? existingConfig.TOOL_CALLS

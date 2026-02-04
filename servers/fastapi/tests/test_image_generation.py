@@ -56,6 +56,19 @@ class TestImageGenerationService:
                         with patch.dict(os.environ, {"IMAGE_PROVIDER": "pixabay"}):
                             service = ImageGenerationService(mock_images_directory)
                             assert service.image_gen_func == service.get_image_from_pixabay
+
+    def test_get_image_gen_func_custom_openai_selected(self, mock_images_directory):
+        """
+        Test function selection when Custom OpenAI is selected
+        """
+        with patch('services.image_generation_service.is_pixabay_selected', return_value=False):
+            with patch('services.image_generation_service.is_pixels_selected', return_value=False):
+                with patch('services.image_generation_service.is_gemini_flash_selected', return_value=False):
+                    with patch('services.image_generation_service.is_dalle3_selected', return_value=False):
+                        with patch('services.image_generation_service.is_custom_openai_selected', return_value=True):
+                            with patch.dict(os.environ, {"IMAGE_PROVIDER": "custom_openai"}):
+                                service = ImageGenerationService(mock_images_directory)
+                                assert service.image_gen_func == service.generate_image_custom_openai
     
     def test_get_image_gen_func_pexels_selected(self, mock_images_directory):
         """
@@ -176,6 +189,42 @@ class TestImageGenerationService:
                                 assert isinstance(result, ImageAsset)
                                 assert result.path == test_image_path
                                 assert result.extras["prompt"] == sample_image_prompt.prompt
+
+    def test_generate_image_custom_openai_params(self, mock_images_directory, sample_image_prompt):
+        """
+        Test that custom OpenAI generation passes correct parameters
+        """
+        async def run_test():
+            with patch.dict(
+                os.environ,
+                {
+                    "IMAGE_PROVIDER": "custom_openai",
+                    "IMAGE_GEN_API_KEY": "sk-test",
+                    "IMAGE_GEN_BASE_URL": "http://localhost:1234",
+                    "IMAGE_GEN_MODEL": "test-model",
+                },
+            ):
+                with patch('services.image_generation_service.is_custom_openai_selected', return_value=True):
+                    service = ImageGenerationService(mock_images_directory)
+                    
+                    # Create a mock for the internal generate_image_openai
+                    mock_gen_openai = AsyncMock(return_value="path/to/image.png")
+                    service.generate_image_openai = mock_gen_openai
+
+                    await service.generate_image_custom_openai(
+                        "test prompt", mock_images_directory
+                    )
+
+                    mock_gen_openai.assert_called_once_with(
+                        "test prompt",
+                        mock_images_directory,
+                        "test-model",
+                        "standard",
+                        "sk-test",
+                        "http://localhost:1234"
+                    )
+
+        asyncio.run(run_test())
     
     def test_generate_image_no_provider_selected(self, mock_images_directory, sample_image_prompt):
         """

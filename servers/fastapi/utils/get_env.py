@@ -117,3 +117,16 @@ def get_dall_e_3_quality_env():
 # Gpt Image 1.5 Quality
 def get_gpt_image_1_5_quality_env():
     return os.getenv("GPT_IMAGE_1_5_QUALITY")
+
+
+# Custom Image Generation Provider
+def get_image_gen_api_key_env():
+    return os.getenv("IMAGE_GEN_API_KEY")
+
+
+def get_image_gen_base_url_env():
+    return os.getenv("IMAGE_GEN_BASE_URL")
+
+
+def get_image_gen_model_env():
+    return os.getenv("IMAGE_GEN_MODEL")

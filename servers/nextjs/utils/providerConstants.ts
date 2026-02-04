@@ -88,6 +88,15 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderOption> = {
     apiKeyField: "COMFYUI_URL",
     apiKeyFieldLabel: "ComfyUI Server URL",
   },
+  custom_openai: {
+    value: "custom_openai",
+    label: "Custom OpenAI",
+    description: "Use any OpenAI-compatible image generation API",
+    icon: "/icons/openai.png",
+    requiresApiKey: true,
+    apiKeyField: "IMAGE_GEN_API_KEY",
+    apiKeyFieldLabel: "API Key",
+  },
 };
 
 export const LLM_PROVIDERS: Record<string, LLMProviderOption> = {

@@ -7,6 +7,7 @@ services:
     ports:
       # You can replace 5000 with any other port number of your choice to run Presenton on a different port number.
       - "5000:80"
+      - "8000:8000"
     volumes:
       - ./app_data:/app_data
     environment:
@@ -35,6 +36,10 @@ services:
       - TEMPLATE_API_KEY=${TEMPLATE_API_KEY}
       - TEMPLATE_MODEL=${TEMPLATE_MODEL}
       - TEMPLATE_API_BASE=${TEMPLATE_API_BASE}
+      - IMAGE_GEN_API_KEY=${IMAGE_GEN_API_KEY}
+      - IMAGE_GEN_BASE_URL=${IMAGE_GEN_BASE_URL}
+      - IMAGE_GEN_MODEL=${IMAGE_GEN_MODEL}
+      - IMAGE_PROVIDER=${IMAGE_PROVIDER}
 
   production-gpu:
     # image: ghcr.io/presenton/presenton:latest
@@ -51,6 +56,7 @@ services:
     ports:
       # You can replace 5000 with any other port number of your choice to run Presenton on a different port number.
       - "5000:80"
+      - "8000:8000"
     volumes:
       - ./app_data:/app_data
     environment:
@@ -79,6 +85,10 @@ services:
       - TEMPLATE_API_KEY=${TEMPLATE_API_KEY}
       - TEMPLATE_MODEL=${TEMPLATE_MODEL}
       - TEMPLATE_API_BASE=${TEMPLATE_API_BASE}
+      - IMAGE_GEN_API_KEY=${IMAGE_GEN_API_KEY}
+      - IMAGE_GEN_BASE_URL=${IMAGE_GEN_BASE_URL}
+      - IMAGE_GEN_MODEL=${IMAGE_GEN_MODEL}
+      - IMAGE_PROVIDER=${IMAGE_PROVIDER}
 
   development:
     build:
@@ -86,6 +96,7 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "5000:80"
+      - "8000:8000"
     volumes:
       - .:/app
       - ./app_data:/app_data
@@ -115,6 +126,10 @@ services:
       - TEMPLATE_API_KEY=${TEMPLATE_API_KEY}
       - TEMPLATE_MODEL=${TEMPLATE_MODEL}
       - TEMPLATE_API_BASE=${TEMPLATE_API_BASE}
+      - IMAGE_GEN_API_KEY=${IMAGE_GEN_API_KEY}
+      - IMAGE_GEN_BASE_URL=${IMAGE_GEN_BASE_URL}
+      - IMAGE_GEN_MODEL=${IMAGE_GEN_MODEL}
+      - IMAGE_PROVIDER=${IMAGE_PROVIDER}
 
   development-gpu:
     build:
@@ -129,6 +144,7 @@ services:
               capabilities: [ gpu ]
     ports:
       - "5000:80"
+      - "8000:8000"
     volumes:
       - .:/app
       - ./app_data:/app_data
@@ -160,3 +176,7 @@ services:
       - TEMPLATE_API_KEY=${TEMPLATE_API_KEY}
       - TEMPLATE_MODEL=${TEMPLATE_MODEL}
       - TEMPLATE_API_BASE=${TEMPLATE_API_BASE}
+      - IMAGE_GEN_API_KEY=${IMAGE_GEN_API_KEY}
+      - IMAGE_GEN_BASE_URL=${IMAGE_GEN_BASE_URL}
+      - IMAGE_GEN_MODEL=${IMAGE_GEN_MODEL}
+      - IMAGE_PROVIDER=${IMAGE_PROVIDER}

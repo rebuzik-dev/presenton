@@ -89,6 +89,9 @@ const setupUserConfigFromEnv = () => {
     PEXELS_API_KEY: process.env.PEXELS_API_KEY || existingConfig.PEXELS_API_KEY,
     PIXABAY_API_KEY:
       process.env.PIXABAY_API_KEY || existingConfig.PIXABAY_API_KEY,
+    IMAGE_GEN_API_KEY: process.env.IMAGE_GEN_API_KEY || existingConfig.IMAGE_GEN_API_KEY,
+    IMAGE_GEN_BASE_URL: process.env.IMAGE_GEN_BASE_URL || existingConfig.IMAGE_GEN_BASE_URL,
+    IMAGE_GEN_MODEL: process.env.IMAGE_GEN_MODEL || existingConfig.IMAGE_GEN_MODEL,
     IMAGE_PROVIDER: process.env.IMAGE_PROVIDER || existingConfig.IMAGE_PROVIDER,
     TOOL_CALLS: process.env.TOOL_CALLS || existingConfig.TOOL_CALLS,
     DISABLE_THINKING:

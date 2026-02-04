@@ -80,6 +80,15 @@ export const hasValidLLMConfig = (llmConfig: LLMConfig) => {
         return llmConfig.GOOGLE_API_KEY && llmConfig.GOOGLE_API_KEY !== "";
       case "comfyui":
         return llmConfig.COMFYUI_URL && llmConfig.COMFYUI_URL !== "";
+      case "custom_openai":
+        return (
+          llmConfig.IMAGE_GEN_BASE_URL !== "" &&
+          llmConfig.IMAGE_GEN_BASE_URL !== null &&
+          llmConfig.IMAGE_GEN_BASE_URL !== undefined &&
+          llmConfig.IMAGE_GEN_MODEL !== "" &&
+          llmConfig.IMAGE_GEN_MODEL !== null &&
+          llmConfig.IMAGE_GEN_MODEL !== undefined
+        );
       default:
         return false;
     }
@@ -89,14 +98,14 @@ export const hasValidLLMConfig = (llmConfig: LLMConfig) => {
     llmConfig.LLM === "openai"
       ? isOpenAIConfigValid
       : llmConfig.LLM === "google"
-      ? isGoogleConfigValid
-      : llmConfig.LLM === "anthropic"
-      ? isAnthropicConfigValid
-      : llmConfig.LLM === "ollama"
-      ? isOllamaConfigValid
-      : llmConfig.LLM === "custom"
-      ? isCustomConfigValid
-      : false;
+        ? isGoogleConfigValid
+        : llmConfig.LLM === "anthropic"
+          ? isAnthropicConfigValid
+          : llmConfig.LLM === "ollama"
+            ? isOllamaConfigValid
+            : llmConfig.LLM === "custom"
+              ? isCustomConfigValid
+              : false;
 
   return isLLMConfigValid && isImageConfigValid();
 };

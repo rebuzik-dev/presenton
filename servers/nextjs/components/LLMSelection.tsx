@@ -123,22 +123,32 @@ export default function LLMProviderSelection({
       llmConfig.IMAGE_PROVIDER === "comfyui" &&
       (!llmConfig.COMFYUI_URL || !llmConfig.COMFYUI_WORKFLOW);
 
+    const needsCustomOpenAIConfig =
+      !llmConfig.DISABLE_IMAGE_GENERATION &&
+      llmConfig.IMAGE_PROVIDER === "custom_openai" &&
+      (!llmConfig.IMAGE_GEN_BASE_URL ||
+        !llmConfig.IMAGE_GEN_MODEL ||
+        !llmConfig.IMAGE_GEN_API_KEY);
+
     setButtonState({
       isLoading: false,
       isDisabled:
         needsModelSelection ||
         needsApiKey ||
         needsOllamaUrl ||
-        needsComfyUIConfig,
+        needsComfyUIConfig ||
+        needsCustomOpenAIConfig,
       text: needsModelSelection
         ? "Please Select a Model"
         : needsApiKey
-        ? "Please Enter API Key"
-        : needsOllamaUrl
-        ? "Please Enter Ollama URL"
-        : needsComfyUIConfig
-        ? "Please Configure ComfyUI"
-        : "Save Configuration",
+          ? "Please Enter API Key"
+          : needsOllamaUrl
+            ? "Please Enter Ollama URL"
+            : needsComfyUIConfig
+              ? "Please Configure ComfyUI"
+              : needsCustomOpenAIConfig
+                ? "Please Configure Custom OpenAI"
+                : "Save Configuration",
       showProgress: false,
     });
   }, [llmConfig]);
@@ -452,7 +462,7 @@ export default function LLMProviderSelection({
                         <span className="text-sm font-medium text-gray-900">
                           {llmConfig.IMAGE_PROVIDER
                             ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]
-                                ?.label || llmConfig.IMAGE_PROVIDER
+                              ?.label || llmConfig.IMAGE_PROVIDER
                             : "Select image provider"}
                         </span>
                       </div>
@@ -602,6 +612,71 @@ export default function LLMProviderSelection({
                   );
                 }
 
+                // Show Custom OpenAI configuration
+                if (provider.value === "custom_openai") {
+                  return (
+                    <div className="mb-8 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          OpenAI Compatible URL
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="https://api.example.com/v1"
+                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                            value={llmConfig.IMAGE_GEN_BASE_URL || ""}
+                            onChange={(e) => {
+                              input_field_changed(
+                                e.target.value,
+                                "image_gen_base_url"
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Model Name
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="stabilityai/sdxl-turbo"
+                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                            value={llmConfig.IMAGE_GEN_MODEL || ""}
+                            onChange={(e) => {
+                              input_field_changed(
+                                e.target.value,
+                                "image_gen_model"
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          API Key
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="sk-..."
+                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                            value={llmConfig.IMAGE_GEN_API_KEY || ""}
+                            onChange={(e) => {
+                              input_field_changed(
+                                e.target.value,
+                                "image_gen_api_key"
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 // Show API key input for other providers
                 return (
                   <div className="mb-8">
@@ -645,14 +720,14 @@ export default function LLMProviderSelection({
                 {llmConfig.LLM === "ollama"
                   ? llmConfig.OLLAMA_MODEL ?? "xxxxx"
                   : llmConfig.LLM === "custom"
-                  ? llmConfig.CUSTOM_MODEL ?? "xxxxx"
-                  : llmConfig.LLM === "anthropic"
-                  ? llmConfig.ANTHROPIC_MODEL ?? "xxxxx"
-                  : llmConfig.LLM === "google"
-                  ? llmConfig.GOOGLE_MODEL ?? "xxxxx"
-                  : llmConfig.LLM === "openai"
-                  ? llmConfig.OPENAI_MODEL ?? "xxxxx"
-                  : "xxxxx"}{" "}
+                    ? llmConfig.CUSTOM_MODEL ?? "xxxxx"
+                    : llmConfig.LLM === "anthropic"
+                      ? llmConfig.ANTHROPIC_MODEL ?? "xxxxx"
+                      : llmConfig.LLM === "google"
+                        ? llmConfig.GOOGLE_MODEL ?? "xxxxx"
+                        : llmConfig.LLM === "openai"
+                          ? llmConfig.OPENAI_MODEL ?? "xxxxx"
+                          : "xxxxx"}{" "}
                 for text generation{" "}
                 {isImageGenerationDisabled ? (
                   "and image generation is disabled."
@@ -660,7 +735,7 @@ export default function LLMProviderSelection({
                   <>
                     and{" "}
                     {llmConfig.IMAGE_PROVIDER &&
-                    IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]
+                      IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]
                       ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER].label
                       : "xxxxx"}{" "}
                     for images

@@ -37,6 +37,11 @@ export interface LLMConfig {
   // GPT Image 1.5 Quality
   GPT_IMAGE_1_5_QUALITY?: string;
 
+  // Custom Image Gen Provider
+  IMAGE_GEN_API_KEY?: string;
+  IMAGE_GEN_BASE_URL?: string;
+  IMAGE_GEN_MODEL?: string;
+
   // Other Configs
   TOOL_CALLS?: boolean;
   DISABLE_THINKING?: boolean;

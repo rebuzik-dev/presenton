@@ -101,5 +101,18 @@ def set_dall_e_3_quality_env(value):
     os.environ["DALL_E_3_QUALITY"] = value
 
 
+# Gpt Image 1.5 Quality
 def set_gpt_image_1_5_quality_env(value):
     os.environ["GPT_IMAGE_1_5_QUALITY"] = value
+
+
+def set_image_gen_api_key_env(value):
+    os.environ["IMAGE_GEN_API_KEY"] = value
+
+
+def set_image_gen_base_url_env(value):
+    os.environ["IMAGE_GEN_BASE_URL"] = value
+
+
+def set_image_gen_model_env(value):
+    os.environ["IMAGE_GEN_MODEL"] = value

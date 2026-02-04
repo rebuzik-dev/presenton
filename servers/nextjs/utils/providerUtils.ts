@@ -50,6 +50,9 @@ export const updateLLMConfig = (
     web_grounding: "WEB_GROUNDING",
     comfyui_url: "COMFYUI_URL",
     comfyui_workflow: "COMFYUI_WORKFLOW",
+    image_gen_api_key: "IMAGE_GEN_API_KEY",
+    image_gen_base_url: "IMAGE_GEN_BASE_URL",
+    image_gen_model: "IMAGE_GEN_MODEL",
     dall_e_3_quality: "DALL_E_3_QUALITY",
     gpt_image_1_5_quality: "GPT_IMAGE_1_5_QUALITY",
   };

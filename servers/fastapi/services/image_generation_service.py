@@ -12,6 +12,9 @@ from utils.get_env import (
     get_dall_e_3_quality_env,
     get_gpt_image_1_5_quality_env,
     get_pexels_api_key_env,
+    get_image_gen_api_key_env,
+    get_image_gen_base_url_env,
+    get_image_gen_model_env,
 )
 from utils.get_env import get_pixabay_api_key_env
 from utils.get_env import get_comfyui_url_env
@@ -25,6 +28,7 @@ from utils.image_provider import (
     is_nanobanana_pro_selected,
     is_dalle3_selected,
     is_comfyui_selected,
+    is_custom_openai_selected,
 )
 import uuid
 
@@ -34,6 +38,11 @@ class ImageGenerationService:
         self.output_directory = output_directory
         self.is_image_generation_disabled = is_image_generation_disabled()
         self.image_gen_func = self.get_image_gen_func()
+
+        # Debugging active provider
+        print(f"DEBUG: Initialized ImageGenerationService. Provider func: {self.image_gen_func}")
+        print(f"DEBUG: Pexels Selected: {is_pixels_selected()}")
+        print(f"DEBUG: Custom OpenAI Selected: {is_custom_openai_selected()}")
 
     def get_image_gen_func(self):
         if self.is_image_generation_disabled:
@@ -53,6 +62,8 @@ class ImageGenerationService:
             return self.generate_image_openai_gpt_image_1_5
         elif is_comfyui_selected():
             return self.generate_image_comfyui
+        elif is_custom_openai_selected():
+            return self.generate_image_custom_openai
         return None
 
     def is_stock_provider_selected(self):
@@ -105,9 +116,15 @@ class ImageGenerationService:
             return "/static/images/placeholder.jpg"
 
     async def generate_image_openai(
-        self, prompt: str, output_directory: str, model: str, quality: str
+        self,
+        prompt: str,
+        output_directory: str,
+        model: str,
+        quality: str = "standard",
+        api_key: str | None = None,
+        base_url: str | None = None,
     ) -> str:
-        client = AsyncOpenAI()
+        client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         result = await client.images.generate(
             model=model,
             prompt=prompt,
@@ -139,6 +156,18 @@ class ImageGenerationService:
             output_directory,
             "gpt-image-1.5",
             get_gpt_image_1_5_quality_env() or "medium",
+        )
+
+    async def generate_image_custom_openai(
+        self, prompt: str, output_directory: str
+    ) -> str:
+        return await self.generate_image_openai(
+            prompt,
+            output_directory,
+            get_image_gen_model_env(),
+            "standard",  # Custom providers might not support quality param, but we pass default
+            get_image_gen_api_key_env(),
+            get_image_gen_base_url_env(),
         )
 
     async def _generate_image_google(

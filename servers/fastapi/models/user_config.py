@@ -36,6 +36,11 @@ class UserConfig(BaseModel):
     COMFYUI_URL: Optional[str] = None
     COMFYUI_WORKFLOW: Optional[str] = None
 
+    # Custom Image Generation Provider
+    IMAGE_GEN_API_KEY: Optional[str] = None
+    IMAGE_GEN_BASE_URL: Optional[str] = None
+    IMAGE_GEN_MODEL: Optional[str] = None
+
     # Dalle 3 Quality
     DALL_E_3_QUALITY: Optional[str] = None
     # Gpt Image 1.5 Quality
