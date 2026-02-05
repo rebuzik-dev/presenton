@@ -97,10 +97,16 @@ async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
 
   await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
   page.setDefaultNavigationTimeout(300000);
-  page.setDefaultTimeout(300000);
-  await page.goto(`http://localhost/pdf-maker?id=${id}`, {
+  page.setDefaultTimeout(300000); // 5 minutes default is long, but keeping it for complex slides.
+
+  page.on("console", (msg) => console.log("PPTX PAGE LOG:", msg.text()));
+
+  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  console.log(`PPTX Model Gen: Navigating to ${baseUrl}/pdf-maker?id=${id}`);
+
+  await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {
     waitUntil: "networkidle0",
-    timeout: 300000,
+    timeout: 60000,
   });
   return [browser, page];
 }
@@ -111,13 +117,8 @@ async function closeBrowserAndPage(browser: Browser | null, page: Page | null) {
 }
 
 function getScreenshotsDir() {
-  const tempDir = process.env.TEMP_DIRECTORY;
-  if (!tempDir) {
-    console.warn(
-      "TEMP_DIRECTORY environment variable not set, skipping screenshot"
-    );
-    throw new ApiError("TEMP_DIRECTORY environment variable not set");
-  }
+  const tempDir = process.env.TEMP_DIRECTORY || "./temp";
+
   const screenshotsDir = path.join(tempDir, "screenshots");
   if (!fs.existsSync(screenshotsDir)) {
     fs.mkdirSync(screenshotsDir, { recursive: true });
@@ -435,30 +436,30 @@ async function getAllChildElementsAttributes({
   const filteredResults =
     depth === 0
       ? allResults.filter(({ attributes }) => {
-          const hasBackground =
-            attributes.background && attributes.background.color;
-          const hasBorder = attributes.border && attributes.border.color;
-          const hasShadow = attributes.shadow && attributes.shadow.color;
-          const hasText =
-            attributes.innerText && attributes.innerText.trim().length > 0;
-          const hasImage = attributes.imageSrc;
-          const isSvg = attributes.tagName === "svg";
-          const isCanvas = attributes.tagName === "canvas";
-          const isTable = attributes.tagName === "table";
+        const hasBackground =
+          attributes.background && attributes.background.color;
+        const hasBorder = attributes.border && attributes.border.color;
+        const hasShadow = attributes.shadow && attributes.shadow.color;
+        const hasText =
+          attributes.innerText && attributes.innerText.trim().length > 0;
+        const hasImage = attributes.imageSrc;
+        const isSvg = attributes.tagName === "svg";
+        const isCanvas = attributes.tagName === "canvas";
+        const isTable = attributes.tagName === "table";
 
-          const occupiesRoot =
-            attributes.position &&
-            attributes.position.left === 0 &&
-            attributes.position.top === 0 &&
-            attributes.position.width === rootRect!.width &&
-            attributes.position.height === rootRect!.height;
+        const occupiesRoot =
+          attributes.position &&
+          attributes.position.left === 0 &&
+          attributes.position.top === 0 &&
+          attributes.position.width === rootRect!.width &&
+          attributes.position.height === rootRect!.height;
 
-          const hasVisualProperties =
-            hasBackground || hasBorder || hasShadow || hasText;
-          const hasSpecialContent = hasImage || isSvg || isCanvas || isTable;
+        const hasVisualProperties =
+          hasBackground || hasBorder || hasShadow || hasText;
+        const hasSpecialContent = hasImage || isSvg || isCanvas || isTable;
 
-          return (hasVisualProperties && !occupiesRoot) || hasSpecialContent;
-        })
+        return (hasVisualProperties && !occupiesRoot) || hasSpecialContent;
+      })
       : allResults;
 
   if (depth === 0) {
@@ -1163,8 +1164,8 @@ async function getElementAttributes(
           el.className && typeof el.className === "string"
             ? el.className
             : el.className
-            ? el.className.toString()
-            : undefined,
+              ? el.className.toString()
+              : undefined,
         innerText: innerText,
         opacity: elementOpacity,
         background: background,

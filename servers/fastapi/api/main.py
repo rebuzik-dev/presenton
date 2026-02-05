@@ -26,3 +26,10 @@ app.add_middleware(
 )
 
 app.add_middleware(UserConfigEnvUpdateMiddleware)
+
+from fastapi.staticfiles import StaticFiles
+import os
+
+app_data_dir = os.environ.get("APP_DATA_DIRECTORY", "../../app_data")
+if os.path.exists(app_data_dir):
+    app.mount("/app_data", StaticFiles(directory=app_data_dir), name="app_data")

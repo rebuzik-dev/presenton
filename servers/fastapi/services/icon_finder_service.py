@@ -8,16 +8,28 @@ from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 class IconFinderService:
     def __init__(self):
         self.collection_name = "icons"
+        from utils.get_env import get_app_data_directory_env
+        import os
+        
+        app_data_dir = get_app_data_directory_env()
+        chroma_path = os.path.join(app_data_dir, "chroma") if app_data_dir else "chroma"
+        
         self.client = chromadb.PersistentClient(
-            path="chroma", settings=Settings(anonymized_telemetry=False)
+            path=chroma_path, settings=Settings(anonymized_telemetry=False)
         )
         print("Initializing icons collection...")
         self._initialize_icons_collection()
         print("Icons collection initialized.")
 
     def _initialize_icons_collection(self):
+        from utils.get_env import get_app_data_directory_env
+        import os
+        
+        app_data_dir = get_app_data_directory_env()
+        chroma_path = os.path.join(app_data_dir, "chroma") if app_data_dir else "chroma"
+
         self.embedding_function = ONNXMiniLM_L6_V2()
-        self.embedding_function.DOWNLOAD_PATH = "chroma/models"
+        self.embedding_function.DOWNLOAD_PATH = os.path.join(chroma_path, "models")
         self.embedding_function._download_model_if_not_exists()
         try:
             self.collection = self.client.get_collection(

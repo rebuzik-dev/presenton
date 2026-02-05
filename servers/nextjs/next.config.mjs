@@ -1,15 +1,25 @@
+import dotenv from "dotenv";
+import path from "path";
 
+// Load environment variables from the root .env file
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
   distDir: ".next-build",
-  
+
 
   // Rewrites for development - proxy font requests to FastAPI backend
   async rewrites() {
     return [
       {
-        source: '/app_data/fonts/:path*',
-        destination: 'http://localhost:8000/app_data/fonts/:path*',
+        source: '/app_data/:path*',
+        destination: 'http://localhost:8000/app_data/:path*',
+      },
+      {
+        source: '/api/v1/:path*',
+        destination: 'http://localhost:8000/api/v1/:path*',
       },
     ];
   },
@@ -54,7 +64,7 @@ const nextConfig = {
       },
     ],
   },
-  
+
 };
 
 export default nextConfig;

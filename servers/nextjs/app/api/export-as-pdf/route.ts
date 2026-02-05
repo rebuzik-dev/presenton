@@ -34,14 +34,20 @@ export async function POST(req: NextRequest) {
   page.setDefaultNavigationTimeout(300000);
   page.setDefaultTimeout(300000);
 
-  await page.goto(`http://localhost/pdf-maker?id=${id}`, {
+  page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
+
+  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  console.log(`Navigating to: ${baseUrl}/pdf-maker?id=${id}`);
+
+  await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {
     waitUntil: "networkidle0",
-    timeout: 300000,
+    timeout: 60000,
   });
 
   await page.waitForFunction('() => document.readyState === "complete"');
 
   try {
+    console.log("Waiting for elements to load...");
     await page.waitForFunction(
       `
       () => {
@@ -60,15 +66,17 @@ export async function POST(req: NextRequest) {
             }
         }
         
-        return (loadedElements / totalElements) >= 0.99;
+        const progress = loadedElements / totalElements;
+        // console.log("Loading progress:", progress, loadedElements, totalElements);
+        return progress >= 0.99;
       }
       `,
-      { timeout: 300000 }
+      { timeout: 30000 }
     );
-
+    console.log("Elements loaded.");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
-    console.log("Warning: Some content may not have loaded completely:", error);
+    console.log("Warning: Some content may not have loaded completely (timeout):", error);
   }
 
   const pdfBuffer = await page.pdf({
@@ -81,13 +89,7 @@ export async function POST(req: NextRequest) {
   browser.close();
 
   const sanitizedTitle = sanitizeFilename(title ?? "presentation");
-  const appDataDirectory = process.env.APP_DATA_DIRECTORY!;
-  if (!appDataDirectory) {
-    return NextResponse.json({
-      error: "App data directory not found",
-      status: 500,
-    });
-  }
+  const appDataDirectory = process.env.APP_DATA_DIRECTORY || "./app_data";
   const destinationPath = path.join(
     appDataDirectory,
     "exports",

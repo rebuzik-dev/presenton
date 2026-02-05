@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import { LLMConfig } from "@/types/llm_config";
 
-const userConfigPath = process.env.USER_CONFIG_PATH!;
+const userConfigPath = process.env.USER_CONFIG_PATH || "./user_config.json";
 const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
 
 export async function GET() {

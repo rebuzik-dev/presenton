@@ -1,7 +1,12 @@
 import uvicorn
 import argparse
 
+from dotenv import load_dotenv
+import os
+
 if __name__ == "__main__":
+    # Load .env from project root (2 levels up)
+    load_dotenv("../../.env")
     parser = argparse.ArgumentParser(description="Run the FastAPI server")
     parser.add_argument(
         "--port", type=int, required=True, help="Port number to run the server on"
@@ -14,8 +19,8 @@ if __name__ == "__main__":
     
     uvicorn.run(
         "api.main:app",
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=args.port,
-        log_level="info",
+        log_level="debug",
         reload=reload,
     )

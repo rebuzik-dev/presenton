@@ -17,12 +17,17 @@ from utils.get_env import (
 
 
 def get_llm_provider():
+    provider_str = get_llm_provider_env()
+    print(f"LLM Provider from env: '{provider_str}'")
     try:
-        return LLMProvider(get_llm_provider_env())
-    except:
+        if not provider_str:
+             raise ValueError("Provider is empty")
+        return LLMProvider(provider_str.strip())
+    except Exception as e:
+        print(f"Error parsing LLM provider: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Invalid LLM provider. Please select one of: openai, google, anthropic, ollama, custom",
+            detail=f"Invalid LLM provider: '{provider_str}'. Please select one of: openai, google, anthropic, ollama, custom",
         )
 
 
