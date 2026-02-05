@@ -20,6 +20,7 @@ from services.temp_file_service import TEMP_FILE_SERVICE
 from services.database import get_async_session
 from services.documents_loader import DocumentsLoader
 from utils.llm_calls.generate_presentation_outlines import generate_ppt_outline
+from utils.json_repair import repair_json_string
 from utils.ppt_utils import get_presentation_title_from_outlines
 
 OUTLINES_ROUTER = APIRouter(prefix="/outlines", tags=["Outlines"])
@@ -88,11 +89,22 @@ async def stream_outlines(
                 dirtyjson.loads(presentation_outlines_text)
             )
         except Exception as e:
-            traceback.print_exc()
-            yield SSEErrorResponse(
-                detail=f"Failed to generate presentation outlines. Please try again. {str(e)}",
-            ).to_string()
-            return
+            print(f"JSON Parsing failed: {e}")
+            print(f"Tail of content: {presentation_outlines_text[-500:]}")
+            
+            try:
+                print("Attempting to repair JSON...")
+                repaired_text = repair_json_string(presentation_outlines_text)
+                presentation_outlines_json = dict(
+                    dirtyjson.loads(repaired_text)
+                )
+                print("JSON Repair successful.")
+            except Exception as repair_error:
+                traceback.print_exc()
+                yield SSEErrorResponse(
+                    detail=f"Failed to generate presentation outlines. JSON Invalid (Repair failed). {str(e)}",
+                ).to_string()
+                return
 
         presentation_outlines = PresentationOutlineModel(**presentation_outlines_json)
 
