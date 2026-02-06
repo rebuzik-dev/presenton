@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RootState } from "@/store/store";
-import { useSelector } from "react-redux";
+import { useSearchParams } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
 import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import OutlineContent from "./OutlineContent";
@@ -15,11 +16,21 @@ import { useOutlineStreaming } from "../hooks/useOutlineStreaming";
 import { useOutlineManagement } from "../hooks/useOutlineManagement";
 import { usePresentationGeneration } from "../hooks/usePresentationGeneration";
 import TemplateSelection from "./TemplateSelection";
+import { setPresentationId } from "@/store/slices/presentationGeneration";
 
 const OutlinePage: React.FC = () => {
+  const dispatch = useDispatch();
+  const searchParams = useSearchParams();
   const { presentation_id, outlines } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
+
+  React.useEffect(() => {
+    const idFromUrl = searchParams.get("id");
+    if (!presentation_id && idFromUrl) {
+      dispatch(setPresentationId(idFromUrl));
+    }
+  }, [presentation_id, searchParams, dispatch]);
 
   const [activeTab, setActiveTab] = useState<string>(TABS.OUTLINE);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -32,7 +43,8 @@ const OutlinePage: React.FC = () => {
     selectedTemplate,
     setActiveTab
   );
-  if (!presentation_id) {
+
+  if (!presentation_id && !searchParams.get("id")) {
     return <EmptyStateView />;
   }
 

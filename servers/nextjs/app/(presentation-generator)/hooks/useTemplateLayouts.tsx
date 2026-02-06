@@ -29,6 +29,14 @@ export const useTemplateLayouts = () => {
   const renderSlideContent = useMemo(() => {
     return (slide: any, isEditMode: boolean) => {
 
+      if (!slide) {
+        return (
+          <div className="flex flex-col items-center justify-center aspect-video h-full bg-gray-100 rounded-lg">
+            <p className="text-gray-400 font-medium">Draft</p>
+          </div>
+        );
+      }
+
       const Layout = getTemplateLayout(slide.layout, slide.layout_group);
       if (loading) {
         return (
@@ -48,6 +56,41 @@ export const useTemplateLayouts = () => {
         );
       }
 
+      const slideContent = (
+        <SlideErrorBoundary label={`Slide ${slide.index + 1}`}>
+          <Layout data={slide.content} />
+        </SlideErrorBoundary>
+      );
+
+      // Wrap with TiptapTextReplacer to process Markdown text
+      // In edit mode: it's editable and updates Redux
+      // In view mode: it's read-only but renders Markdown
+      const withTextReplacer = (
+        <TiptapTextReplacer
+          key={slide.id}
+          slideData={slide.content}
+          slideIndex={slide.index}
+          isEditable={isEditMode}
+          onContentChange={(
+            content: string,
+            dataPath: string,
+            slideIndex?: number
+          ) => {
+            if (dataPath && slideIndex !== undefined) {
+              dispatch(
+                updateSlideContent({
+                  slideIndex: slideIndex,
+                  dataPath: dataPath,
+                  content: content,
+                })
+              );
+            }
+          }}
+        >
+          {slideContent}
+        </TiptapTextReplacer>
+      );
+
       if (isEditMode) {
         return (
           <EditableLayoutWrapper
@@ -55,38 +98,12 @@ export const useTemplateLayouts = () => {
             slideData={slide.content}
             properties={slide.properties}
           >
-            <TiptapTextReplacer
-              key={slide.id}
-              slideData={slide.content}
-              slideIndex={slide.index}
-              onContentChange={(
-                content: string,
-                dataPath: string,
-                slideIndex?: number
-              ) => {
-                if (dataPath && slideIndex !== undefined) {
-                  dispatch(
-                    updateSlideContent({
-                      slideIndex: slideIndex,
-                      dataPath: dataPath,
-                      content: content,
-                    })
-                  );
-                }
-              }}
-            >
-              <SlideErrorBoundary label={`Slide ${slide.index + 1}`}>
-                <Layout data={slide.content} />
-              </SlideErrorBoundary>
-            </TiptapTextReplacer>
+            {withTextReplacer}
           </EditableLayoutWrapper>
         );
       }
-      return (
-        <SlideErrorBoundary label={`Slide ${slide.index + 1}`}>
-          <Layout data={slide.content} />
-        </SlideErrorBoundary>
-      );
+
+      return withTextReplacer;
     };
   }, [getTemplateLayout, dispatch]);
 

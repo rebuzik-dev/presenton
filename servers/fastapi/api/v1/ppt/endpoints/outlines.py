@@ -41,6 +41,13 @@ async def stream_outlines(
     temp_dir = TEMP_FILE_SERVICE.create_temp_dir()
 
     async def inner():
+        if presentation.outlines:
+            logger.info(f"Outlines already exist for presentation {id}. Returning cached result.")
+            yield SSECompleteResponse(
+                key="presentation", value=presentation.model_dump(mode="json")
+            ).to_string()
+            return
+
         yield SSEStatusResponse(
             status="Generating presentation outlines..."
         ).to_string()

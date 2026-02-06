@@ -12,7 +12,7 @@ interface EditableLayoutWrapperProps {
     slideData: any;
     isEditMode?: boolean;
     properties?: any;
-    
+
 }
 
 interface EditableElement {
@@ -29,12 +29,61 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
     slideIndex,
     slideData,
     properties,
-    
+
 }) => {
     const dispatch = useDispatch();
     const containerRef = useRef<HTMLDivElement>(null);
     const [editableElements, setEditableElements] = useState<EditableElement[]>([]);
     const [activeEditor, setActiveEditor] = useState<EditableElement | null>(null);
+
+    /**
+     * Checks if two URLs match using various comparison strategies
+     */
+    const isMatchingUrl = (url1: string, url2: string): boolean => {
+        if (!url1 || !url2) return false;
+
+        // Normalize paths: decode, replace backslashes (Windows), remove query params
+        const normalize = (p: string) => {
+            try {
+                return decodeURIComponent(p).replace(/\\/g, '/').split('?')[0];
+            } catch (e) {
+                return p.replace(/\\/g, '/').split('?')[0];
+            }
+        };
+
+        const p1 = normalize(url1);
+        const p2 = normalize(url2);
+
+        // Direct match after normalization
+        if (p1 === p2) return true;
+
+        // Remove protocol and domain differences
+        const cleanUrl1 = p1.replace(/^https?:\/\/[^\/]+/, '').replace(/^\/+/, '');
+        const cleanUrl2 = p2.replace(/^https?:\/\/[^\/]+/, '').replace(/^\/+/, '');
+
+        if (cleanUrl1 === cleanUrl2) return true;
+
+        // Handle placeholder URLs - be more specific
+        if ((url1.includes('placeholder') && url2.includes('placeholder')) ||
+            (url1.includes('/static/images/') && url2.includes('/static/images/'))) {
+            // For placeholders, if they didn't match above, check just filenames
+            const f1 = p1.split('/').pop();
+            const f2 = p2.split('/').pop();
+            if (f1 === f2) return true;
+        }
+
+        // Handle app_data paths & others - rely on filename matching
+        // This is crucial for matching Frontend URL (http://...) with Backend Path (C:\...)
+        const filename1 = p1.split('/').pop() || '';
+        const filename2 = p2.split('/').pop() || '';
+
+        // Relaxed filename length check (> 5) to support shorter names and icons
+        if (filename1 === filename2 && filename1 !== '' && filename1.length > 5) {
+            return true;
+        }
+
+        return false;
+    };
 
     /**
      * Recursively searches for ALL image/icon data paths in the slide data structure
@@ -45,11 +94,11 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
         const matches: { path: string; type: 'image' | 'icon'; data: any }[] = [];
 
         // Check current level for __image_url__ or __icon_url__
-        if (data.__image_url__ && targetUrl.includes(data.__image_url__)) {
+        if (data.__image_url__ && isMatchingUrl(targetUrl, data.__image_url__)) {
             matches.push({ path, type: 'image', data });
         }
 
-        if (data.__icon_url__ && targetUrl.includes(data.__icon_url__)) {
+        if (data.__icon_url__ && isMatchingUrl(targetUrl, data.__icon_url__)) {
             matches.push({ path, type: 'icon', data });
         }
 
@@ -120,48 +169,6 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
         return allMatches[0];
     };
 
-    /**
-     * Checks if two URLs match using various comparison strategies
-     */
-    const isMatchingUrl = (url1: string, url2: string): boolean => {
-        if (!url1 || !url2) return false;
-
-        // Direct match
-        if (url1 === url2) return true;
-
-        // Remove protocol and domain differences
-        const cleanUrl1 = url1 && url1.replace(/^https?:\/\/[^\/]+/, '').replace(/^\/+/, '');
-        const cleanUrl2 = url2 && url2.replace(/^https?:\/\/[^\/]+/, '').replace(/^\/+/, '');
-
-        if (cleanUrl1 === cleanUrl2) return true;
-
-        // Handle placeholder URLs - be more specific
-        if ((url1.includes('placeholder') && url2.includes('placeholder')) ||
-            (url1.includes('/static/images/') && url2.includes('/static/images/'))) {
-            return url1 === url2; // Require exact match for placeholders
-        }
-
-        // Handle app_data paths - be more specific about filename matching
-        if (url1.includes('/app_data/') || url2.includes('/app_data/')) {
-            const getFilename = (path: string) => path.split('/').pop() || '';
-            const filename1 = getFilename(url1);
-            const filename2 = getFilename(url2);
-            if (filename1 === filename2 && filename1 !== '' && filename1.length > 10) { // Ensure significant filename
-                return true;
-            }
-        }
-
-        // Extract and compare filenames for other URLs - be more restrictive
-        const getFilename = (path: string) => path.split('/').pop() || '';
-        const filename1 = getFilename(url1);
-        const filename2 = getFilename(url2);
-
-        if (filename1 === filename2 && filename1 !== '' && filename1.length > 10) { // Ensure significant filename
-            return true;
-        }
-
-        return false; // Remove the overly permissive substring matching
-    };
 
     /**
      * Finds and processes images in the DOM, making them editable
@@ -207,7 +214,7 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
                         setActiveEditor(editableElement);
                     };
 
-                    htmlImg.addEventListener('click', clickHandler);
+                    htmlImg.addEventListener('click', clickHandler, { capture: true });
 
                     const itemIndex = parseInt(`${slideIndex}-${type}-${dataPath}-${index}`.split('-').pop() || '0');
                     const propertiesData = properties?.[itemIndex];
@@ -233,7 +240,7 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
 
                     // Store cleanup functions
                     (htmlImg as any)._editableCleanup = () => {
-                        htmlImg.removeEventListener('click', clickHandler);
+                        htmlImg.removeEventListener('click', clickHandler, { capture: true });
                         htmlImg.removeEventListener('mouseenter', mouseEnterHandler);
                         htmlImg.removeEventListener('mouseleave', mouseLeaveHandler);
                         htmlImg.style.cursor = '';
@@ -245,7 +252,7 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
                 }
             }
         });
-        
+
         // Process SVG icons
         svgElements.forEach((svg, index) => {
             const svgEl = svg as SVGElement;
@@ -282,7 +289,7 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
                         setActiveEditor(editableElement);
                     };
 
-                    svgEl.addEventListener('click', clickHandler);
+                    svgEl.addEventListener('click', clickHandler, { capture: true });
 
                     // Add hover effects without changing layout
                     (svgEl as unknown as HTMLElement).style.cursor = 'pointer';
@@ -301,7 +308,7 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
 
                     // Store cleanup functions
                     (svgEl as any)._editableCleanup = () => {
-                        svgEl.removeEventListener('click', clickHandler);
+                        svgEl.removeEventListener('click', clickHandler, { capture: true });
                         svgEl.removeEventListener('mouseenter', mouseEnterHandler as any);
                         svgEl.removeEventListener('mouseleave', mouseLeaveHandler as any);
                         (svgEl as unknown as HTMLElement).style.cursor = '';

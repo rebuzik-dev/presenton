@@ -21,6 +21,7 @@ import { usePathname } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import NewSlide from "../../components/NewSlide";
 import { addToHistory } from "@/store/slices/undoRedoSlice";
+import ScaledSlideWrapper from "../../components/ScaledSlideWrapper";
 
 interface SlideContentProps {
   slide: any;
@@ -153,7 +154,9 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
               <Loader2 className="w-8 h-8 animate-spin" />
             </div>
           ) : (
-            slideContent
+            <ScaledSlideWrapper>
+              {slideContent}
+            </ScaledSlideWrapper>
           )}
 
           {!showNewSlideSelection && (

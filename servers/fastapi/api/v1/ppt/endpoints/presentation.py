@@ -77,7 +77,7 @@ async def get_all_presentations(sql_session: AsyncSession = Depends(get_async_se
 
     query = (
         select(PresentationModel, SlideModel)
-        .join(
+        .outerjoin(
             SlideModel,
             (SlideModel.presentation == PresentationModel.id) & (SlideModel.index == 0),
         )
@@ -89,7 +89,7 @@ async def get_all_presentations(sql_session: AsyncSession = Depends(get_async_se
     presentations_with_slides = [
         PresentationWithSlides(
             **presentation.model_dump(),
-            slides=[first_slide],
+            slides=[first_slide] if first_slide else [],
         )
         for presentation, first_slide in rows
     ]
@@ -221,6 +221,44 @@ async def stream_presentation(
         
         for i, slide_layout_index in enumerate(structure.slides):
             slide_layout = layout.slides[slide_layout_index]
+            
+            # Check if slide already exists (Resume logic)
+            existing_slide = await sql_session.scalar(
+                select(SlideModel).where(
+                    SlideModel.presentation == id, 
+                    SlideModel.index == i
+                )
+            )
+
+            if existing_slide:
+                # Layout Mismatch Check
+                if str(existing_slide.layout) != str(slide_layout.id):
+                    logger.info(f"Slide {i+1} layout mismatch (DB: {existing_slide.layout}, Expected: {slide_layout.id}). Regenerating.")
+                    await sql_session.delete(existing_slide)
+                    await sql_session.commit()
+                    existing_slide = None
+                else: 
+                    logger.info(f"Found existing slide {i+1} (Resume)")
+                    slide = existing_slide
+                    slides.append(slide)
+                    
+                    # Check if we need to regenerate assets (if placeholders exist)
+                    has_placeholders = 'placeholder' in str(slide.content)
+                    if has_placeholders:
+                        logger.debug(f"Queueing asset generation for existing slide {i+1} (Placeholders found)")
+                        async_assets_generation_tasks.append(
+                            process_slide_and_fetch_assets(image_generation_service, slide)
+                        )
+                    
+                    # Yield existing slide
+                    yield SSEResponse(
+                        event="response",
+                        data=json.dumps({"type": "chunk", "chunk": slide.model_dump_json()}),
+                    ).to_string()
+                    
+                    continue
+
+            # New Slide Logic
             logger.debug(f"Generating slide {i+1} (Layout: {slide_layout.name})")
 
             try:
@@ -250,7 +288,12 @@ async def stream_presentation(
             # This will mutate slide and add placeholder assets
             process_slide_add_placeholder_assets(slide)
 
-            # This will mutate slide
+            # Save IMMEDIATELY (Incremental Persistence)
+            sql_session.add(slide)
+            await sql_session.commit()
+            await sql_session.refresh(slide)
+
+            # This will mutate slide later
             async_assets_generation_tasks.append(
                 process_slide_and_fetch_assets(image_generation_service, slide)
             )
@@ -273,9 +316,17 @@ async def stream_presentation(
             generated_assets.extend(assets_list)
         logger.info("Asset generation finished")
 
-        # Moved this here to make sure new slides are generated before deleting the old ones
+        # Force update content to ensure SQLAlchemy tracks JSON changes
+        for slide in slides:
+             slide.content = dict(slide.content)
+
+        # Cleanup orphan slides (e.g. if structure shrunk)
+        valid_slide_ids = [s.id for s in slides]
         await sql_session.execute(
-            delete(SlideModel).where(SlideModel.presentation == id)
+            delete(SlideModel).where(
+                SlideModel.presentation == id,
+                SlideModel.id.notin_(valid_slide_ids)
+            )
         )
         await sql_session.commit()
 
