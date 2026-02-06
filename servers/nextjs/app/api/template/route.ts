@@ -9,7 +9,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing group name" }, { status: 400 });
   }
 
-  const schemaPageUrl = `http://localhost/schema?group=${encodeURIComponent(
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const schemaPageUrl = `${baseUrl}/schema?group=${encodeURIComponent(
     groupName
   )}`;
 
@@ -76,10 +77,12 @@ export async function GET(request: Request) {
 
     return NextResponse.json(response);
   } catch (err) {
+    console.error("Puppeteer/API Error:", err);
     return NextResponse.json(
-      { error: "Failed to fetch or parse client page" },
+      { error: "Failed to fetch or parse client page", details: String(err) },
       { status: 500 }
     );
+
   } finally {
     if (browser) await browser.close();
   }

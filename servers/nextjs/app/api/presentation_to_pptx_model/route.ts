@@ -101,12 +101,12 @@ async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
 
   page.on("console", (msg) => console.log("PPTX PAGE LOG:", msg.text()));
 
-  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   console.log(`PPTX Model Gen: Navigating to ${baseUrl}/pdf-maker?id=${id}`);
 
   await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {
-    waitUntil: "networkidle0",
-    timeout: 60000,
+    waitUntil: "networkidle2",
+    timeout: 120000,
   });
   return [browser, page];
 }

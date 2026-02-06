@@ -4,7 +4,9 @@ from models.presentation_layout import PresentationLayoutModel
 from typing import List
 
 async def get_layout_by_name(layout_name: str) -> PresentationLayoutModel:
-    url = f"http://localhost/api/template?group={layout_name}"
+    import os
+    base_url = os.environ.get("NEXTJS_API_URL", "http://localhost:3000")
+    url = f"{base_url}/api/template?group={layout_name}"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:

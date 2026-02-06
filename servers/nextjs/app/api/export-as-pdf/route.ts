@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
 
-  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXTJS_API_URL || "http://localhost:3000";
   console.log(`Navigating to: ${baseUrl}/pdf-maker?id=${id}`);
 
   await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {

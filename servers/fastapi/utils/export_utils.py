@@ -17,7 +17,7 @@ import uuid
 async def export_presentation(
     presentation_id: uuid.UUID, title: str, export_as: Literal["pptx", "pdf"]
 ) -> PresentationAndPath:
-    base_url = os.environ.get("APP_BASE_URL", "http://localhost:3000")
+    base_url = os.environ.get("NEXTJS_API_URL", "http://localhost:3000")
 
     if export_as == "pptx":
 

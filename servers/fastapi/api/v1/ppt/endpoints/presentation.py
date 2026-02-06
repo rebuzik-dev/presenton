@@ -66,6 +66,7 @@ from utils.process_slides import (
     process_slide_and_fetch_assets,
 )
 import uuid
+from services.presentation_service import PresentationService
 
 
 PRESENTATION_ROUTER = APIRouter(prefix="/presentation", tags=["Presentation"])
@@ -147,26 +148,19 @@ async def create_presentation(
             detail="Number of slides cannot be less than 3 if table of contents is included",
         )
 
-    presentation_id = uuid.uuid4()
-
-    presentation = PresentationModel(
-        id=presentation_id,
-        content=content,
-        n_slides=n_slides,
-        language=language,
-        file_paths=file_paths,
-        tone=tone.value,
-        verbosity=verbosity.value,
-        instructions=instructions,
-        include_table_of_contents=include_table_of_contents,
-        include_title_slide=include_title_slide,
-        web_search=web_search,
+    return await PresentationService.create_presentation(
+        sql_session,
+        content,
+        n_slides,
+        language,
+        file_paths,
+        tone,
+        verbosity,
+        instructions,
+        include_table_of_contents,
+        include_title_slide,
+        web_search,
     )
-
-    sql_session.add(presentation)
-    await sql_session.commit()
-
-    return presentation
 
 
 @PRESENTATION_ROUTER.post("/prepare", response_model=PresentationModel)
@@ -180,79 +174,9 @@ async def prepare_presentation(
     if not outlines:
         raise HTTPException(status_code=400, detail="Outlines are required")
 
-    presentation = await sql_session.get(PresentationModel, presentation_id)
-    if not presentation:
-        raise HTTPException(status_code=404, detail="Presentation not found")
-
-    presentation_outline_model = PresentationOutlineModel(slides=outlines)
-
-    total_slide_layouts = len(layout.slides)
-    total_outlines = len(outlines)
-
-    if layout.ordered:
-        presentation_structure = layout.to_presentation_structure()
-    else:
-        presentation_structure: PresentationStructureModel = (
-            await generate_presentation_structure(
-                presentation_outline=presentation_outline_model,
-                presentation_layout=layout,
-                instructions=presentation.instructions,
-            )
-        )
-
-    presentation_structure.slides = presentation_structure.slides[: len(outlines)]
-    for index in range(total_outlines):
-        random_slide_index = random.randint(0, total_slide_layouts - 1)
-        if index >= total_outlines:
-            presentation_structure.slides.append(random_slide_index)
-            continue
-        if presentation_structure.slides[index] >= total_slide_layouts:
-            presentation_structure.slides[index] = random_slide_index
-
-    if presentation.include_table_of_contents:
-        n_toc_slides = presentation.n_slides - total_outlines
-        toc_slide_layout_index = select_toc_or_list_slide_layout_index(layout)
-        if toc_slide_layout_index != -1:
-            outline_index = 1 if presentation.include_title_slide else 0
-            for i in range(n_toc_slides):
-                outlines_to = outline_index + 10
-                if total_outlines == outlines_to:
-                    outlines_to -= 1
-
-                presentation_structure.slides.insert(
-                    i + 1 if presentation.include_title_slide else i,
-                    toc_slide_layout_index,
-                )
-                toc_outline = "Table of Contents\n\n"
-
-                for outline in presentation_outline_model.slides[
-                    outline_index:outlines_to
-                ]:
-                    page_number = (
-                        outline_index - i + n_toc_slides + 1
-                        if presentation.include_title_slide
-                        else outline_index - i + n_toc_slides
-                    )
-                    toc_outline += f"Slide page number: {page_number}\n Slide Content: {outline.content[:100]}\n\n"
-                    outline_index += 1
-
-                outline_index += 1
-
-                presentation_outline_model.slides.insert(
-                    i + 1 if presentation.include_title_slide else i,
-                    SlideOutlineModel(
-                        content=toc_outline,
-                    ),
-                )
-
-    sql_session.add(presentation)
-    presentation.outlines = presentation_outline_model.model_dump(mode="json")
-    presentation.title = title or presentation.title
-    presentation.set_layout(layout)
-    presentation.set_structure(presentation_structure)
-    await sql_session.commit()
-
-    return presentation
+    return await PresentationService.prepare_structure(
+        sql_session, presentation_id, layout, outlines, title
+    )
 
 
 @PRESENTATION_ROUTER.get("/stream/{id}", response_model=PresentationWithSlides)
@@ -801,7 +725,7 @@ async def generate_presentation_handler(
             raise e
 
 
-@PRESENTATION_ROUTER.post("/generate", response_model=PresentationPathAndEditPath)
+@PRESENTATION_ROUTER.post("/generate/sync", response_model=PresentationPathAndEditPath)
 async def generate_presentation_sync(
     request: GeneratePresentationRequest,
     sql_session: AsyncSession = Depends(get_async_session),
