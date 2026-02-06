@@ -268,7 +268,7 @@ class PresentationService:
         sql_session: AsyncSession,
         presentation_id: uuid.UUID,
         async_status: Optional[AsyncPresentationGenerationTaskModel] = None,
-        export_as: str = "pptx",
+        export_as: Optional[str] = "pptx",
     ):
         try:
             presentation = await sql_session.get(PresentationModel, presentation_id)
@@ -352,13 +352,20 @@ class PresentationService:
             await sql_session.commit()
 
             # --- Export ---
-            presentation_and_path = await export_presentation(
-                presentation_id, presentation.title or str(uuid.uuid4()), export_as
-            )
+            if export_as:
+                presentation_and_path = await export_presentation(
+                    presentation_id, presentation.title or str(uuid.uuid4()), export_as
+                )
+                response_data = presentation_and_path.model_dump()
+            else:
+                response_data = {
+                    "presentation_id": presentation_id,
+                    "path": None,
+                }
 
             # Response for webhook/status
             response = PresentationPathAndEditPath(
-                **presentation_and_path.model_dump(),
+                **response_data,
                 edit_path=f"/presentation?id={presentation_id}",
             )
             

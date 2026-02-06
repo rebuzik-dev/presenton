@@ -96,7 +96,8 @@ async def autogenerate_presentation(
                     session, 
                     presentation.id, 
                     async_status=status, 
-                    export_as=request.export_as
+                    async_status=status, 
+                    export_as=None
                 )
 
             except Exception as e:
