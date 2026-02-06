@@ -18,3 +18,4 @@ chroma
 container.db
 .next-build
 .cursor
+servers/nextjs/public/static/icons/bold/*

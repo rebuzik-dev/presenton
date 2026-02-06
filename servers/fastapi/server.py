@@ -17,6 +17,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     reload = args.reload == "true"
     
+    # Run icon extraction on startup
+    print("Running startup tasks...")
+    try:
+        from utils.extract_icons import extract_icons
+        extract_icons()
+    except Exception as e:
+        print(f"Error extracting icons: {e}")
+    
     uvicorn.run(
         "api.main:app",
         host="0.0.0.0",
