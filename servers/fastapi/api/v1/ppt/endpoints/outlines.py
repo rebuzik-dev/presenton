@@ -22,6 +22,9 @@ from services.documents_loader import DocumentsLoader
 from utils.llm_calls.generate_presentation_outlines import generate_ppt_outline
 from utils.json_repair import repair_json_string
 from utils.ppt_utils import get_presentation_title_from_outlines
+from utils.custom_logger import setup_logger
+
+logger = setup_logger(__name__)
 
 OUTLINES_ROUTER = APIRouter(prefix="/outlines", tags=["Outlines"])
 
@@ -83,23 +86,26 @@ async def stream_outlines(
             ).to_string()
 
             presentation_outlines_text += chunk
+            # logger.debug(f"Received outline chunk of length {len(chunk)}")
 
+        logger.debug(f"Raw outlines text from LLM:\n{presentation_outlines_text}\n" + "-"*40)
         try:
             presentation_outlines_json = dict(
                 dirtyjson.loads(presentation_outlines_text)
             )
         except Exception as e:
-            print(f"JSON Parsing failed: {e}")
-            print(f"Tail of content: {presentation_outlines_text[-500:]}")
+            logger.warning(f"JSON Parsing failed: {e}")
+            logger.warning(f"Tail of content: {presentation_outlines_text[-500:]}")
             
             try:
-                print("Attempting to repair JSON...")
+                logger.info("Attempting to repair JSON...")
                 repaired_text = repair_json_string(presentation_outlines_text)
                 presentation_outlines_json = dict(
                     dirtyjson.loads(repaired_text)
                 )
-                print("JSON Repair successful.")
+                logger.info("JSON Repair successful.")
             except Exception as repair_error:
+                logger.error(f"JSON Repair failed: {repair_error}")
                 traceback.print_exc()
                 yield SSEErrorResponse(
                     detail=f"Failed to generate presentation outlines. JSON Invalid (Repair failed). {str(e)}",
@@ -107,6 +113,7 @@ async def stream_outlines(
                 return
 
         presentation_outlines = PresentationOutlineModel(**presentation_outlines_json)
+        logger.debug(f"Parsed Outline Model: {presentation_outlines.dict()}\n" + "-"*40)
 
         presentation_outlines.slides = presentation_outlines.slides[
             :n_slides_to_generate

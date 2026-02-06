@@ -16,6 +16,9 @@ from utils.get_env import (
 )
 
 
+from functools import lru_cache
+
+@lru_cache()
 def get_llm_provider():
     provider_str = get_llm_provider_env()
     print(f"LLM Provider from env: '{provider_str}'")

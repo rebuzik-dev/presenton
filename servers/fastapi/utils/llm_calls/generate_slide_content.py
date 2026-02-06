@@ -1,5 +1,7 @@
+import asyncio
 from datetime import datetime
 from typing import Optional
+from fastapi import HTTPException
 from models.llm_message import LLMSystemMessage, LLMUserMessage
 from models.presentation_layout import SlideLayoutModel
 from models.presentation_outline_model import SlideOutlineModel
@@ -7,6 +9,9 @@ from services.llm_client import LLMClient
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_provider import get_model
 from utils.schema_utils import add_field_in_schema, remove_fields_from_schema
+from utils.custom_logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def get_system_prompt(
@@ -108,7 +113,7 @@ async def get_slide_content_from_type_and_outline(
 ):
     client = LLMClient()
     model = get_model()
-
+    
     response_schema = remove_fields_from_schema(
         slide_layout.json_schema, ["__image_url__", "__icon_url__"]
     )
@@ -125,20 +130,43 @@ async def get_slide_content_from_type_and_outline(
         True,
     )
 
-    try:
-        response = await client.generate_structured(
-            model=model,
-            messages=get_messages(
-                outline.content,
-                language,
-                tone,
-                verbosity,
-                instructions,
-            ),
-            response_format=response_schema,
-            strict=False,
-        )
-        return response
+    retries = 2
+    for attempt in range(retries + 1):
+        try:
+            logger.debug(f"Calling LLM for slide content (Model: {model}, Attempt: {attempt + 1}/{retries + 1})")
+            # 60 second timeout for slide generation
+            response = await asyncio.wait_for(
+                client.generate_structured(
+                    model=model,
+                    messages=get_messages(
+                        outline.content,
+                        language,
+                        tone,
+                        verbosity,
+                        instructions,
+                    ),
+                    response_format=response_schema,
+                    strict=False,
+                ),
+                timeout=60.0
+            )
+            logger.debug("LLM response received successfully")
+            return response
 
-    except Exception as e:
-        raise handle_llm_client_exceptions(e)
+        except asyncio.TimeoutError:
+            logger.warning(f"LLM call timed out after 60 seconds (Attempt {attempt + 1}/{retries + 1})")
+            if attempt == retries:
+                logger.error("All retry attempts failed due to timeout")
+                raise HTTPException(
+                    status_code=504,
+                    detail="Slide generation timed out. The LLM took too long to respond.",
+                )
+        except Exception as e:
+            logger.warning(f"Error in slide generation (Attempt {attempt + 1}/{retries + 1}): {e}")
+            if attempt == retries:
+                logger.error(f"All retry attempts failed: {e}")
+                raise handle_llm_client_exceptions(e)
+            
+        # Optional: wait a bit before retrying
+        if attempt < retries:
+            await asyncio.sleep(1)

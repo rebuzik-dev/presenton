@@ -2,6 +2,7 @@ from html.parser import HTMLParser
 from typing import List, Optional
 
 from models.pptx_models import PptxFontModel, PptxTextRunModel
+import re
 
 
 class InlineHTMLToRunsParser(HTMLParser):
@@ -56,6 +57,19 @@ def parse_html_text_to_text_runs(
     text: str, base_font: Optional[PptxFontModel] = None
 ) -> List[PptxTextRunModel]:
     normalized_text = text.replace("\r\n", "\n").replace("\r", "\n")
+    
+    # Basic Markdown to HTML conversion
+    # Bold **text** or __text__ -> <strong>text</strong>
+    normalized_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', normalized_text)
+    normalized_text = re.sub(r'__(.*?)__', r'<strong>\1</strong>', normalized_text)
+    
+    # Italic *text* or _text_ -> <em>text</em>
+    # Note: simple regex might simple cases. 
+    # Valid markdown italic usually requires * not surrounded by spaces if inside words, 
+    # but for LLM output, this simple version covers 99%
+    normalized_text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', normalized_text)
+    normalized_text = re.sub(r'_(.*?)_', r'<em>\1</em>', normalized_text)
+
     normalized_text = normalized_text.replace("\n", "<br>")
 
     parser = InlineHTMLToRunsParser(base_font if base_font else PptxFontModel())

@@ -95,8 +95,7 @@ async def autogenerate_presentation(
                 await PresentationService.run_full_generation_pipeline(
                     session, 
                     presentation.id, 
-                    async_status=status, 
-                    async_status=status, 
+                    async_status=status,
                     export_as=None
                 )
 

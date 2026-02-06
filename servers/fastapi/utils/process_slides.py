@@ -9,6 +9,11 @@ from utils.asset_directory_utils import get_images_directory
 from utils.dict_utils import get_dict_at_path, get_dict_paths_with_key, set_dict_at_path
 
 
+from utils.custom_logger import setup_logger
+
+logger = setup_logger(__name__)
+
+
 async def process_slide_and_fetch_assets(
     image_generation_service: ImageGenerationService,
     slide: SlideModel,
@@ -19,22 +24,29 @@ async def process_slide_and_fetch_assets(
     image_paths = get_dict_paths_with_key(slide.content, "__image_prompt__")
     icon_paths = get_dict_paths_with_key(slide.content, "__icon_query__")
 
+    logger.debug(f"Processing slide {slide.index}: {len(image_paths)} images, {len(icon_paths)} icons")
+
     for image_path in image_paths:
         __image_prompt__parent = get_dict_at_path(slide.content, image_path)
+        prompt = __image_prompt__parent["__image_prompt__"]
+        logger.debug(f"Queueing image generation for slide {slide.index}: {prompt[:50]}...")
         async_tasks.append(
             image_generation_service.generate_image(
                 ImagePrompt(
-                    prompt=__image_prompt__parent["__image_prompt__"],
+                    prompt=prompt,
                 )
             )
         )
 
     for icon_path in icon_paths:
         __icon_query__parent = get_dict_at_path(slide.content, icon_path)
+        query = __icon_query__parent["__icon_query__"]
+        logger.debug(f"Queueing icon search for slide {slide.index}: {query}")
         async_tasks.append(
-            ICON_FINDER_SERVICE.search_icons(__icon_query__parent["__icon_query__"])
+            ICON_FINDER_SERVICE.search_icons(query)
         )
 
+    logger.debug(f"Awaiting {len(async_tasks)} asset tasks for slide {slide.index}")
     results = await asyncio.gather(*async_tasks)
     results.reverse()
 
@@ -59,6 +71,7 @@ async def process_slide_and_fetch_assets(
             icon_dict["__icon_url__"] = "/static/icons/placeholder.svg"
         set_dict_at_path(slide.content, icon_path, icon_dict)
 
+    logger.debug(f"Assets processed for slide {slide.index}")
     return return_assets
 
 

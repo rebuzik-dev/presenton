@@ -57,6 +57,9 @@ from utils.process_slides import (
     process_slide_add_placeholder_assets,
     process_slide_and_fetch_assets,
 )
+from utils.custom_logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class PresentationService:
@@ -74,6 +77,7 @@ class PresentationService:
         include_title_slide: bool = True,
         web_search: bool = False,
     ) -> PresentationModel:
+        logger.info(f"Creating presentation with content length: {len(content)}")
         if include_table_of_contents and n_slides < 3:
             raise HTTPException(
                 status_code=400,
@@ -99,12 +103,14 @@ class PresentationService:
         sql_session.add(presentation)
         await sql_session.commit()
 
+        logger.info(f"Presentation created: {presentation_id}")
         return presentation
 
     @staticmethod
     async def generate_outlines(
         sql_session: AsyncSession, presentation_id: uuid.UUID
     ) -> PresentationModel:
+        logger.info(f"Generating outlines for presentation: {presentation_id}")
         presentation = await sql_session.get(PresentationModel, presentation_id)
         if not presentation:
             raise HTTPException(status_code=404, detail="Presentation not found")
@@ -113,11 +119,13 @@ class PresentationService:
         additional_context = ""
 
         if presentation.file_paths:
+            logger.debug(f"Loading documents from {len(presentation.file_paths)} files")
             documents_loader = DocumentsLoader(file_paths=presentation.file_paths)
             await documents_loader.load_documents(temp_dir)
             documents = documents_loader.documents
             if documents:
                 additional_context = "\n\n".join(documents)
+                logger.debug(f"Loaded {len(documents)} documents for context")
 
         n_slides_to_generate = presentation.n_slides
         if presentation.include_table_of_contents:
@@ -126,6 +134,7 @@ class PresentationService:
                 (presentation.n_slides - needed_toc_count) / 10
             )
 
+        logger.info(f"Generating outlines for {n_slides_to_generate} slides (LLM call)")
         presentation_outlines_text = ""
         async for chunk in generate_ppt_outline(
             presentation.content,
@@ -139,6 +148,7 @@ class PresentationService:
             presentation.web_search,
         ):
             if isinstance(chunk, HTTPException):
+                logger.error(f"HTTPException in outline generation: {chunk.detail}")
                 raise chunk
             presentation_outlines_text += chunk
 
@@ -147,13 +157,14 @@ class PresentationService:
                 dirtyjson.loads(presentation_outlines_text)
             )
         except Exception as e:
-            print(f"JSON Parsing failed: {e}")
+            logger.warning(f"JSON Parsing failed: {e}. Attempting repair.")
             try:
-                print("Attempting to repair JSON...")
+                logger.info("Attempting to repair JSON...")
                 repaired_text = repair_json_string(presentation_outlines_text)
                 presentation_outlines_json = dict(dirtyjson.loads(repaired_text))
-                print("JSON Repair successful.")
+                logger.info("JSON Repair successful.")
             except Exception:
+                logger.error("JSON Repair failed.")
                 traceback.print_exc()
                 raise HTTPException(
                     status_code=500,
@@ -171,6 +182,7 @@ class PresentationService:
         sql_session.add(presentation)
         await sql_session.commit()
 
+        logger.info("Outlines generated and saved.")
         return presentation
 
     @staticmethod
@@ -181,6 +193,7 @@ class PresentationService:
         outlines: Optional[List[SlideOutlineModel]] = None,
         title: Optional[str] = None,
     ) -> PresentationModel:
+        logger.info(f"Preparing structure for presentation: {presentation_id}")
         presentation = await sql_session.get(PresentationModel, presentation_id)
         if not presentation:
             raise HTTPException(status_code=404, detail="Presentation not found")
@@ -201,6 +214,7 @@ class PresentationService:
         if layout.ordered:
             presentation_structure = layout.to_presentation_structure()
         else:
+            logger.info("Generating dynamic structure (LLM call)")
             presentation_structure: PresentationStructureModel = (
                 await generate_presentation_structure(
                     presentation_outline=presentation_outline_model,
@@ -219,6 +233,7 @@ class PresentationService:
                 presentation_structure.slides[index] = random_slide_index
 
         if presentation.include_table_of_contents:
+            logger.info("Adding Table of Contents")
             n_toc_slides = presentation.n_slides - total_outlines
             toc_slide_layout_index = select_toc_or_list_slide_layout_index(layout)
             if toc_slide_layout_index != -1:
@@ -261,6 +276,7 @@ class PresentationService:
         presentation.set_structure(presentation_structure)
         await sql_session.commit()
 
+        logger.info("Structure prepared and saved.")
         return presentation
 
     @staticmethod
@@ -270,6 +286,7 @@ class PresentationService:
         async_status: Optional[AsyncPresentationGenerationTaskModel] = None,
         export_as: Optional[str] = "pptx",
     ):
+        logger.info(f"Starting full generation pipeline for: {presentation_id}")
         try:
             presentation = await sql_session.get(PresentationModel, presentation_id)
             if not presentation:
@@ -291,8 +308,11 @@ class PresentationService:
             slides: List[SlideModel] = []
             
             batch_size = 10
-            for start in range(0, len(slide_layouts), batch_size):
+            total_batches = (len(slide_layouts) + batch_size - 1) // batch_size
+            
+            for batch_idx, start in enumerate(range(0, len(slide_layouts), batch_size)):
                 end = min(start + batch_size, len(slide_layouts))
+                logger.info(f"Processing batch {batch_idx + 1}/{total_batches} (Slides {start}-{end-1})")
                 
                 # Generate contents for this batch concurrently
                 content_tasks = [
@@ -307,6 +327,7 @@ class PresentationService:
                     for i in range(start, end)
                 ]
                 batch_contents: List[dict] = await asyncio.gather(*content_tasks)
+                logger.debug(f"Batch {batch_idx + 1}: Content generated")
                 
                 # Build slides for this batch
                 batch_slides: List[SlideModel] = []
@@ -335,7 +356,10 @@ class PresentationService:
                 async_assets_generation_tasks.extend(asset_tasks)
             
             # --- Wait for all assets ---
+            logger.info(f"Waiting for {len(async_assets_generation_tasks)} asset generation tasks...")
             generated_assets_lists = await asyncio.gather(*async_assets_generation_tasks)
+            logger.info("Asset generation completed.")
+            
             generated_assets = []
             for assets_list in generated_assets_lists:
                 generated_assets.extend(assets_list)
@@ -353,6 +377,7 @@ class PresentationService:
 
             # --- Export ---
             if export_as:
+                logger.info(f"Exporting presentation as {export_as}...")
                 presentation_and_path = await export_presentation(
                     presentation_id, presentation.title or str(uuid.uuid4()), export_as
                 )
@@ -386,9 +411,11 @@ class PresentationService:
                 response.model_dump(mode="json"),
             )
             
+            logger.info(f"Generation pipeline completed successfully for: {presentation_id}")
             return response
 
         except Exception as e:
+            logger.error(f"Error in generation pipeline: {e}")
             if not isinstance(e, HTTPException):
                 traceback.print_exc()
                 e = HTTPException(status_code=500, detail="Presentation generation failed")
