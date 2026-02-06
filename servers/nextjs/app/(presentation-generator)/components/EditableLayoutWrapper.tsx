@@ -36,6 +36,13 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
     const [editableElements, setEditableElements] = useState<EditableElement[]>([]);
     const [activeEditor, setActiveEditor] = useState<EditableElement | null>(null);
 
+    // Drag state
+    const [isDragging, setIsDragging] = useState(false);
+    const [draggedElement, setDraggedElement] = useState<EditableElement | null>(null);
+    const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+    const dragStartElementPos = useRef<{ x: number; y: number } | null>(null);
+    const clickThreshold = 5; // pixels - distinguish click from drag
+
     /**
      * Checks if two URLs match using various comparison strategies
      */
@@ -207,21 +214,36 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
 
                     newEditableElements.push(editableElement);
 
-                    // Add click handler directly to the image
-                    const clickHandler = (e: Event) => {
+                    // Add mousedown handler for dragging
+                    const mouseDownHandler = (e: MouseEvent) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setActiveEditor(editableElement);
+
+                        dragStartPos.current = { x: e.clientX, y: e.clientY };
+
+                        // Get current position from left/top style
+                        const element = htmlImg as HTMLElement;
+                        const currentX = parseFloat(element.style.left) || 0;
+                        const currentY = parseFloat(element.style.top) || 0;
+
+                        dragStartElementPos.current = { x: currentX, y: currentY };
+                        setDraggedElement(editableElement);
                     };
 
-                    htmlImg.addEventListener('click', clickHandler, { capture: true });
+                    htmlImg.addEventListener('mousedown', mouseDownHandler, { capture: true });
 
                     const itemIndex = parseInt(`${slideIndex}-${type}-${dataPath}-${index}`.split('-').pop() || '0');
                     const propertiesData = properties?.[itemIndex];
 
-                    // Add hover effects without changing layout
-                    htmlImg.style.cursor = 'pointer';
-                    htmlImg.style.transition = 'opacity 0.2s, transform 0.2s';
+                    // Set absolute positioning to allow free movement
+                    const parentElement = htmlImg.parentElement;
+                    if (parentElement && window.getComputedStyle(parentElement).position === 'static') {
+                        parentElement.style.position = 'relative';
+                    }
+
+                    htmlImg.style.position = 'absolute';
+                    htmlImg.style.cursor = 'move';
+                    htmlImg.style.transition = 'opacity 0.2s';
                     htmlImg.style.objectFit = propertiesData?.initialObjectFit;
                     htmlImg.style.objectPosition = `${propertiesData?.initialFocusPoint?.x}% ${propertiesData?.initialFocusPoint?.y}%`;
 
@@ -240,7 +262,7 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
 
                     // Store cleanup functions
                     (htmlImg as any)._editableCleanup = () => {
-                        htmlImg.removeEventListener('click', clickHandler, { capture: true });
+                        htmlImg.removeEventListener('mousedown', mouseDownHandler, { capture: true });
                         htmlImg.removeEventListener('mouseenter', mouseEnterHandler);
                         htmlImg.removeEventListener('mouseleave', mouseLeaveHandler);
                         htmlImg.style.cursor = '';
@@ -377,6 +399,79 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
 
         return () => observer.disconnect();
     }, [slideData]);
+
+    // Global drag handlers
+    useEffect(() => {
+        if (!draggedElement) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!dragStartPos.current || !dragStartElementPos.current) return;
+
+            const deltaX = e.clientX - dragStartPos.current.x;
+            const deltaY = e.clientY - dragStartPos.current.y;
+
+            // Check if movement exceeds click threshold to start dragging
+            if (!isDragging && (Math.abs(deltaX) > clickThreshold || Math.abs(deltaY) > clickThreshold)) {
+                setIsDragging(true);
+            }
+
+            if (isDragging) {
+                const newX = dragStartElementPos.current.x + deltaX;
+                const newY = dragStartElementPos.current.y + deltaY;
+
+                // Apply position using left/top for absolute positioning
+                const element = draggedElement.element as HTMLElement;
+                element.style.left = `${newX}px`;
+                element.style.top = `${newY}px`;
+                element.style.zIndex = '1000';
+                element.style.opacity = '0.7';
+            }
+        };
+
+        const handleMouseUp = (e: MouseEvent) => {
+            if (!dragStartPos.current || !dragStartElementPos.current) {
+                setDraggedElement(null);
+                return;
+            }
+
+            const deltaX = e.clientX - dragStartPos.current.x;
+            const deltaY = e.clientY - dragStartPos.current.y;
+            const wasDragging = isDragging || (Math.abs(deltaX) > clickThreshold || Math.abs(deltaY) > clickThreshold);
+
+            if (wasDragging && draggedElement) {
+                // Save position
+                const element = draggedElement.element as HTMLElement;
+                element.style.opacity = '1';
+                element.style.zIndex = '';
+
+                const finalX = dragStartElementPos.current.x + deltaX;
+                const finalY = dragStartElementPos.current.y + deltaY;
+
+                // Store position in element's data attribute for persistence
+                element.setAttribute('data-position', JSON.stringify({ x: finalX, y: finalY }));
+
+                // TODO: Dispatch to Redux to save position
+                console.log('Image dragged to:', { x: finalX, y: finalY, path: draggedElement.dataPath });
+            } else {
+                // Was a click, open editor
+                setActiveEditor(draggedElement);
+            }
+
+            // Reset drag state
+            setIsDragging(false);
+            setDraggedElement(null);
+            dragStartPos.current = null;
+            dragStartElementPos.current = null;
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [draggedElement, isDragging]);
 
     /**
      * Handles closing the active editor
