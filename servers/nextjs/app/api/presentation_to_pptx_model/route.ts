@@ -105,9 +105,38 @@ async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
   console.log(`PPTX Model Gen: Navigating to ${baseUrl}/pdf-maker?id=${id}`);
 
   await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {
-    waitUntil: "networkidle2",
+    waitUntil: "networkidle0",
     timeout: 120000,
   });
+
+  // Wait for document to be fully ready
+  await page.waitForFunction('() => document.readyState === "complete"');
+
+  // Wait for slides to be rendered (not skeleton)
+  try {
+    console.log("PPTX Model Gen: Waiting for slides to load...");
+    await page.waitForSelector("#presentation-slides-wrapper > div > div", {
+      timeout: 60000,
+    });
+
+    // Additional wait for content to fully render
+    await page.waitForFunction(
+      `() => {
+        const wrapper = document.querySelector('#presentation-slides-wrapper');
+        if (!wrapper) return false;
+        // Check that we have actual slide content, not skeletons
+        const slides = wrapper.querySelectorAll(':scope > div > div');
+        const skeletons = wrapper.querySelectorAll('[class*="skeleton"], [class*="Skeleton"]');
+        return slides.length > 0 && skeletons.length === 0;
+      }`,
+      { timeout: 60000 }
+    );
+    console.log("PPTX Model Gen: Slides loaded successfully.");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  } catch (error) {
+    console.log("PPTX Model Gen: Warning - slides may not have loaded:", error);
+  }
+
   return [browser, page];
 }
 

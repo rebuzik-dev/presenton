@@ -16,6 +16,7 @@ from api.v1.ppt.endpoints.outlines import OUTLINES_ROUTER
 from api.v1.ppt.endpoints.slide import SLIDE_ROUTER
 from api.v1.ppt.endpoints.pptx_slides import PPTX_FONTS_ROUTER
 from api.v1.ppt.endpoints.autogenerate import AUTOGENERATE_ROUTER
+from api.v1.ppt.endpoints.templates import TEMPLATES_ROUTER
 
 
 API_V1_PPT_ROUTER = APIRouter(prefix="/api/v1/ppt")
@@ -39,3 +40,5 @@ API_V1_PPT_ROUTER.include_router(ANTHROPIC_ROUTER)
 API_V1_PPT_ROUTER.include_router(GOOGLE_ROUTER)
 API_V1_PPT_ROUTER.include_router(PPTX_FONTS_ROUTER)
 API_V1_PPT_ROUTER.include_router(AUTOGENERATE_ROUTER)
+API_V1_PPT_ROUTER.include_router(TEMPLATES_ROUTER)
+
