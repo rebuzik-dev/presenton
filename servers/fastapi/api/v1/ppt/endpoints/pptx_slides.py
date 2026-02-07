@@ -144,6 +144,40 @@ def normalize_font_family_name(raw_name: str) -> str:
     return normalized
 
 
+def _resolve_libreoffice_cmd() -> str:
+    env_path = os.environ.get("LIBREOFFICE_PATH") or os.environ.get("SOFFICE_PATH")
+    candidates: List[str] = []
+
+    if env_path:
+        candidates.append(env_path)
+        if os.path.isdir(env_path):
+            exe = "soffice.exe" if os.name == "nt" else "soffice"
+            candidates.append(os.path.join(env_path, exe))
+            candidates.append(os.path.join(env_path, "libreoffice"))
+
+    for name in ("soffice", "libreoffice"):
+        path = shutil.which(name)
+        if path:
+            candidates.append(path)
+
+    if os.name == "nt":
+        candidates.extend(
+            [
+                r"C:\Program Files\LibreOffice\program\soffice.exe",
+                r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+            ]
+        )
+
+    for cmd in candidates:
+        if cmd and os.path.exists(cmd):
+            return cmd
+
+    raise Exception(
+        "LibreOffice failed: executable not found. Install LibreOffice or set "
+        "LIBREOFFICE_PATH/SOFFICE_PATH."
+    )
+
+
 def extract_fonts_from_oxml(xml_content: str) -> List[str]:
     """
     Extract font names from OXML content.
@@ -570,9 +604,10 @@ async def _convert_pptx_to_pdf(pptx_path: str, temp_dir: str) -> str:
         pdf_path = os.path.join(screenshots_dir, pdf_filename)
 
         try:
+            libreoffice_cmd = _resolve_libreoffice_cmd()
             result = subprocess.run(
                 [
-                    "libreoffice",
+                    libreoffice_cmd,
                     "--headless",
                     "--convert-to",
                     "pdf",

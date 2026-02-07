@@ -71,16 +71,16 @@ class TemplateService:
             elif include_system and not include_custom:
                 statement = statement.where(TemplateModel.is_system == True)
 
-            result = await session.exec(statement)
-            templates = result.all()
+            result = await session.execute(statement)
+            templates = result.scalars().all()
             return list(templates)
 
     async def get_by_id(self, template_id: uuid.UUID) -> Optional[TemplateModel]:
         """Get template by ID."""
         async with async_session_maker() as session:
             statement = select(TemplateModel).where(TemplateModel.id == template_id)
-            result = await session.exec(statement)
-            return result.first()
+            result = await session.execute(statement)
+            return result.scalars().first()
 
     async def get_by_slug(self, slug: str) -> Optional[TemplateModel]:
         """
@@ -94,15 +94,15 @@ class TemplateService:
         """
         async with async_session_maker() as session:
             statement = select(TemplateModel).where(TemplateModel.slug == slug)
-            result = await session.exec(statement)
-            return result.first()
+            result = await session.execute(statement)
+            return result.scalars().first()
 
     async def get_default_template(self) -> Optional[TemplateModel]:
         """Get the default template (for fallback)."""
         async with async_session_maker() as session:
             statement = select(TemplateModel).where(TemplateModel.is_default == True)
-            result = await session.exec(statement)
-            template = result.first()
+            result = await session.execute(statement)
+            template = result.scalars().first()
             if not template:
                 # Fallback to 'general' if no default is set
                 template = await self.get_by_slug("general")
@@ -261,10 +261,10 @@ class TemplateService:
                     continue
 
                 # Check if already exists
-                result = await session.exec(
+                result = await session.execute(
                     select(TemplateModel).where(TemplateModel.slug == slug)
                 )
-                existing = result.first()
+                existing = result.scalars().first()
 
                 settings = tpl_info.get("settings") or {}
 
