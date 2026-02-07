@@ -28,7 +28,12 @@ target_metadata = SQLModel.metadata
 
 # --- Database URL from environment or db_utils ---
 import os
+from dotenv import load_dotenv
 from utils.db_utils import get_database_url_and_connect_args
+
+# Load .env from project root (../../../.env relative to this file)
+dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"))
+load_dotenv(dotenv_path)
 
 def get_url():
     """Get database URL, preferring env var for flexibility."""
