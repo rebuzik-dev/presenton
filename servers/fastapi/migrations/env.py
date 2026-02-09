@@ -22,6 +22,8 @@ from models.sql.key_value import KeyValueSqlModel
 from models.sql.presentation_layout_code import PresentationLayoutCodeModel
 from models.sql.webhook_subscription import WebhookSubscription
 from models.sql.async_presentation_generation_status import AsyncPresentationGenerationTaskModel
+from models.sql.user import UserModel
+from models.sql.api_key import ApiKeyModel
 
 # Use SQLModel metadata for autogenerate
 target_metadata = SQLModel.metadata

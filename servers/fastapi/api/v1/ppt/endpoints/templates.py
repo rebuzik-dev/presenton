@@ -6,10 +6,12 @@ CRUD operations for presentation templates.
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from services.template_service import template_service
+from api.deps import get_current_user_or_api_key
+from models.sql.user import UserModel
 
 
 TEMPLATES_ROUTER = APIRouter(prefix="/templates", tags=["Templates"])
@@ -129,7 +131,10 @@ async def get_template_by_slug(slug: str):
 
 
 @TEMPLATES_ROUTER.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
-async def create_template(request: CreateTemplateRequest):
+async def create_template(
+    request: CreateTemplateRequest,
+    current_user: UserModel = Depends(get_current_user_or_api_key),
+):
     """
     Create a new custom template.
 
@@ -146,6 +151,7 @@ async def create_template(request: CreateTemplateRequest):
             description=request.description,
             ordered=request.ordered,
             layouts=layouts_dict,
+            created_by_id=current_user.id,
         )
         return TemplateResponse(
             id=template.id,

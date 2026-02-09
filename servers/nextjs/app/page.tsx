@@ -1,9 +1,14 @@
-import Home from "@/components/Home"
+"use client";
+
+import Home from "@/components/Home";
+import AuthGuard from "@/app/(presentation-generator)/components/AuthGuard";
 
 const page = () => {
-    return (
-        <Home />
-    )
-}
+  return (
+    <AuthGuard>
+      <Home />
+    </AuthGuard>
+  );
+};
 
-export default page
+export default page;

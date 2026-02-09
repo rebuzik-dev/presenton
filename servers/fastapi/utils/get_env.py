@@ -130,3 +130,20 @@ def get_image_gen_base_url_env():
 
 def get_image_gen_model_env():
     return os.getenv("IMAGE_GEN_MODEL")
+
+
+def get_jwt_secret_env():
+    return os.getenv("JWT_SECRET")
+
+
+def get_jwt_algorithm_env():
+    return os.getenv("JWT_ALGORITHM")
+
+
+def get_jwt_expires_minutes_env():
+    value = os.getenv("JWT_EXPIRES_MINUTES")
+    return int(value) if value else None
+
+
+def get_api_key_secret_env():
+    return os.getenv("API_KEY_SECRET")

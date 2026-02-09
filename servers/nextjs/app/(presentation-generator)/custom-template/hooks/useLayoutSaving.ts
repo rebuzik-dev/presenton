@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { ApiResponseHandler } from "@/app/(presentation-generator)/services/api/api-error-handler";
+import { getHeader } from "@/app/(presentation-generator)/services/api/header";
 import { ProcessedSlide, UploadedFont, FontData } from "../types";
 
 export const useLayoutSaving = (
@@ -37,9 +38,7 @@ export const useLayoutSaving = (
       try {
         const response = await fetch("/api/v1/ppt/html-to-react/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: getHeader(),
           body: JSON.stringify({
             html: slide.html,
             image: slide.screenshot_url,
@@ -138,7 +137,7 @@ export const useLayoutSaving = (
       // First create/update the template metadata
       await fetch("/api/v1/ppt/template-management/templates", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeader(),
         body: JSON.stringify({ id: presentationId, name: layoutName, description }),
       });
 
@@ -146,9 +145,7 @@ export const useLayoutSaving = (
         "/api/v1/ppt/template-management/save-templates",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: getHeader(),
           body: JSON.stringify({
             layouts: reactComponents,
           }),

@@ -13,7 +13,9 @@ class ApiKeyModel(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
-    key_hash: str = Field(sa_column=Column(String, index=True, nullable=False))
+    key_hash: str = Field(
+        sa_column=Column(String, unique=True, index=True, nullable=False)
+    )
     user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False)
     is_active: bool = Field(
         sa_column=Column(Boolean, nullable=False, default=True),

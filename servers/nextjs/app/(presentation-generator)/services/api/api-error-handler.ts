@@ -27,6 +27,12 @@ export class ApiResponseHandler {
 
     // Handle error responses
     let errorMessage = defaultErrorMessage;
+
+    if (response.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_role");
+      window.location.href = "/login";
+    }
     
     try {
       const errorData: ApiErrorResponse = await response.json();
@@ -58,6 +64,12 @@ export class ApiResponseHandler {
 
       // Handle error responses
       let errorMessage = defaultErrorMessage;
+
+      if (response.status === 401 && typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_role");
+        window.location.href = "/login";
+      }
       
       try {
         const errorData: ApiErrorResponse = await response.json();

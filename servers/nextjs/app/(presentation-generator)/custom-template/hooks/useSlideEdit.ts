@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
 import { ProcessedSlide } from "../types";
+import { getHeaderForFormData } from "@/app/(presentation-generator)/services/api/header";
 
 export const useSlideEdit = (
   slide: ProcessedSlide,
@@ -144,6 +145,7 @@ export const useSlideEdit = (
 
       const response = await fetch("/api/v1/ppt/html-edit/", {
         method: "POST",
+        headers: getHeaderForFormData(),
         body: formData,
       });
 

@@ -1,5 +1,5 @@
 import uuid
-from typing import Callable, Iterable, Optional
+from typing import Callable, Optional
 
 import jwt
 from fastapi import Depends, HTTPException, Request, status
@@ -17,16 +17,19 @@ api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 async def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     session: AsyncSession = Depends(get_async_session),
 ) -> UserModel:
-    if not credentials:
+    token = credentials.credentials if credentials else None
+    if not token:
+        token = request.cookies.get("auth_token") or request.query_params.get("token")
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = credentials.credentials
     try:
         payload = decode_access_token(token)
     except jwt.PyJWTError:
@@ -52,13 +55,17 @@ async def get_current_user(
 
 
 async def get_optional_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     session: AsyncSession = Depends(get_async_session),
 ) -> Optional[UserModel]:
-    if not credentials:
+    token = credentials.credentials if credentials else None
+    if not token:
+        token = request.cookies.get("auth_token") or request.query_params.get("token")
+    if not token:
         return None
     try:
-        payload = decode_access_token(credentials.credentials)
+        payload = decode_access_token(token)
     except jwt.PyJWTError:
         return None
     user_id = payload.get("sub")
@@ -71,20 +78,49 @@ async def get_optional_user(
 
 
 async def get_current_user_or_api_key(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     api_key: Optional[str] = Depends(api_key_scheme),
     session: AsyncSession = Depends(get_async_session),
 ) -> UserModel:
     if credentials:
-        return await get_current_user(credentials, session)
-    if api_key:
-        user = await get_user_by_api_key(session, api_key)
+        return await get_current_user(request, credentials, session)
+
+    token_value = request.cookies.get("auth_token") or request.query_params.get("token")
+    if token_value:
+        try:
+            payload = decode_access_token(token_value)
+        except jwt.PyJWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user = await session.get(UserModel, uuid.UUID(user_id))
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User inactive or not found",
+            )
+        return user
+
+    api_key_param = api_key or request.query_params.get("api_key")
+    if api_key_param:
+        user = await get_user_by_api_key(session, api_key_param)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid API key",
             )
         return user
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Not authenticated",

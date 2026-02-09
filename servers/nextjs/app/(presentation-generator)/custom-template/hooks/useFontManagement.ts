@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { UploadedFont, FontData } from "../types";
+import { getHeaderForFormData } from "@/app/(presentation-generator)/services/api/header";
 
 export const useFontManagement = () => {
   const [UploadedFonts, setUploadedFonts] = useState<UploadedFont[]>([]);
@@ -84,6 +85,7 @@ export const useFontManagement = () => {
 
         const response = await fetch("/api/v1/ppt/fonts/upload", {
           method: "POST",
+          headers: getHeaderForFormData(),
           body: formData,
         });
 

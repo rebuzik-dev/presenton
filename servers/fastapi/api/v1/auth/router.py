@@ -49,7 +49,7 @@ async def register_user(
     elif request.role and current_user and current_user.role == UserRole.admin.value:
         role = request.role
     else:
-        role = UserRole.viewer
+        role = UserRole.editor
 
     user = await create_user(session, request.username, request.password, role)
     return UserPublic(
@@ -102,7 +102,10 @@ async def get_me(current_user: UserModel = Depends(get_current_user)):
     response_model=List[UserPublic],
     dependencies=[Depends(require_roles(UserRole.admin))],
 )
-async def list_users(session: AsyncSession = Depends(get_async_session)):
+async def list_users(
+    session: AsyncSession = Depends(get_async_session),
+    current_user: UserModel = Depends(get_current_user),
+):
     result = await session.execute(select(UserModel))
     users = result.scalars().all()
     return [
@@ -126,6 +129,7 @@ async def update_user_role(
     user_id: uuid.UUID,
     role: UserRole = Body(embed=True),
     session: AsyncSession = Depends(get_async_session),
+    current_user: UserModel = Depends(get_current_user),
 ):
     user = await session.get(UserModel, user_id)
     if not user:

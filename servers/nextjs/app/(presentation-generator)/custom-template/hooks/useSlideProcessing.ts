@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { ApiResponseHandler } from "@/app/(presentation-generator)/services/api/api-error-handler";
+import { getHeader, getHeaderForFormData } from "@/app/(presentation-generator)/services/api/header";
 import { ProcessedSlide, SlideData, FontData } from "../types";
 
 export const useSlideProcessing = (
@@ -29,9 +30,7 @@ export const useSlideProcessing = (
       try {
         const htmlResponse = await fetch("/api/v1/ppt/slide-to-html/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: getHeader(),
           body: JSON.stringify({
             image: slide.screenshot_url,
             xml: slide.xml_content,
@@ -135,6 +134,7 @@ export const useSlideProcessing = (
         formData.append("pdf_file", selectedFile);
         const pdfResponse = await fetch("/api/v1/ppt/pdf-slides/process", {
           method: "POST",
+          headers: getHeaderForFormData(),
           body: formData,
         });
         slidesResponseData = await ApiResponseHandler.handleResponse(
@@ -145,6 +145,7 @@ export const useSlideProcessing = (
         formData.append("pptx_file", selectedFile);
         const pptxResponse = await fetch("/api/v1/ppt/pptx-slides/process", {
           method: "POST",
+          headers: getHeaderForFormData(),
           body: formData,
         });
         slidesResponseData = await ApiResponseHandler.handleResponse(
