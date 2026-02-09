@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Loader2, Download, CheckCircle } from "lucide-react";
+import { Loader2, Download, CheckCircle, Key, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
@@ -14,6 +14,8 @@ import LLMProviderSelection from "@/components/LLMSelection";
 import Header from "../dashboard/components/Header";
 import { LLMConfig } from "@/types/llm_config";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ApiKeyManagement from "./components/ApiKeyManagement";
 
 // Button state interface
 interface ButtonState {
@@ -39,6 +41,8 @@ const SettingsPage = () => {
     text: "Save Configuration",
     showProgress: false,
   });
+
+  const [activeTab, setActiveTab] = useState("general");
 
   const [downloadingModel, setDownloadingModel] = useState<{
     name: string;
@@ -156,40 +160,66 @@ const SettingsPage = () => {
   return (
     <div className="h-screen bg-gradient-to-b font-instrument_sans from-gray-50 to-white flex flex-col overflow-hidden">
       <Header />
-      <main className="flex-1 container mx-auto px-4 max-w-3xl overflow-hidden flex flex-col">
-        {/* LLM Selection Component */}
-        <div className="flex-1 overflow-hidden">
-          <LLMProviderSelection
-            initialLLMConfig={llmConfig}
-            onConfigChange={setLlmConfig}
-            buttonState={buttonState}
-            setButtonState={setButtonState}
-          />
-        </div>
+      <main className="flex-1 container mx-auto px-4 max-w-4xl overflow-hidden flex flex-col pt-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
+            <TabsList>
+              <TabsTrigger value="general" className="gap-2">
+                <Settings className="w-4 h-4" />
+                General
+              </TabsTrigger>
+              <TabsTrigger value="api-keys" className="gap-2">
+                <Key className="w-4 h-4" />
+                API Keys
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="general" className="flex-1 overflow-hidden data-[state=active]:flex flex-col mt-0 border-none p-0 outline-none">
+            {/* LLM Selection Component */}
+            <div className="flex-1 overflow-hidden">
+              <LLMProviderSelection
+                initialLLMConfig={llmConfig}
+                onConfigChange={setLlmConfig}
+                buttonState={buttonState}
+                setButtonState={setButtonState}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="api-keys" className="flex-1 overflow-y-auto mt-0 border-none p-6 pt-0 outline-none custom_scrollbar">
+            <div className="max-w-3xl mx-auto">
+              <ApiKeyManagement />
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
-      {/* Fixed Bottom Button */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
-        <div className="container mx-auto max-w-3xl">
-          <button
-            onClick={handleSaveConfig}
-            disabled={buttonState.isDisabled}
-            className={`w-full font-semibold py-3 px-4 rounded-lg transition-all duration-500 ${buttonState.isDisabled
+      {/* Fixed Bottom Button - Only show for General tab */}
+      {activeTab === "general" && (
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+          <div className="container mx-auto max-w-3xl">
+            <button
+              onClick={handleSaveConfig}
+              disabled={buttonState.isDisabled}
+              className={`w-full font-semibold py-3 px-4 rounded-lg transition-all duration-500 ${buttonState.isDisabled
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-200"
-              } text-white`}
-          >
-            {buttonState.isLoading ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {buttonState.text}
-              </div>
-            ) : (
-              buttonState.text
-            )}
-          </button>
+                } text-white`}
+            >
+              {buttonState.isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {buttonState.text}
+                </div>
+              ) : (
+                buttonState.text
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Download Progress Modal */}
       {showDownloadModal && downloadingModel && (
