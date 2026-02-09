@@ -1,4 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from api.deps import enforce_ppt_access
 
 from api.v1.ppt.endpoints.slide_to_html import SLIDE_TO_HTML_ROUTER, HTML_TO_REACT_ROUTER, HTML_EDIT_ROUTER, LAYOUT_MANAGEMENT_ROUTER
 from api.v1.ppt.endpoints.presentation import PRESENTATION_ROUTER
@@ -19,7 +21,10 @@ from api.v1.ppt.endpoints.autogenerate import AUTOGENERATE_ROUTER
 from api.v1.ppt.endpoints.templates import TEMPLATES_ROUTER
 
 
-API_V1_PPT_ROUTER = APIRouter(prefix="/api/v1/ppt")
+API_V1_PPT_ROUTER = APIRouter(
+    prefix="/api/v1/ppt",
+    dependencies=[Depends(enforce_ppt_access)],
+)
 
 API_V1_PPT_ROUTER.include_router(FILES_ROUTER)
 API_V1_PPT_ROUTER.include_router(FONTS_ROUTER)

@@ -1,5 +1,8 @@
 from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Path
+
+from api.deps import require_roles
+from enums.user_role import UserRole
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +10,11 @@ from enums.webhook_event import WebhookEvent
 from models.sql.webhook_subscription import WebhookSubscription
 from services.database import get_async_session
 
-API_V1_WEBHOOK_ROUTER = APIRouter(prefix="/api/v1/webhook", tags=["Webhook"])
+API_V1_WEBHOOK_ROUTER = APIRouter(
+    prefix="/api/v1/webhook",
+    tags=["Webhook"],
+    dependencies=[Depends(require_roles(UserRole.admin, UserRole.editor))],
+)
 
 
 class SubscribeToWebhookRequest(BaseModel):

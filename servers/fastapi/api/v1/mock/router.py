@@ -1,10 +1,17 @@
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from api.deps import require_roles
+from enums.user_role import UserRole
 from models.api_error_model import APIErrorModel
 from models.presentation_and_path import PresentationPathAndEditPath
 from typing import List
 
-API_V1_MOCK_ROUTER = APIRouter(prefix="/api/v1/mock", tags=["Mock"])
+API_V1_MOCK_ROUTER = APIRouter(
+    prefix="/api/v1/mock",
+    tags=["Mock"],
+    dependencies=[Depends(require_roles(UserRole.admin))],
+)
 
 
 @API_V1_MOCK_ROUTER.get(
