@@ -7,7 +7,7 @@ import random
 import traceback
 from typing import Annotated, List, Literal, Optional, Tuple
 import dirtyjson
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Path
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,6 +69,25 @@ from utils.custom_logger import setup_logger
 logger = setup_logger(__name__)
 
 PRESENTATION_ROUTER = APIRouter(prefix="/presentation", tags=["Presentation"])
+
+
+def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optional[str]]:
+    authorization_header = http_request.headers.get("Authorization")
+    auth_token = None
+    if authorization_header and authorization_header.lower().startswith("bearer "):
+        auth_token = authorization_header.split(" ", 1)[1].strip()
+
+    if not auth_token:
+        auth_token = (
+            http_request.cookies.get("auth_token")
+            or http_request.query_params.get("token")
+        )
+
+    api_key = (
+        http_request.headers.get("X-API-Key")
+        or http_request.query_params.get("api_key")
+    )
+    return auth_token, api_key
 
 
 @PRESENTATION_ROUTER.get("/all", response_model=List[PresentationWithSlides])
@@ -410,6 +429,7 @@ async def export_presentation_as_pptx(
 @PRESENTATION_ROUTER.post("/export", response_model=PresentationPathAndEditPath)
 async def export_presentation_as_pptx_or_pdf(
     id: Annotated[uuid.UUID, Body(description="Presentation ID to export")],
+    http_request: Request,
     export_as: Annotated[
         Literal["pptx", "pdf"], Body(description="Format to export the presentation as")
     ] = "pptx",
@@ -420,10 +440,13 @@ async def export_presentation_as_pptx_or_pdf(
     if not presentation:
         raise HTTPException(status_code=404, detail="Presentation not found")
 
+    auth_token, api_key = _extract_auth_context(http_request)
     presentation_and_path = await export_presentation(
         id,
         presentation.title or str(uuid.uuid4()),
         export_as,
+        auth_token=auth_token,
+        api_key=api_key,
     )
 
     return PresentationPathAndEditPath(
@@ -450,6 +473,7 @@ async def check_async_presentation_generation_status(
 @PRESENTATION_ROUTER.post("/edit", response_model=PresentationPathAndEditPath)
 async def edit_presentation_with_new_content(
     data: Annotated[EditPresentationRequest, Body()],
+    http_request: Request,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
     presentation = await sql_session.get(PresentationModel, data.presentation_id)
@@ -481,8 +505,13 @@ async def edit_presentation_with_new_content(
     sql_session.add_all(new_slides)
     await sql_session.commit()
 
+    auth_token, api_key = _extract_auth_context(http_request)
     presentation_and_path = await export_presentation(
-        presentation.id, presentation.title or str(uuid.uuid4()), data.export_as
+        presentation.id,
+        presentation.title or str(uuid.uuid4()),
+        data.export_as,
+        auth_token=auth_token,
+        api_key=api_key,
     )
 
     return PresentationPathAndEditPath(
@@ -494,6 +523,7 @@ async def edit_presentation_with_new_content(
 @PRESENTATION_ROUTER.post("/derive", response_model=PresentationPathAndEditPath)
 async def derive_presentation_from_existing_one(
     data: Annotated[EditPresentationRequest, Body()],
+    http_request: Request,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
     presentation = await sql_session.get(PresentationModel, data.presentation_id)
@@ -521,8 +551,13 @@ async def derive_presentation_from_existing_one(
     sql_session.add_all(new_slides)
     await sql_session.commit()
 
+    auth_token, api_key = _extract_auth_context(http_request)
     presentation_and_path = await export_presentation(
-        new_presentation.id, new_presentation.title or str(uuid.uuid4()), data.export_as
+        new_presentation.id,
+        new_presentation.title or str(uuid.uuid4()),
+        data.export_as,
+        auth_token=auth_token,
+        api_key=api_key,
     )
 
     return PresentationPathAndEditPath(

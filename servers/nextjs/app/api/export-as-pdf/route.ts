@@ -6,6 +6,25 @@ import { sanitizeFilename } from "@/app/(presentation-generator)/utils/others";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
+  const extractAuth = () => {
+    const authorization = req.headers.get("authorization");
+    const headerApiKey = req.headers.get("x-api-key");
+    const queryToken = req.nextUrl.searchParams.get("token");
+    const queryApiKey = req.nextUrl.searchParams.get("api_key");
+    const cookieToken = req.cookies.get("auth_token")?.value;
+
+    let token: string | null = null;
+    if (authorization && authorization.toLowerCase().startsWith("bearer ")) {
+      token = authorization.split(" ", 2)[1] || null;
+    }
+    token = token || queryToken || cookieToken || null;
+
+    return {
+      token,
+      apiKey: headerApiKey || queryApiKey || null,
+    };
+  };
+
   const { id, title } = await req.json();
   if (!id) {
     return NextResponse.json(
@@ -13,6 +32,8 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+
+  const { token, apiKey } = extractAuth();
   const browser = await puppeteer.launch({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     headless: true,
@@ -37,9 +58,17 @@ export async function POST(req: NextRequest) {
   page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
 
   const baseUrl = process.env.NEXTJS_API_URL || "http://localhost:3000";
+  const pdfMakerParams = new URLSearchParams({ id: String(id) });
+  if (token) {
+    pdfMakerParams.set("token", token);
+  }
+  if (apiKey) {
+    pdfMakerParams.set("api_key", apiKey);
+  }
+  const pdfMakerUrl = `${baseUrl}/pdf-maker?${pdfMakerParams.toString()}`;
   console.log(`Navigating to: ${baseUrl}/pdf-maker?id=${id}`);
 
-  await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {
+  await page.goto(pdfMakerUrl, {
     waitUntil: "networkidle0",
     timeout: 60000,
   });

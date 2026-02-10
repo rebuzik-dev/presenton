@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const id = await getPresentationId(request);
-    [browser, page] = await getBrowserAndPage(id);
+    const auth = getRequestAuth(request);
+    [browser, page] = await getBrowserAndPage(id, auth);
     const screenshotsDir = getScreenshotsDir();
 
     const { slides, speakerNotes } = await getSlidesAndSpeakerNotes(page);
@@ -75,7 +76,32 @@ async function getPresentationId(request: NextRequest) {
   return id;
 }
 
-async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
+function getRequestAuth(request: NextRequest): {
+  token: string | null;
+  apiKey: string | null;
+} {
+  const authorization = request.headers.get("authorization");
+  const headerApiKey = request.headers.get("x-api-key");
+  const queryToken = request.nextUrl.searchParams.get("token");
+  const queryApiKey = request.nextUrl.searchParams.get("api_key");
+  const cookieToken = request.cookies.get("auth_token")?.value;
+
+  let token: string | null = null;
+  if (authorization && authorization.toLowerCase().startsWith("bearer ")) {
+    token = authorization.split(" ", 2)[1] || null;
+  }
+  token = token || queryToken || cookieToken || null;
+
+  return {
+    token,
+    apiKey: headerApiKey || queryApiKey || null,
+  };
+}
+
+async function getBrowserAndPage(
+  id: string,
+  auth: { token: string | null; apiKey: string | null }
+): Promise<[Browser, Page]> {
   const browser = await puppeteer.launch({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     headless: true,
@@ -102,9 +128,17 @@ async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
   page.on("console", (msg) => console.log("PPTX PAGE LOG:", msg.text()));
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const pdfMakerParams = new URLSearchParams({ id });
+  if (auth.token) {
+    pdfMakerParams.set("token", auth.token);
+  }
+  if (auth.apiKey) {
+    pdfMakerParams.set("api_key", auth.apiKey);
+  }
+  const pdfMakerUrl = `${baseUrl}/pdf-maker?${pdfMakerParams.toString()}`;
   console.log(`PPTX Model Gen: Navigating to ${baseUrl}/pdf-maker?id=${id}`);
 
-  await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {
+  await page.goto(pdfMakerUrl, {
     waitUntil: "networkidle0",
     timeout: 120000,
   });
