@@ -27,7 +27,12 @@ export const useTemplateLayouts = () => {
 
   // Render slide content with group validation, automatic Tiptap text editing, and editable images/icons
   const renderSlideContent = useMemo(() => {
-    return (slide: any, isEditMode: boolean) => {
+    return (
+      slide: any,
+      isEditMode: boolean,
+      options?: { enableTextReplacer?: boolean }
+    ) => {
+      const enableTextReplacer = options?.enableTextReplacer ?? true;
 
       if (!slide) {
         return (
@@ -91,6 +96,10 @@ export const useTemplateLayouts = () => {
         </TiptapTextReplacer>
       );
 
+      const renderedContent = enableTextReplacer
+        ? withTextReplacer
+        : slideContent;
+
       if (isEditMode) {
         return (
           <EditableLayoutWrapper
@@ -98,12 +107,12 @@ export const useTemplateLayouts = () => {
             slideData={slide.content}
             properties={slide.properties}
           >
-            {withTextReplacer}
+            {renderedContent}
           </EditableLayoutWrapper>
         );
       }
 
-      return withTextReplacer;
+      return renderedContent;
     };
   }, [getTemplateLayout, dispatch]);
 
