@@ -998,15 +998,27 @@ async def create_template(
         if not request.id or not request.name:
             raise HTTPException(status_code=400, detail="id and name are required")
 
+        slug = f"custom-{request.id}"
+
         # Upsert template by id
         existing = await session.get(TemplateModel, request.id)
         if existing:
             existing.name = request.name
             existing.description = request.description
+            existing.slug = slug
+            existing.is_system = False
+            existing.is_default = False
+            existing.ordered = bool(existing.ordered)
         else:
             session.add(
                 TemplateModel(
-                    id=request.id, name=request.name, description=request.description
+                    id=request.id,
+                    name=request.name,
+                    slug=slug,
+                    description=request.description,
+                    ordered=False,
+                    is_default=False,
+                    is_system=False,
                 )
             )
         await session.commit()

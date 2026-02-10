@@ -4,15 +4,22 @@ import puppeteer from "puppeteer";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const groupName = searchParams.get("group");
+  const token = searchParams.get("token");
+  const apiKey = searchParams.get("api_key");
 
   if (!groupName) {
     return NextResponse.json({ error: "Missing group name" }, { status: 400 });
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const schemaPageUrl = `${baseUrl}/schema?group=${encodeURIComponent(
-    groupName
-  )}`;
+  const schemaSearchParams = new URLSearchParams({ group: groupName });
+  if (token) {
+    schemaSearchParams.set("token", token);
+  }
+  if (apiKey) {
+    schemaSearchParams.set("api_key", apiKey);
+  }
+  const schemaPageUrl = `${baseUrl}/schema?${schemaSearchParams.toString()}`;
 
   let browser;
   try {
