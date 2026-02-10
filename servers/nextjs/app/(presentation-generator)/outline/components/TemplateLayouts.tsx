@@ -5,6 +5,7 @@ import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { Template } from "../types/index";
 import { useLayout } from "../../context/LayoutContext";
 import { useFontLoader } from "../../hooks/useFontLoader";
+import ScaledSlideWrapper from "../../components/ScaledSlideWrapper";
 interface TemplateLayoutsProps {
   template: Template;
   onSelectTemplate: (template: Template) => void;
@@ -61,8 +62,10 @@ const TemplateLayouts: React.FC<TemplateLayoutsProps> = ({
                 className=" relative cursor-pointer overflow-hidden aspect-video"
               >
                 <div className="absolute cursor-pointer bg-transparent z-40 top-0 left-0 w-full h-full" />
-                <div className="transform scale-[0.2] flex justify-center items-center origin-top-left  w-[500%] h-[500%]">
-                  <LayoutComponent data={sampleData} />
+                <div className="w-full h-full pointer-events-none">
+                  <ScaledSlideWrapper>
+                    <LayoutComponent data={sampleData} />
+                  </ScaledSlideWrapper>
                 </div>
               </div>
             );

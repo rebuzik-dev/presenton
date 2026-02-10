@@ -165,6 +165,17 @@ async function getBrowserAndPage(
       }`,
       { timeout: 60000 }
     );
+
+    // Wait until markdown replacement finishes in all rendered slides
+    await page.waitForFunction(
+      `() => {
+        const replacers = Array.from(document.querySelectorAll('.tiptap-text-replacer'));
+        if (replacers.length === 0) return true;
+        return replacers.every((el) => el.getAttribute('data-tiptap-processed') === 'true');
+      }`,
+      { timeout: 30000 }
+    );
+
     console.log("PPTX Model Gen: Slides loaded successfully.");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
@@ -419,15 +430,44 @@ async function getAllChildElementsAttributes({
       continue;
     }
 
-    // If element is paragraph and contains only inline formatting tags, don't go deeper
-    if (attributes.tagName === "p") {
+    // If element is a text container and contains only inline formatting tags, keep
+    // it as a single rich-text node so formatting survives in PPTX conversion.
+    const inlineFormattingContainers = new Set([
+      "p",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "li",
+      "blockquote",
+      "span",
+      "small",
+    ]);
+    if (inlineFormattingContainers.has(attributes.tagName)) {
       const innerElementTagNames = await childElementHandle.evaluate((el) => {
         return Array.from(el.querySelectorAll("*")).map((e) =>
           e.tagName.toLowerCase()
         );
       });
 
-      const allowedInlineTags = new Set(["strong", "u", "em", "code", "s"]);
+      const allowedInlineTags = new Set([
+        "strong",
+        "b",
+        "u",
+        "em",
+        "i",
+        "code",
+        "s",
+        "strike",
+        "del",
+        "br",
+        "mark",
+        "sub",
+        "sup",
+        "a",
+      ]);
       const hasOnlyAllowedInlineTags = innerElementTagNames.every((tag) =>
         allowedInlineTags.has(tag)
       );
@@ -931,10 +971,58 @@ async function getElementAttributes(
       const fontFamily = computedStyles.fontFamily;
       const fontStyle = computedStyles.fontStyle;
 
+      const normalizeFontName = (rawFontFamily: string): string | undefined => {
+        if (!rawFontFamily || rawFontFamily === "initial") return undefined;
+
+        const genericFamilies = new Set([
+          "serif",
+          "sans-serif",
+          "monospace",
+          "cursive",
+          "fantasy",
+          "system-ui",
+          "ui-sans-serif",
+          "ui-serif",
+          "ui-monospace",
+          "math",
+          "emoji",
+          "fangsong",
+        ]);
+
+        const fontCandidates = rawFontFamily
+          .split(",")
+          .map((part) => part.trim().replace(/['"]/g, ""))
+          .filter(Boolean);
+
+        const explicitFont = fontCandidates.find((name) => {
+          const lower = name.toLowerCase();
+          return (
+            !genericFamilies.has(lower) &&
+            !name.startsWith("__") &&
+            !name.startsWith("var(")
+          );
+        });
+
+        if (explicitFont) return explicitFont;
+
+        const joined = fontCandidates.join(" ").toLowerCase();
+        if (joined.includes("playfair")) return "Playfair Display";
+        if (joined.includes("poppins")) return "Poppins";
+        if (joined.includes("roboto")) return "Roboto";
+        if (joined.includes("inter")) return "Inter";
+        if (joined.includes("instrument")) return "Instrument Sans";
+        if (joined.includes("courier") || joined.includes("mono")) {
+          return "Courier New";
+        }
+        if (joined.includes("serif")) return "Times New Roman";
+        if (joined.includes("sans")) return "Arial";
+
+        return "Calibri";
+      };
+
       let fontName = undefined;
       if (fontFamily !== "initial") {
-        const firstFont = fontFamily.split(",")[0].trim().replace(/['"]/g, "");
-        fontName = firstFont;
+        fontName = normalizeFontName(fontFamily);
       }
 
       const font = {

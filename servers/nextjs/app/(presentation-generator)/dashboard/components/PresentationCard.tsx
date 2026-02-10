@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 
 import { Card } from "@/components/ui/card";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTemplateLayouts } from "@/app/(presentation-generator)/hooks/useTemplateLayouts";
+import ScaledSlideWrapper from "@/app/(presentation-generator)/components/ScaledSlideWrapper";
 
 export const PresentationCard = ({
   id,
@@ -89,14 +90,11 @@ export const PresentationCard = ({
           style={{}}
         >
           {slide ? (
-            <>
-              <div className="absolute bg-transparent z-40 top-0 left-0 w-full h-full" />
-              <div className="transform scale-[0.2] flex justify-center items-center origin-top-left  w-[500%] h-[500%]">
-                {renderSlideContent(slide, false, {
-                  enableTextReplacer: false,
-                })}
-              </div>
-            </>
+            <div className="w-full h-full pointer-events-none">
+              <ScaledSlideWrapper>
+                {renderSlideContent(slide, false)}
+              </ScaledSlideWrapper>
+            </div>
           ) : (
             <div className="w-full h-full flex flex-col gap-2 items-center justify-center bg-gray-50 pointer-events-none">
               <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">

@@ -64,6 +64,7 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
     if (!containerRef.current) return;
 
     const container = containerRef.current;
+    container.setAttribute("data-tiptap-processed", "false");
 
     const replaceTextElements = () => {
       // Get all elements in the container
@@ -139,6 +140,8 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
           />
         );
       });
+
+      container.setAttribute("data-tiptap-processed", "true");
     };
 
     // Replace text elements after a short delay to ensure DOM is ready
