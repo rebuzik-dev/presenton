@@ -43,9 +43,13 @@ const CustomTemplatePage = () => {
     setSlides
   );
 
-  const handleSaveTemplate = async (layoutName: string, description: string): Promise<string | null> => {
+  const handleSaveTemplate = async (
+    layoutName: string,
+    description: string,
+    slug: string
+  ): Promise<string | null> => {
     trackEvent(MixpanelEvent.CustomTemplate_Save_Templates_API_Call);
-    const id = await saveLayout(layoutName, description);
+    const id = await saveLayout(layoutName, description, slug);
     if (id) {
       router.push(`/template-preview/custom-${id}`);
     }

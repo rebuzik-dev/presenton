@@ -12,14 +12,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2, Save } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 interface SaveLayoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (layoutName: string, description: string) => Promise<string | null>;
+  onSave: (
+    layoutName: string,
+    description: string,
+    slug: string
+  ) => Promise<string | null>;
   isSaving: boolean;
 }
+
+const slugify = (value: string): string => {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
 
 export const SaveLayoutModal: React.FC<SaveLayoutModalProps> = ({
   isOpen,
@@ -27,28 +39,32 @@ export const SaveLayoutModal: React.FC<SaveLayoutModalProps> = ({
   onSave,
   isSaving,
 }) => {
-  const router = useRouter();
   const [layoutName, setLayoutName] = useState("");
   const [description, setDescription] = useState("");
+  const [slug, setSlug] = useState("");
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
+
+  const isSlugValid =
+    slug.length > 0 && /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(slug);
 
   const handleSave = async () => {
-    if (!layoutName.trim()) {
+    if (!layoutName.trim() || !isSlugValid) {
       return; // Don't save if name is empty
     }
-    const id = await onSave(layoutName.trim(), description.trim());
-    if (id) {
-      // Redirect to the new template preview page
-      router.push(`/template-preview/custom-${id}`);
-    }
+    await onSave(layoutName.trim(), description.trim(), slug.trim());
     // Reset form after navigation decision
     setLayoutName("");
     setDescription("");
+    setSlug("");
+    setIsSlugManuallyEdited(false);
   };
 
   const handleClose = () => {
     if (!isSaving) {
       setLayoutName("");
       setDescription("");
+      setSlug("");
+      setIsSlugManuallyEdited(false);
       onClose();
     }
   };
@@ -73,11 +89,42 @@ export const SaveLayoutModal: React.FC<SaveLayoutModalProps> = ({
             <Input
               id="layout-name"
               value={layoutName}
-              onChange={(e) => setLayoutName(e.target.value)}
+              onChange={(e) => {
+                const nextName = e.target.value;
+                setLayoutName(nextName);
+                if (!isSlugManuallyEdited) {
+                  setSlug(slugify(nextName));
+                }
+              }}
               placeholder="Enter template name..."
               disabled={isSaving}
               className="w-full"
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="template-slug" className="text-sm font-medium">
+              Slug *
+            </Label>
+            <Input
+              id="template-slug"
+              value={slug}
+              onChange={(e) => {
+                setIsSlugManuallyEdited(true);
+                setSlug(slugify(e.target.value));
+              }}
+              placeholder="e.g. sales-q3-deck"
+              disabled={isSaving}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500">
+              Use lowercase letters, numbers, and `-`. This is the value for API
+              calls in `template`.
+            </p>
+            {!isSlugValid && slug.length > 0 && (
+              <p className="text-xs text-red-600">
+                Invalid slug format.
+              </p>
+            )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="description" className="text-sm font-medium">
@@ -104,7 +151,7 @@ export const SaveLayoutModal: React.FC<SaveLayoutModalProps> = ({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={isSaving || !layoutName.trim()}
+            disabled={isSaving || !layoutName.trim() || !isSlugValid}
             className="bg-green-600 hover:bg-green-700"
           >
             {isSaving ? (

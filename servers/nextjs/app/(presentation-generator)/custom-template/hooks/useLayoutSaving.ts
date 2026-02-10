@@ -77,7 +77,7 @@ export const useLayoutSaving = (
     }
   };
 
-  const saveLayout = useCallback(async (layoutName: string, description: string): Promise<string | null> => {
+  const saveLayout = useCallback(async (layoutName: string, description: string, slug: string): Promise<string | null> => {
     if (!slides.length) {
       toast.error("No slides to save");
       return null;
@@ -135,11 +135,15 @@ export const useLayoutSaving = (
       }
 
       // First create/update the template metadata
-      await fetch("/api/v1/ppt/template-management/templates", {
+      const metadataResponse = await fetch("/api/v1/ppt/template-management/templates", {
         method: "POST",
         headers: getHeader(),
-        body: JSON.stringify({ id: presentationId, name: layoutName, description }),
+        body: JSON.stringify({ id: presentationId, name: layoutName, description, slug }),
       });
+      const metadataData = await ApiResponseHandler.handleResponse(
+        metadataResponse,
+        "Failed to save template metadata"
+      );
 
       const saveResponse = await fetch(
         "/api/v1/ppt/template-management/save-templates",
@@ -170,6 +174,9 @@ export const useLayoutSaving = (
       });
 
       toast.success(`Layout "${layoutName}" saved successfully`);
+      if (metadataData?.template?.slug) {
+        toast.success(`Template slug: ${metadataData.template.slug}`);
+      }
       refetch();
       closeSaveModal();
       return presentationId;

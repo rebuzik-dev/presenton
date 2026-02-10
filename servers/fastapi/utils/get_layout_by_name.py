@@ -62,8 +62,10 @@ async def get_layout_by_name(
 
         # Legacy custom templates store raw layout code in presentation_layout_codes and
         # must be resolved through Next.js schema extraction.
+        # For compatibility, legacy schema loading still expects `custom-<template_uuid>` group.
+        legacy_group_name = f"custom-{template.id}"
         return await _fetch_layout_from_nextjs(
-            layout_name,
+            legacy_group_name,
             template.ordered,
             auth_token=auth_token,
             api_key=api_key,

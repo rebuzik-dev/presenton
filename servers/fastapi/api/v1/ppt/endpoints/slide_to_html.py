@@ -2,6 +2,7 @@ import os
 import base64
 from datetime import datetime
 from typing import Optional, List, Dict
+import re
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, File, UploadFile, Form, Depends
 from pydantic import BaseModel
@@ -112,6 +113,7 @@ class TemplateCreateRequest(BaseModel):
     id: UUID
     name: str
     description: Optional[str] = None
+    slug: Optional[str] = None
 
 
 class TemplateCreateResponse(BaseModel):
@@ -887,6 +889,7 @@ async def get_layouts(
             template = {
                 "id": template_meta.id,
                 "name": template_meta.name,
+                "slug": template_meta.slug,
                 "description": template_meta.description,
                 "created_at": template_meta.created_at,
             }
@@ -950,6 +953,7 @@ async def get_presentations_summary(
                 template = {
                     "id": template_meta.id,
                     "name": template_meta.name,
+                    "slug": template_meta.slug,
                     "description": template_meta.description,
                     "created_at": template_meta.created_at,
                 }
@@ -998,7 +1002,35 @@ async def create_template(
         if not request.id or not request.name:
             raise HTTPException(status_code=400, detail="id and name are required")
 
-        slug = f"custom-{request.id}"
+        slug = (request.slug or f"custom-{request.id}").strip().lower()
+        if not slug:
+            slug = f"custom-{request.id}"
+
+        # Normalize user-provided slug into URL-safe form.
+        slug = re.sub(r"[^a-z0-9-]+", "-", slug).strip("-")
+        slug = re.sub(r"-{2,}", "-", slug)
+        if not slug:
+            slug = f"custom-{request.id}"
+        if len(slug) > 120:
+            raise HTTPException(
+                status_code=400,
+                detail="slug is too long (max 120 characters)",
+            )
+        if not re.match(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$", slug):
+            raise HTTPException(
+                status_code=400,
+                detail="slug must contain only lowercase letters, numbers, and '-'",
+            )
+
+        # Ensure slug uniqueness across templates.
+        existing_by_slug_stmt = select(TemplateModel).where(TemplateModel.slug == slug)
+        existing_by_slug_result = await session.execute(existing_by_slug_stmt)
+        existing_by_slug = existing_by_slug_result.scalar_one_or_none()
+        if existing_by_slug and existing_by_slug.id != request.id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Template slug '{slug}' is already in use",
+            )
 
         # Upsert template by id
         existing = await session.get(TemplateModel, request.id)
@@ -1030,6 +1062,7 @@ async def create_template(
             template={
                 "id": template.id,
                 "name": template.name,
+                "slug": template.slug,
                 "description": template.description,
                 "created_at": template.created_at,
             },
