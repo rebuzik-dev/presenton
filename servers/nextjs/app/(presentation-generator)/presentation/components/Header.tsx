@@ -37,6 +37,7 @@ import { usePresentationUndoRedo } from "../hooks/PresentationUndoRedo";
 import ToolTip from "@/components/ToolTip";
 import { clearPresentationData } from "@/store/slices/presentationGeneration";
 import { clearHistory } from "@/store/slices/undoRedoSlice";
+import { getHeader } from "../../services/api/header";
 
 const Header = ({
   presentation_id,
@@ -59,7 +60,9 @@ const Header = ({
   const { onUndo, onRedo, canUndo, canRedo } = usePresentationUndoRedo();
 
   const get_presentation_pptx_model = async (id: string): Promise<PptxPresentationModel> => {
-    const response = await fetch(`/api/presentation_to_pptx_model?id=${id}`);
+    const response = await fetch(`/api/presentation_to_pptx_model?id=${id}`, {
+      headers: getHeader(),
+    });
     const pptx_model = await response.json();
     return pptx_model;
   };
@@ -111,6 +114,7 @@ const Header = ({
       trackEvent(MixpanelEvent.Header_ExportAsPDF_API_Call);
       const response = await fetch('/api/export-as-pdf', {
         method: 'POST',
+        headers: getHeader(),
         body: JSON.stringify({
           id: presentation_id,
           title: presentationData?.title,

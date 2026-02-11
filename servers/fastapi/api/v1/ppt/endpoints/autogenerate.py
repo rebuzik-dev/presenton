@@ -1,20 +1,16 @@
 
 import asyncio
 import uuid
-from typing import Annotated, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from enums.webhook_event import WebhookEvent
 from models.generate_presentation_request import GeneratePresentationRequest
 from models.sql.async_presentation_generation_status import (
     AsyncPresentationGenerationTaskModel,
 )
-from services.concurrent_service import CONCURRENT_SERVICE
 from services.database import get_async_session
 from services.presentation_service import PresentationService
-from services.webhook_service import WebhookService
 from utils.get_layout_by_name import get_layout_by_name
 
 AUTOGENERATE_ROUTER = APIRouter(prefix="/presentation", tags=["Autogenerate"])
@@ -23,6 +19,7 @@ AUTOGENERATE_ROUTER = APIRouter(prefix="/presentation", tags=["Autogenerate"])
 @AUTOGENERATE_ROUTER.post("/generate", response_model=dict)
 async def autogenerate_presentation(
     request: GeneratePresentationRequest,
+    http_request: Request,
     background_tasks: BackgroundTasks,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
@@ -61,10 +58,26 @@ async def autogenerate_presentation(
     sql_session.add(async_status)
     await sql_session.commit()
 
+    # Capture request auth context for custom template resolution in headless Next.js flow
+    authorization_header = http_request.headers.get("Authorization")
+    auth_token = None
+    if authorization_header and authorization_header.lower().startswith("bearer "):
+        auth_token = authorization_header.split(" ", 1)[1].strip()
+    if not auth_token:
+        auth_token = (
+            http_request.cookies.get("auth_token")
+            or http_request.query_params.get("token")
+        )
+    api_key = (
+        http_request.headers.get("X-API-Key")
+        or http_request.query_params.get("api_key")
+    )
+
     # 4. Define background task
     async def run_autogeneration():
          # We need a new session for the background task
         async for session in get_async_session():
+            status = None
             try:
                 # Re-fetch status to attach to new session
                 status = await session.get(AsyncPresentationGenerationTaskModel, presentation.id)
@@ -82,7 +95,11 @@ async def autogenerate_presentation(
                 session.add(status)
                 await session.commit()
                 
-                layout_model = await get_layout_by_name(request.template)
+                layout_model = await get_layout_by_name(
+                    request.template,
+                    auth_token=auth_token,
+                    api_key=api_key,
+                )
                 await PresentationService.prepare_structure(
                     session, presentation.id, layout_model
                 )

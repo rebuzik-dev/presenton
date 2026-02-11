@@ -14,11 +14,11 @@ import { useLayout } from "../context/LayoutContext";
 import { useFontLoader } from "../hooks/useFontLoader";
 import { useTemplateLayouts } from "../hooks/useTemplateLayouts";
 
-
-
-
-
-const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
+const PresentationPage = ({
+  presentation_id,
+}: {
+  presentation_id: string;
+}) => {
   const { renderSlideContent, loading } = useTemplateLayouts();
   const pathname = usePathname();
   const [contentLoading, setContentLoading] = useState(true);

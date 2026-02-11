@@ -9,15 +9,41 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token =
+    const tokenFromQuery =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("token")
+        : null;
+    const apiKeyFromQuery =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("api_key")
+        : null;
+    const tokenFromStorage =
       typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-    if (!token) {
+    const token = tokenFromQuery || tokenFromStorage;
+
+    // Allow headless/internal flows to bootstrap auth via URL token.
+    if (tokenFromQuery) {
+      localStorage.setItem("auth_token", tokenFromQuery);
+    }
+
+    // For API-key-only flows (headless export), skip JWT /me check.
+    if (!token && apiKeyFromQuery) {
+      setChecking(false);
+      return;
+    }
+
+    if (!token && !apiKeyFromQuery) {
       router.replace("/login");
       return;
     }
     document.cookie = `auth_token=${token}; path=/; SameSite=Lax`;
 
-    fetch("/api/v1/auth/me", { headers: getHeader() })
+    fetch("/api/v1/auth/me", {
+      headers: {
+        ...getHeader(),
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) {
           localStorage.removeItem("auth_token");

@@ -347,7 +347,20 @@ export const LayoutProvider: React.FC<{
   }
 
   const LoadCustomLayouts = async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const queryParams =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : null;
+    const tokenFromStorage =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    const tokenFromQuery = queryParams?.get("token");
+    const apiKeyFromQuery = queryParams?.get("api_key");
+    const token = tokenFromStorage || tokenFromQuery;
+    const authHeaders = {
+      ...getHeader(),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(apiKeyFromQuery ? { "X-API-Key": apiKeyFromQuery } : {}),
+    };
 
     const layouts: LayoutInfo[] = [];
     const layoutsById = new Map<string, LayoutInfo>();
@@ -360,10 +373,7 @@ export const LayoutProvider: React.FC<{
       const customTemplateResponse = await fetch(
         `/api/v1/ppt/template-management/summary`,
         {
-          headers: {
-            ...getHeader(),
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          }
+          headers: authHeaders,
         }
       );
       const customTemplateData = await customTemplateResponse.json();
@@ -388,10 +398,7 @@ export const LayoutProvider: React.FC<{
         const customLayoutResponse = await fetch(
           `/api/v1/ppt/template-management/get-templates/${presentationId}`,
           {
-            headers: {
-              ...getHeader(),
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
+            headers: authHeaders,
           }
         );
         const customLayoutsData = await customLayoutResponse.json();

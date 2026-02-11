@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect } from "react";
 
 import { Card } from "@/components/ui/card";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
@@ -27,6 +27,22 @@ export const PresentationCard = ({
 }) => {
   const router = useRouter();
   const { renderSlideContent } = useTemplateLayouts();
+
+  useEffect(() => {
+    if (!slide?.layout?.includes("custom")) {
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[src*="tailwindcss.com"]'
+    );
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://cdn.tailwindcss.com";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, [slide?.layout]);
 
 
 
@@ -89,12 +105,11 @@ export const PresentationCard = ({
           style={{}}
         >
           {slide ? (
-            <>
-              <div className="absolute bg-transparent z-40 top-0 left-0 w-full h-full" />
-              <div className="transform scale-[0.2] flex justify-center items-center origin-top-left  w-[500%] h-[500%]">
-                {renderSlideContent(slide, false)}
+            <div className="w-full h-full pointer-events-none">
+              <div className="transform scale-[0.2] flex pointer-events-none justify-center items-center origin-top-left w-[500%] h-[500%]">
+                {renderSlideContent(slide, false, { enableTextReplacer: false })}
               </div>
-            </>
+            </div>
           ) : (
             <div className="w-full h-full flex flex-col gap-2 items-center justify-center bg-gray-50 pointer-events-none">
               <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">

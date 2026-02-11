@@ -4,6 +4,9 @@ import { useParams, useRouter, usePathname } from "next/navigation";
 import LoadingStates from "../components/LoadingStates";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Home, Trash2, Code, Save, X, Pencil } from "lucide-react";
 import { useLayout } from "@/app/(presentation-generator)/context/LayoutContext";
 import Editor from "react-simple-code-editor";
@@ -13,9 +16,11 @@ import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-markup";
 import "prismjs/components/prism-jsx";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useFontLoader } from "../../hooks/useFontLoader";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { getHeader } from "../../services/api/header";
+import { toast } from "sonner";
 
 const GroupLayoutPreview = () => {
   const params = useParams();
@@ -41,7 +46,23 @@ const GroupLayoutPreview = () => {
   const [currentFonts, setCurrentFonts] = useState<string[] | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [layoutsMap, setLayoutsMap] = useState<Record<string, { layout_id: string; layout_name: string; layout_code: string; fonts?: string[] }>>({});
-  const [templateMeta, setTemplateMeta] = useState<{ name?: string; description?: string } | null>(null);
+  const [templateMeta, setTemplateMeta] = useState<{ name?: string; description?: string; slug?: string } | null>(null);
+  const [metaEditorOpen, setMetaEditorOpen] = useState(false);
+  const [metaName, setMetaName] = useState("");
+  const [metaSlug, setMetaSlug] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [isSavingMeta, setIsSavingMeta] = useState(false);
+
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/-{2,}/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const isValidSlug = (value: string) =>
+    /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(value);
 
 
 
@@ -66,7 +87,11 @@ const GroupLayoutPreview = () => {
         setLayoutsMap(map);
         // Set template meta and inject aggregated fonts if provided
         if (data?.template) {
-          setTemplateMeta({ name: data.template.name, description: data.template.description });
+          setTemplateMeta({
+            name: data.template.name,
+            description: data.template.description,
+            slug: data.template.slug || rawSlug,
+          });
         }
         if (Array.isArray(data?.fonts) && data.fonts.length) {
           useFontLoader(data.fonts);
@@ -120,6 +145,67 @@ const GroupLayoutPreview = () => {
       router.push("/template-preview");
     }
   }
+
+  const openMetaEditor = () => {
+    const fallbackName = templateMeta?.name || rawSlug;
+    const fallbackSlug = templateMeta?.slug || rawSlug;
+    setMetaName(fallbackName);
+    setMetaSlug(slugify(fallbackSlug));
+    setMetaDescription(templateMeta?.description || "");
+    setMetaEditorOpen(true);
+  };
+
+  const saveTemplateMeta = async () => {
+    if (!isCustom || !presentationId) return;
+
+    const normalizedSlug = slugify(metaSlug);
+    if (!normalizedSlug || !isValidSlug(normalizedSlug)) {
+      toast.error("Invalid slug format");
+      return;
+    }
+
+    if (!metaName.trim()) {
+      toast.error("Template name is required");
+      return;
+    }
+
+    try {
+      setIsSavingMeta(true);
+      const response = await fetch(`/api/v1/ppt/template-management/templates`, {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify({
+          id: presentationId,
+          name: metaName.trim(),
+          description: metaDescription.trim() || null,
+          slug: normalizedSlug,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to update template metadata";
+        try {
+          const errorData = await response.json();
+          if (errorData?.detail) errorMessage = errorData.detail;
+        } catch {
+          // ignore parse errors
+        }
+        toast.error(errorMessage);
+        return;
+      }
+
+      setTemplateMeta({
+        name: metaName.trim(),
+        description: metaDescription.trim() || undefined,
+        slug: normalizedSlug,
+      });
+      await refetch();
+      setMetaEditorOpen(false);
+      toast.success("Template metadata updated");
+    } finally {
+      setIsSavingMeta(false);
+    }
+  };
 
   const openEditor = (layoutName: string) => {
     const entry = layoutsMap[layoutName];
@@ -208,11 +294,24 @@ const GroupLayoutPreview = () => {
               <Home className="w-4 h-4" />
               All Templates
             </Button>
-            {isCustom && <button className=" border border-red-200 flex justify-center items-center gap-2 text-red-700 px-4 py-1 rounded-md" onClick={() => {
-              trackEvent(MixpanelEvent.TemplatePreview_Delete_Templates_Button_Clicked, { pathname });
-              trackEvent(MixpanelEvent.TemplatePreview_Delete_Templates_API_Call);
-              deleteLayouts();
-            }}><Trash2 className="w-4 h-4" />Delete</button>}
+            {isCustom && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={openMetaEditor}
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit Meta
+                </Button>
+                <button className=" border border-red-200 flex justify-center items-center gap-2 text-red-700 px-4 py-1 rounded-md" onClick={() => {
+                  trackEvent(MixpanelEvent.TemplatePreview_Delete_Templates_Button_Clicked, { pathname });
+                  trackEvent(MixpanelEvent.TemplatePreview_Delete_Templates_API_Call);
+                  deleteLayouts();
+                }}><Trash2 className="w-4 h-4" />Delete</button>
+              </>
+            )}
           </div>
 
           <div className="text-center">
@@ -222,6 +321,11 @@ const GroupLayoutPreview = () => {
             <p className="text-gray-600 mt-2">
               {layoutGroup.length} layout{layoutGroup.length !== 1 ? "s" : ""} • {templateMeta?.description || layoutGroup[0].templateID}
             </p>
+            {templateMeta?.slug && (
+              <p className="text-sm text-gray-500 mt-1">
+                Slug: <span className="font-mono">{templateMeta.slug}</span>
+              </p>
+            )}
           </div>
 
         </div>
@@ -356,6 +460,73 @@ const GroupLayoutPreview = () => {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+      )}
+
+      {/* Template Metadata Editor */}
+      {isCustom && (
+        <Dialog open={metaEditorOpen} onOpenChange={setMetaEditorOpen}>
+          <DialogContent className="sm:max-w-[520px]">
+            <DialogHeader>
+              <DialogTitle>Edit Template Metadata</DialogTitle>
+              <DialogDescription>
+                Update slug and description for API usage and organization.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-2">
+              <div className="grid gap-2">
+                <Label htmlFor="template-name">Name</Label>
+                <Input
+                  id="template-name"
+                  value={metaName}
+                  onChange={(e) => setMetaName(e.target.value)}
+                  placeholder="Template name"
+                  disabled={isSavingMeta}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="template-slug">Slug</Label>
+                <Input
+                  id="template-slug"
+                  value={metaSlug}
+                  onChange={(e) => setMetaSlug(slugify(e.target.value))}
+                  placeholder="my-custom-template"
+                  disabled={isSavingMeta}
+                />
+                <p className="text-xs text-gray-500">
+                  Lowercase letters, numbers and dashes only.
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="template-description">Description</Label>
+                <Textarea
+                  id="template-description"
+                  value={metaDescription}
+                  onChange={(e) => setMetaDescription(e.target.value)}
+                  placeholder="Describe this template"
+                  rows={3}
+                  disabled={isSavingMeta}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setMetaEditorOpen(false)}
+                disabled={isSavingMeta}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={saveTemplateMeta}
+                disabled={isSavingMeta || !metaName.trim() || !isValidSlug(metaSlug)}
+              >
+                Save Metadata
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

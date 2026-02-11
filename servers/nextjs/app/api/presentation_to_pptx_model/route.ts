@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const id = await getPresentationId(request);
-    [browser, page] = await getBrowserAndPage(id);
+    const auth = getRequestAuth(request);
+    [browser, page] = await getBrowserAndPage(id, auth);
     const screenshotsDir = getScreenshotsDir();
 
     const { slides, speakerNotes } = await getSlidesAndSpeakerNotes(page);
@@ -75,7 +76,32 @@ async function getPresentationId(request: NextRequest) {
   return id;
 }
 
-async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
+function getRequestAuth(request: NextRequest): {
+  token: string | null;
+  apiKey: string | null;
+} {
+  const authorization = request.headers.get("authorization");
+  const headerApiKey = request.headers.get("x-api-key");
+  const queryToken = request.nextUrl.searchParams.get("token");
+  const queryApiKey = request.nextUrl.searchParams.get("api_key");
+  const cookieToken = request.cookies.get("auth_token")?.value;
+
+  let token: string | null = null;
+  if (authorization && authorization.toLowerCase().startsWith("bearer ")) {
+    token = authorization.split(" ", 2)[1] || null;
+  }
+  token = token || queryToken || cookieToken || null;
+
+  return {
+    token,
+    apiKey: headerApiKey || queryApiKey || null,
+  };
+}
+
+async function getBrowserAndPage(
+  id: string,
+  auth: { token: string | null; apiKey: string | null }
+): Promise<[Browser, Page]> {
   const browser = await puppeteer.launch({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     headless: true,
@@ -102,9 +128,17 @@ async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
   page.on("console", (msg) => console.log("PPTX PAGE LOG:", msg.text()));
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const pdfMakerParams = new URLSearchParams({ id });
+  if (auth.token) {
+    pdfMakerParams.set("token", auth.token);
+  }
+  if (auth.apiKey) {
+    pdfMakerParams.set("api_key", auth.apiKey);
+  }
+  const pdfMakerUrl = `${baseUrl}/pdf-maker?${pdfMakerParams.toString()}`;
   console.log(`PPTX Model Gen: Navigating to ${baseUrl}/pdf-maker?id=${id}`);
 
-  await page.goto(`${baseUrl}/pdf-maker?id=${id}`, {
+  await page.goto(pdfMakerUrl, {
     waitUntil: "networkidle0",
     timeout: 120000,
   });
@@ -131,6 +165,17 @@ async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
       }`,
       { timeout: 60000 }
     );
+
+    // Wait until markdown replacement finishes in all rendered slides
+    await page.waitForFunction(
+      `() => {
+        const replacers = Array.from(document.querySelectorAll('.tiptap-text-replacer'));
+        if (replacers.length === 0) return true;
+        return replacers.every((el) => el.getAttribute('data-tiptap-processed') === 'true');
+      }`,
+      { timeout: 30000 }
+    );
+
     console.log("PPTX Model Gen: Slides loaded successfully.");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
@@ -385,15 +430,44 @@ async function getAllChildElementsAttributes({
       continue;
     }
 
-    // If element is paragraph and contains only inline formatting tags, don't go deeper
-    if (attributes.tagName === "p") {
+    // If element is a text container and contains only inline formatting tags, keep
+    // it as a single rich-text node so formatting survives in PPTX conversion.
+    const inlineFormattingContainers = new Set([
+      "p",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "li",
+      "blockquote",
+      "span",
+      "small",
+    ]);
+    if (inlineFormattingContainers.has(attributes.tagName)) {
       const innerElementTagNames = await childElementHandle.evaluate((el) => {
         return Array.from(el.querySelectorAll("*")).map((e) =>
           e.tagName.toLowerCase()
         );
       });
 
-      const allowedInlineTags = new Set(["strong", "u", "em", "code", "s"]);
+      const allowedInlineTags = new Set([
+        "strong",
+        "b",
+        "u",
+        "em",
+        "i",
+        "code",
+        "s",
+        "strike",
+        "del",
+        "br",
+        "mark",
+        "sub",
+        "sup",
+        "a",
+      ]);
       const hasOnlyAllowedInlineTags = innerElementTagNames.every((tag) =>
         allowedInlineTags.has(tag)
       );
@@ -897,10 +971,58 @@ async function getElementAttributes(
       const fontFamily = computedStyles.fontFamily;
       const fontStyle = computedStyles.fontStyle;
 
+      const normalizeFontName = (rawFontFamily: string): string | undefined => {
+        if (!rawFontFamily || rawFontFamily === "initial") return undefined;
+
+        const genericFamilies = new Set([
+          "serif",
+          "sans-serif",
+          "monospace",
+          "cursive",
+          "fantasy",
+          "system-ui",
+          "ui-sans-serif",
+          "ui-serif",
+          "ui-monospace",
+          "math",
+          "emoji",
+          "fangsong",
+        ]);
+
+        const fontCandidates = rawFontFamily
+          .split(",")
+          .map((part) => part.trim().replace(/['"]/g, ""))
+          .filter(Boolean);
+
+        const explicitFont = fontCandidates.find((name) => {
+          const lower = name.toLowerCase();
+          return (
+            !genericFamilies.has(lower) &&
+            !name.startsWith("__") &&
+            !name.startsWith("var(")
+          );
+        });
+
+        if (explicitFont) return explicitFont;
+
+        const joined = fontCandidates.join(" ").toLowerCase();
+        if (joined.includes("playfair")) return "Playfair Display";
+        if (joined.includes("poppins")) return "Poppins";
+        if (joined.includes("roboto")) return "Roboto";
+        if (joined.includes("inter")) return "Inter";
+        if (joined.includes("instrument")) return "Instrument Sans";
+        if (joined.includes("courier") || joined.includes("mono")) {
+          return "Courier New";
+        }
+        if (joined.includes("serif")) return "Times New Roman";
+        if (joined.includes("sans")) return "Arial";
+
+        return "Calibri";
+      };
+
       let fontName = undefined;
       if (fontFamily !== "initial") {
-        const firstFont = fontFamily.split(",")[0].trim().replace(/['"]/g, "");
-        fontName = firstFont;
+        fontName = normalizeFontName(fontFamily);
       }
 
       const font = {

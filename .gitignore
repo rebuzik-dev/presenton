@@ -21,3 +21,4 @@ container.db
 servers/nextjs/public/static/icons/bold/*
 servers/nextjs/temp/*
 servers/nextjs/public/static/images/*
+temp/*

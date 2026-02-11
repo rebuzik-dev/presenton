@@ -23,6 +23,7 @@ import { setPresentationData } from "@/store/slices/presentationGeneration";
 import { SortableSlide } from "./SortableSlide";
 import { SortableListItem } from "./SortableListItem";
 import { useTemplateLayouts } from "../../hooks/useTemplateLayouts";
+import ScaledSlideWrapper from "../../components/ScaledSlideWrapper";
 
 interface SidePanelProps {
   selectedSlide: number;
@@ -278,8 +279,10 @@ const SidePanel = ({
                     >
                       <div className=" bg-white pointer-events-none  relative overflow-hidden aspect-video">
                         <div className="absolute bg-gray-100/5 z-50  top-0 left-0 w-full h-full" />
-                        <div className="transform scale-[0.2] flex justify-center items-center origin-top-left  w-[500%] h-[500%]">
-                          {renderSlideContent(slide, false)}
+                        <div className="w-full h-full">
+                          <ScaledSlideWrapper>
+                            {renderSlideContent(slide, false, { enableTextReplacer: false })}
+                          </ScaledSlideWrapper>
                         </div>
                       </div>
                     </div>
@@ -299,7 +302,9 @@ const SidePanel = ({
                           index={index}
                           selectedSlide={selectedSlide}
                           onSlideClick={onSlideClick}
-                          renderSlideContent={(slide) => renderSlideContent(slide, false)}
+                          renderSlideContent={(slide) =>
+                            renderSlideContent(slide, false, { enableTextReplacer: false })
+                          }
                         />
                       ))}
                   </SortableContext>
