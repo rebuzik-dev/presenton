@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import { Card } from "@/components/ui/card";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
@@ -27,6 +27,22 @@ export const PresentationCard = ({
 }) => {
   const router = useRouter();
   const { renderSlideContent } = useTemplateLayouts();
+
+  useEffect(() => {
+    if (!slide?.layout?.includes("custom")) {
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[src*="tailwindcss.com"]'
+    );
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://cdn.tailwindcss.com";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, [slide?.layout]);
 
 
 
