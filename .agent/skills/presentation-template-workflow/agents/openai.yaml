@@ -1,0 +1,4 @@
+interface:
+  display_name: "Presentation Template Workflow"
+  short_description: "Create and edit slide templates without clipping"
+  default_prompt: "Use $presentation-template-workflow to create or refine presentation templates with safe layout constraints."
