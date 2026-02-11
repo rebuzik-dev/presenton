@@ -11,7 +11,6 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTemplateLayouts } from "@/app/(presentation-generator)/hooks/useTemplateLayouts";
-import ScaledSlideWrapper from "@/app/(presentation-generator)/components/ScaledSlideWrapper";
 
 export const PresentationCard = ({
   id,
@@ -91,9 +90,9 @@ export const PresentationCard = ({
         >
           {slide ? (
             <div className="w-full h-full pointer-events-none">
-              <ScaledSlideWrapper>
-                {renderSlideContent(slide, false)}
-              </ScaledSlideWrapper>
+              <div className="transform scale-[0.2] flex pointer-events-none justify-center items-center origin-top-left w-[500%] h-[500%]">
+                {renderSlideContent(slide, false, { enableTextReplacer: false })}
+              </div>
             </div>
           ) : (
             <div className="w-full h-full flex flex-col gap-2 items-center justify-center bg-gray-50 pointer-events-none">

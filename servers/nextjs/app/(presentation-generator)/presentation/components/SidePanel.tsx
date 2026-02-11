@@ -281,7 +281,7 @@ const SidePanel = ({
                         <div className="absolute bg-gray-100/5 z-50  top-0 left-0 w-full h-full" />
                         <div className="w-full h-full">
                           <ScaledSlideWrapper>
-                            {renderSlideContent(slide, false)}
+                            {renderSlideContent(slide, false, { enableTextReplacer: false })}
                           </ScaledSlideWrapper>
                         </div>
                       </div>
@@ -303,7 +303,7 @@ const SidePanel = ({
                           selectedSlide={selectedSlide}
                           onSlideClick={onSlideClick}
                           renderSlideContent={(slide) =>
-                            renderSlideContent(slide, false)
+                            renderSlideContent(slide, false, { enableTextReplacer: false })
                           }
                         />
                       ))}
