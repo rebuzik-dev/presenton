@@ -8,7 +8,7 @@ import SidePanel from "./SidePanel";
 import SlideContent from "./SlideContent";
 import Header from "./Header";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Help from "./Help";
@@ -28,6 +28,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   presentation_id,
 }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const templateFont = (searchParams.get("font") || "Inter").trim() || "Inter";
+  const externalFontUrl = searchParams.get("font_url")?.trim() || "";
   // State management
   const [loading, setLoading] = useState(true);
   const [selectedSlide, setSelectedSlide] = useState(0);
@@ -87,10 +90,12 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     if (!loading && !isStreaming && presentationData?.slides && presentationData?.slides.length > 0) {
       const presentation_id = presentationData?.slides[0].layout.split(":")[0].split("custom-")[1];
       const fonts = getCustomTemplateFonts(presentation_id);
-
-      useFontLoader(fonts || []);
+      const mergedFonts = [...(fonts || []), ...(externalFontUrl ? [externalFontUrl] : [])];
+      useFontLoader(mergedFonts);
+    } else if (externalFontUrl) {
+      useFontLoader([externalFontUrl]);
     }
-  }, [presentationData, loading, isStreaming]);
+  }, [presentationData, loading, isStreaming, externalFontUrl]);
   // Presentation Mode View
   if (isPresentMode) {
     return (
@@ -150,6 +155,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
           <div
             id="presentation-slides-wrapper"
             className="mx-auto flex flex-col items-center overflow-hidden justify-center p-2 sm:p-6 pt-0"
+            style={{ ["--template-font" as any]: templateFont }}
           >
             {!presentationData ||
               loading ||

@@ -73,7 +73,7 @@ const dynamicSlideLayout: React.FC<HeaderThreeImageCardsSlideLayoutProps> = ({ d
   const cards = slideData?.cards || []
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden font-['Inter']">
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
       <div className="h-full px-[72px] pt-12 pb-12">
         <div className="text-[52px] leading-[58px] font-[900] uppercase text-[#3f3f3f]">
           {slideData?.title || "ПРЕДЛОЖЕНИЯ ПО ДЕКОРУ"}
@@ -100,4 +100,5 @@ const dynamicSlideLayout: React.FC<HeaderThreeImageCardsSlideLayoutProps> = ({ d
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 
