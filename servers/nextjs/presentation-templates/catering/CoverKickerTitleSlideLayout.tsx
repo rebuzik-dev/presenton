@@ -56,7 +56,7 @@ const dynamicSlideLayout: React.FC<CoverKickerTitleSlideLayoutProps> = ({ data: 
       </div>
 
       <div className="relative h-full px-20 pt-44">
-        <div className="text-[30px] leading-[36px] text-[#3f3f3f] font-[500] overflow-hidden">
+        <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500] overflow-hidden">
           {slideData?.kicker || "Концепция кейтеринга"}
         </div>
 

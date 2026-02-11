@@ -103,12 +103,12 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
-            <div className="text-[26px] leading-[30px] text-[#3f3f3f] font-[500]">
+            <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500]">
               {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(0, 2).join(" ")}
               <br />
               {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(2).join(" ") || " "}
             </div>
-            <div className="text-[26px] leading-[30px] text-[#3f3f3f] font-[500]">
+            <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500]">
               {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
               <br />
               {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(1).join(" ")}

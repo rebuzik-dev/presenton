@@ -82,17 +82,17 @@ const dynamicSlideLayout: React.FC<HeaderTextBulletsImageSlideLayoutProps> = ({ 
 
         <div className="mt-8 grid grid-cols-[1fr_1.35fr] gap-10 items-start">
           <div className="pt-1">
-            <div className="text-[30px] leading-[36px] font-[800] text-[#3f3f3f]">
+            <div className="text-[24px] leading-[32px] font-[700] text-[#3f3f3f]">
               {(slideData?.lead || "Меню формируется по функциональной логике.").split(" ").slice(0, 3).join(" ")}
               <br />
               {(slideData?.lead || "Меню формируется по функциональной логике.").split(" ").slice(3).join(" ")}
             </div>
 
-            <div className="mt-7 text-[28px] leading-[34px] font-[600] text-[#3f3f3f]">
+            <div className="mt-7 text-[24px] leading-[32px] font-[600] text-[#3f3f3f]">
               {slideData?.listTitle || "Принципы:"}
             </div>
 
-            <ul className="mt-5 space-y-5 text-[26px] leading-[32px] font-[500] text-[#3f3f3f]">
+            <ul className="mt-5 space-y-5 text-[24px] leading-[32px] font-[500] text-[#3f3f3f]">
               {bullets.map((t, idx) => (
                 <li key={idx} className="flex gap-4">
                   <span className="mt-[14px] w-2.5 h-1 bg-[#3f3f3f] flex-shrink-0"></span>
@@ -101,7 +101,7 @@ const dynamicSlideLayout: React.FC<HeaderTextBulletsImageSlideLayoutProps> = ({ 
               ))}
             </ul>
 
-            <div className="mt-7 text-[26px] leading-[32px] font-[500] text-[#3f3f3f] max-w-[420px]">
+            <div className="mt-7 text-[24px] leading-[32px] font-[500] text-[#3f3f3f] max-w-[420px]">
               {slideData?.footerNote || "Фокус — удобство и скорость потребления."}
             </div>
           </div>
