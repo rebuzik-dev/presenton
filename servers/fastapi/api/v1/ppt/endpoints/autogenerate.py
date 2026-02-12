@@ -97,6 +97,7 @@ async def autogenerate_presentation(
                 
                 layout_model = await get_layout_by_name(
                     request.template,
+                    ordered=request.ordered,
                     auth_token=auth_token,
                     api_key=api_key,
                 )

@@ -20,10 +20,14 @@ class GeneratePresentationRequest(BaseModel):
     web_search: bool = Field(default=False, description="Whether to enable web search")
     n_slides: int = Field(default=8, description="Number of slides to generate")
     language: str = Field(
-        default="English", description="Language for the presentation"
+        default="Russian", description="Language for the presentation"
     )
     template: str = Field(
         default="general", description="Template to use for the presentation"
+    )
+    ordered: Optional[bool] = Field(
+        default=None,
+        description="Override template layout ordering: true for strict sequence, false for smart selection",
     )
     include_table_of_contents: bool = Field(
         default=False, description="Whether to include a table of contents"
