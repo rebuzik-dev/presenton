@@ -22,12 +22,31 @@ Use these constraints when fixing clipping or creating a new layout in `servers/
   - `text-[22px]..text-[28px]`
   - `leading-[29px]..leading-[34px]`
 
+## Consistency Standard (Mandatory)
+
+- Keep text styling unified across slides in the same template.
+- Base content style (default):
+  - `text-[24px] leading-[32px] font-[500]`
+- Allow intentional deviation only for:
+  - main slide titles
+  - section/column headers
+  - small utility labels (e.g., hex codes, micro captions)
+- Keep semantic blocks visually single.
+  - If text is one thought, render it as one block and one weight.
+  - Avoid splitting one sentence into mixed bold/regular unless explicitly requested.
+- Keep mirrored columns visually symmetric.
+  - Same separator behavior (both present or both absent).
+  - Same top spacing after headers.
+  - Comparable bottom breathing room.
+
 ## High-Risk Patterns
 
 - `overflow-hidden` on text elements with variable content.
 - Tall fixed blocks (`h-[500px]+`) combined with large headings.
 - Large gaps (`mt-12+`, `space-y-8+`) in dense compositions.
 - Multi-line uppercase headers with aggressive font size.
+- Inconsistent body typography across neighboring slides.
+- Left/right column asymmetry without semantic intent.
 
 ## Anti-Clipping Fix Order
 
@@ -36,6 +55,13 @@ Use these constraints when fixing clipping or creating a new layout in `servers/
 3. Reduce top margins and section spacing.
 4. Reduce fixed card/image heights.
 5. Only then adjust outer paddings.
+
+## Consistency Check Before Done
+
+1. Compare all slides in one template and normalize body/list text classes.
+2. Verify heading differences are intentional and limited to hierarchy.
+3. Verify two-column slides have consistent separators and spacing logic.
+4. Verify no semantic sentence is split into mixed weights by accident.
 
 ## Template Discovery Rules
 

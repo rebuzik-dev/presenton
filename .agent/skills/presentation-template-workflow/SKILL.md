@@ -46,7 +46,20 @@ Use this workflow to safely modify and create slide layouts that render inside a
   - vertical margins (`mt-*`, `pt-*`, `pb-*`)
 - Use the constraints guide in `references/layout-constraints.md`.
 
-5. Validate quickly before finishing.
+5. Enforce visual consistency across the whole template.
+- Keep non-heading text unified across slides unless there is a clear semantic reason.
+- Default body/list text standard: `text-[24px] leading-[32px] font-[500]`.
+- Keep differences only for:
+  - main slide title
+  - section/column headers
+  - compact utility labels (e.g. hex codes, tiny overlays)
+- Keep semantically single text as a single visual block.
+  - Do not split one phrase into mixed weights unless explicitly requested.
+- Keep mirrored structures symmetric.
+  - If one column has a separator or spacing pattern, match it in the opposite column.
+  - If asymmetry is intentional, document it in a short code comment.
+
+6. Validate quickly before finishing.
 - Check template file discovery:
   - `rg --files servers/nextjs/presentation-templates/<template-id>`
 - Check required exports:
@@ -54,6 +67,10 @@ Use this workflow to safely modify and create slide layouts that render inside a
 - Check obvious clipping risk:
   - search for aggressive heights and hidden overflow in text-heavy zones.
 - If visual bug report exists, confirm each reported symptom is mapped to a concrete CSS/class change.
+- Check typography drift:
+  - verify body/list text sizes and leading are consistent in all slides of the template.
+- Check structural symmetry:
+  - compare left/right column separators, spacing, and vertical rhythm in two-column layouts.
 
 ## Change Patterns
 
