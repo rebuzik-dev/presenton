@@ -25,6 +25,7 @@ import { AuthUser, UserRole, usersService } from "../../services/api/users";
 const AVAILABLE_ROLES: UserRole[] = ["admin", "editor", "viewer"];
 
 const ROLE_BADGE_CLASS: Record<UserRole, string> = {
+  superadmin: "bg-amber-100 text-amber-800 hover:bg-amber-100",
   admin: "bg-red-100 text-red-800 hover:bg-red-100",
   editor: "bg-blue-100 text-blue-800 hover:bg-blue-100",
   viewer: "bg-gray-100 text-gray-800 hover:bg-gray-100",
@@ -33,6 +34,7 @@ const ROLE_BADGE_CLASS: Record<UserRole, string> = {
 export default function UserManagement() {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [draftRoles, setDraftRoles] = useState<Record<string, UserRole>>({});
@@ -45,6 +47,7 @@ export default function UserManagement() {
         usersService.getAll(),
       ]);
       setCurrentUserId(me.id);
+      setCurrentUserRole(me.role);
       setUsers(allUsers);
       setDraftRoles(
         Object.fromEntries(allUsers.map((user) => [user.id, user.role])) as Record<
@@ -68,11 +71,26 @@ export default function UserManagement() {
   };
 
   const handleSaveRole = async (user: AuthUser) => {
+    if (currentUserRole !== "superadmin" && currentUserRole !== "admin") {
+      toast.error("Insufficient permissions to change roles");
+      return;
+    }
+
     const nextRole = draftRoles[user.id];
     if (!nextRole || nextRole === user.role) return;
-    if (user.id === currentUserId && user.role === "admin" && nextRole !== "admin") {
-      toast.error("You cannot remove your own admin role");
+    if (user.role === "superadmin") {
+      toast.error("Superadmin role cannot be changed from UI");
       return;
+    }
+    if (currentUserRole === "admin") {
+      if (user.role === "admin") {
+        toast.error("Only superadmin can modify admin accounts");
+        return;
+      }
+      if (nextRole === "admin") {
+        toast.error("Only superadmin can grant admin role");
+        return;
+      }
     }
 
     try {
@@ -135,6 +153,16 @@ export default function UserManagement() {
               users.map((user) => {
                 const isDirty = draftRoles[user.id] && draftRoles[user.id] !== user.role;
                 const isUpdating = updatingUserId === user.id;
+                const isSuperadminTarget = user.role === "superadmin";
+                const isAdminTarget = user.role === "admin";
+                const isDisabledByRole =
+                  currentUserRole !== "superadmin" && currentUserRole !== "admin";
+                const isLockedTarget =
+                  isSuperadminTarget || (currentUserRole === "admin" && isAdminTarget);
+                const editableRoles: UserRole[] =
+                  currentUserRole === "superadmin"
+                    ? AVAILABLE_ROLES
+                    : ["editor", "viewer"];
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
@@ -147,22 +175,26 @@ export default function UserManagement() {
                       <Badge className={ROLE_BADGE_CLASS[user.role]}>{user.role}</Badge>
                     </TableCell>
                     <TableCell className="w-[180px]">
-                      <Select
-                        value={draftRoles[user.id]}
-                        onValueChange={(value) => handleRoleChange(user.id, value as UserRole)}
-                        disabled={isUpdating}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AVAILABLE_ROLES.map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {role}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {isLockedTarget ? (
+                        <span className="text-sm text-gray-500">Locked</span>
+                      ) : (
+                        <Select
+                          value={draftRoles[user.id]}
+                          onValueChange={(value) => handleRoleChange(user.id, value as UserRole)}
+                          disabled={isUpdating || isDisabledByRole}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {editableRoles.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                {role}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {formatDate(user.created_at)}
@@ -171,7 +203,7 @@ export default function UserManagement() {
                       <Button
                         size="sm"
                         onClick={() => handleSaveRole(user)}
-                        disabled={!isDirty || isUpdating}
+                        disabled={!isDirty || isUpdating || isLockedTarget || isDisabledByRole}
                       >
                         {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
                       </Button>
