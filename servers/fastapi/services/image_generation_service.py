@@ -112,8 +112,32 @@ class ImageGenerationService:
             raise Exception(f"Image not found at {image_path}")
 
         except Exception as e:
-            print(f"Error generating image: {e}")
+            print(
+                f"Error generating image with provider {self.image_gen_func}: {e}. "
+                f"Prompt: {image_prompt[:120]}"
+            )
             return "/static/images/placeholder.jpg"
+
+    async def _download_image_from_url(self, image_url: str, output_directory: str) -> str:
+        os.makedirs(output_directory, exist_ok=True)
+        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.png")
+
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            response = await session.get(
+                image_url,
+                timeout=aiohttp.ClientTimeout(total=60),
+            )
+            if response.status != 200:
+                body = await response.text()
+                raise Exception(
+                    f"Failed to download generated image. Status={response.status}, Body={body[:300]}"
+                )
+            image_bytes = await response.read()
+
+        with open(image_path, "wb") as f:
+            f.write(image_bytes)
+
+        return image_path
 
     async def generate_image_openai(
         self,
@@ -125,18 +149,53 @@ class ImageGenerationService:
         base_url: str | None = None,
     ) -> str:
         client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-        result = await client.images.generate(
-            model=model,
-            prompt=prompt,
-            n=1,
-            quality=quality,
-            response_format="b64_json" if model == "dall-e-3" else NOT_GIVEN,
-            size="1024x1024",
-        )
+
+        request_params = {
+            "model": model,
+            "prompt": prompt,
+            "n": 1,
+            "quality": quality,
+            "response_format": "b64_json" if model == "dall-e-3" else NOT_GIVEN,
+            "size": "1024x1024",
+        }
+
+        try:
+            result = await client.images.generate(**request_params)
+        except Exception as first_error:
+            # Fallback for partially OpenAI-compatible providers that don't support
+            # quality / response_format / size the same way as OpenAI.
+            print(
+                f"Primary image generation params failed for model '{model}' at '{base_url}': {first_error}. "
+                f"Retrying with minimal params."
+            )
+            result = await client.images.generate(
+                model=model,
+                prompt=prompt,
+                n=1,
+            )
+
+        if not result.data:
+            raise Exception("Image provider returned empty data list")
+
+        first_item = result.data[0]
+        image_b64 = getattr(first_item, "b64_json", None)
+        image_url = getattr(first_item, "url", None)
+
+        os.makedirs(output_directory, exist_ok=True)
         image_path = os.path.join(output_directory, f"{uuid.uuid4()}.png")
-        with open(image_path, "wb") as f:
-            f.write(base64.b64decode(result.data[0].b64_json))
-        return image_path
+
+        if image_b64:
+            with open(image_path, "wb") as f:
+                f.write(base64.b64decode(image_b64))
+            return image_path
+
+        if image_url:
+            return await self._download_image_from_url(image_url, output_directory)
+
+        raise Exception(
+            f"Image provider returned unsupported payload. "
+            f"Expected 'b64_json' or 'url', got keys: {list(first_item.__dict__.keys()) if hasattr(first_item, '__dict__') else 'unknown'}"
+        )
 
     async def generate_image_openai_dalle3(
         self, prompt: str, output_directory: str
