@@ -1,16 +1,18 @@
 services:
-  production:
-    # image: ghcr.io/presenton/presenton:latest
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
+    working_dir: /app/servers/fastapi
+    command: ["python", "server.py", "--port", "8000", "--reload", "false"]
     ports:
-      # You can replace 5000 with any other port number of your choice to run Presenton on a different port number.
-      - "5000:5000"
       - "8080:8000"
     volumes:
       - ./app_data:/app_data
     environment:
+      - APP_DATA_DIRECTORY=/app_data
+      - USER_CONFIG_PATH=/app_data/userConfig.json
+      - TEMP_DIRECTORY=/tmp/presenton
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ALGORITHM=${JWT_ALGORITHM}
@@ -44,3 +46,16 @@ services:
       - IMAGE_GEN_BASE_URL=${IMAGE_GEN_BASE_URL}
       - IMAGE_GEN_MODEL=${IMAGE_GEN_MODEL}
       - IMAGE_PROVIDER=${IMAGE_PROVIDER}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app/servers/nextjs
+    command: ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"]
+    depends_on:
+      - backend
+    ports:
+      - "5000:3000"
+    environment:
+      - NEXT_INTERNAL_API_URL=http://backend:8000

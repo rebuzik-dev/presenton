@@ -4,6 +4,8 @@ import path from "path";
 // Load environment variables from the root .env file
 dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 
+const backendBaseUrl = process.env.NEXT_INTERNAL_API_URL || "http://backend:8000";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
@@ -15,11 +17,11 @@ const nextConfig = {
     return [
       {
         source: '/app_data/:path*',
-        destination: 'http://localhost:8000/app_data/:path*',
+        destination: `${backendBaseUrl}/app_data/:path*`,
       },
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:8000/api/v1/:path*',
+        destination: `${backendBaseUrl}/api/v1/:path*`,
       },
     ];
   },
