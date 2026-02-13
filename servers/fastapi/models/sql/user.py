@@ -16,8 +16,8 @@ class UserModel(SQLModel, table=True):
     )
     password_hash: str = Field(sa_column=Column(String, nullable=False))
     role: str = Field(
-        sa_column=Column(String, nullable=False, default="editor"),
-        default="editor",
+        sa_column=Column(String, nullable=False, default="viewer"),
+        default="viewer",
     )
     is_active: bool = Field(
         sa_column=Column(Boolean, nullable=False, default=True),

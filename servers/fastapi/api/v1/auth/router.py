@@ -45,11 +45,16 @@ async def register_user(
     is_first_user = any_user.scalar_one_or_none() is None
 
     if is_first_user:
-        role = UserRole.admin
-    elif request.role and current_user and current_user.role == UserRole.admin.value:
+        role = UserRole.superadmin
+    elif (
+        request.role
+        and request.role != UserRole.superadmin
+        and current_user
+        and current_user.role == UserRole.superadmin.value
+    ):
         role = request.role
     else:
-        role = UserRole.editor
+        role = UserRole.viewer
 
     user = await create_user(session, request.username, request.password, role)
     return UserPublic(
@@ -134,6 +139,37 @@ async def update_user_role(
     user = await session.get(UserModel, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if role == UserRole.superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superadmin role cannot be assigned via this endpoint",
+        )
+
+    is_current_superadmin = current_user.role == UserRole.superadmin.value
+    is_target_superadmin = user.role == UserRole.superadmin.value
+
+    if is_target_superadmin and not is_current_superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superadmin can modify superadmin account",
+        )
+
+    if current_user.id == user.id and is_current_superadmin and role != UserRole.superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superadmin cannot remove own superadmin role",
+        )
+
+    if (
+        current_user.role == UserRole.admin.value
+        and (user.role == UserRole.admin.value or role == UserRole.admin)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superadmin can grant or revoke admin role",
+        )
+
     user.role = role.value
     session.add(user)
     await session.commit()
@@ -158,9 +194,15 @@ async def create_api_key_endpoint(
     current_user: UserModel = Depends(get_current_user),
 ):
     target_user_id = current_user.id
-    if request.user_id and current_user.role == UserRole.admin.value:
+    if request.user_id and current_user.role in {
+        UserRole.admin.value,
+        UserRole.superadmin.value,
+    }:
         target_user_id = request.user_id
-    elif request.user_id and current_user.role != UserRole.admin.value:
+    elif request.user_id and current_user.role not in {
+        UserRole.admin.value,
+        UserRole.superadmin.value,
+    }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can create API keys for other users",
@@ -188,9 +230,15 @@ async def list_api_keys(
     current_user: UserModel = Depends(get_current_user),
 ):
     target_user_id = current_user.id
-    if user_id and current_user.role == UserRole.admin.value:
+    if user_id and current_user.role in {
+        UserRole.admin.value,
+        UserRole.superadmin.value,
+    }:
         target_user_id = user_id
-    elif user_id and current_user.role != UserRole.admin.value:
+    elif user_id and current_user.role not in {
+        UserRole.admin.value,
+        UserRole.superadmin.value,
+    }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can list API keys for other users",
@@ -226,7 +274,10 @@ async def revoke_api_key(
     if not api_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found")
 
-    if api_key.user_id != current_user.id and current_user.role != UserRole.admin.value:
+    if api_key.user_id != current_user.id and current_user.role not in {
+        UserRole.admin.value,
+        UserRole.superadmin.value,
+    }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not allowed to revoke this API key",

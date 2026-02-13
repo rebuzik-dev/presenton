@@ -16,6 +16,7 @@ from services.template_service import template_service
 
 async def get_layout_by_name(
     layout_name: str,
+    ordered: Optional[bool] = None,
     auth_token: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> PresentationLayoutModel:
@@ -49,24 +50,29 @@ async def get_layout_by_name(
     if template:
         # System templates: fetch layout from Next.js (it has the TSX components)
         if template.is_system:
+            resolved_ordered = ordered if ordered is not None else template.ordered
             return await _fetch_layout_from_nextjs(
                 layout_name,
-                template.ordered,
+                resolved_ordered,
                 auth_token=auth_token,
                 api_key=api_key,
             )
         
         # Custom templates: prefer DB-backed layouts when available
         if template.layouts:
-            return _build_layout_from_db(template)
+            layout = _build_layout_from_db(template)
+            if ordered is not None:
+                layout.ordered = ordered
+            return layout
 
         # Legacy custom templates store raw layout code in presentation_layout_codes and
         # must be resolved through Next.js schema extraction.
         # For compatibility, legacy schema loading still expects `custom-<template_uuid>` group.
         legacy_group_name = f"custom-{template.id}"
+        resolved_ordered = ordered if ordered is not None else template.ordered
         return await _fetch_layout_from_nextjs(
             legacy_group_name,
-            template.ordered,
+            resolved_ordered,
             auth_token=auth_token,
             api_key=api_key,
         )
@@ -74,6 +80,7 @@ async def get_layout_by_name(
     # Fallback: try Next.js directly (for backwards compatibility)
     return await _fetch_layout_from_nextjs(
         layout_name,
+        ordered=ordered,
         auth_token=auth_token,
         api_key=api_key,
     )

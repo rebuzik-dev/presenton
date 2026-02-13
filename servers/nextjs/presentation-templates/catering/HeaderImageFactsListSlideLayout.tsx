@@ -78,7 +78,7 @@ const dynamicSlideLayout: React.FC<HeaderImageFactsListSlideLayoutProps> = ({ da
   const listItems = slideData?.listItems || []
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden font-['Inter']">
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
       <div className="h-full px-[72px] pt-12 pb-12">
         <div className="text-[52px] leading-[58px] font-[900] uppercase text-[#3f3f3f]">
           {slideData?.title || "ОБЩАЯ ИНФОРМАЦИЯ"}
@@ -97,16 +97,16 @@ const dynamicSlideLayout: React.FC<HeaderImageFactsListSlideLayoutProps> = ({ da
             <div className="space-y-6">
               {facts.map((f, idx) => (
                 <div key={idx}>
-                  <div className="text-[24px] leading-[29px] font-[800] text-[#3f3f3f]">{f.label}</div>
-                  <div className="mt-2 text-[24px] leading-[29px] font-[500] text-[#3f3f3f]">{f.value}</div>
+                  <div className="text-[24px] leading-[32px] font-[800] text-[#3f3f3f]">{f.label}</div>
+                  <div className="mt-2 text-[24px] leading-[32px] font-[500] text-[#3f3f3f]">{f.value}</div>
                 </div>
               ))}
 
               <div>
-                <div className="text-[24px] leading-[29px] font-[800] text-[#3f3f3f]">
+                <div className="text-[24px] leading-[32px] font-[800] text-[#3f3f3f]">
                   {slideData?.listTitle || "Ассортимент"}
                 </div>
-                <ul className="mt-3 space-y-2 text-[24px] leading-[29px] font-[500] text-[#3f3f3f]">
+                <ul className="mt-3 space-y-2 text-[24px] leading-[32px] font-[500] text-[#3f3f3f]">
                   {listItems.map((t, idx) => (
                     <li key={idx} className="flex gap-3 items-start">
                       <span className="mt-[12px] w-2.5 h-1 bg-[#3f3f3f] flex-shrink-0"></span>
@@ -125,4 +125,5 @@ const dynamicSlideLayout: React.FC<HeaderImageFactsListSlideLayoutProps> = ({ da
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 

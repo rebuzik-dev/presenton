@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Loader2, Download, CheckCircle, Key, Settings } from "lucide-react";
+import { Loader2, Download, CheckCircle, Key, Settings, Users } from "lucide-react";
 import { toast } from "sonner";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
@@ -16,6 +16,7 @@ import { LLMConfig } from "@/types/llm_config";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ApiKeyManagement from "./components/ApiKeyManagement";
+import UserManagement from "./components/UserManagement";
 
 // Button state interface
 interface ButtonState {
@@ -43,6 +44,7 @@ const SettingsPage = () => {
   });
 
   const [activeTab, setActiveTab] = useState("general");
+  const [canManageUsers, setCanManageUsers] = useState(false);
 
   const [downloadingModel, setDownloadingModel] = useState<{
     name: string;
@@ -153,6 +155,12 @@ const SettingsPage = () => {
     }
   }, [canChangeKeys, router]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const role = localStorage.getItem("auth_role");
+    setCanManageUsers(role === "admin" || role === "superadmin");
+  }, []);
+
   if (!canChangeKeys) {
     return null;
   }
@@ -173,6 +181,12 @@ const SettingsPage = () => {
                 <Key className="w-4 h-4" />
                 API Keys
               </TabsTrigger>
+              {canManageUsers && (
+                <TabsTrigger value="users" className="gap-2">
+                  <Users className="w-4 h-4" />
+                  Users
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -193,6 +207,14 @@ const SettingsPage = () => {
               <ApiKeyManagement />
             </div>
           </TabsContent>
+
+          {canManageUsers && (
+            <TabsContent value="users" className="flex-1 overflow-y-auto mt-0 border-none p-6 pt-0 outline-none custom_scrollbar">
+              <div className="max-w-3xl mx-auto">
+                <UserManagement />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
 

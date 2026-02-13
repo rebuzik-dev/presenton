@@ -130,6 +130,8 @@ async def get_current_user_or_api_key(
 
 def require_roles(*roles: UserRole) -> Callable[[UserModel], UserModel]:
     allowed = {role.value for role in roles}
+    if UserRole.admin.value in allowed:
+        allowed.add(UserRole.superadmin.value)
 
     async def checker(
         user: UserModel = Depends(get_current_user_or_api_key),

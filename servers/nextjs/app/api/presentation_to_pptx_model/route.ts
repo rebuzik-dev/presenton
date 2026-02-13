@@ -79,11 +79,13 @@ async function getPresentationId(request: NextRequest) {
 function getRequestAuth(request: NextRequest): {
   token: string | null;
   apiKey: string | null;
+  font: string | null;
 } {
   const authorization = request.headers.get("authorization");
   const headerApiKey = request.headers.get("x-api-key");
   const queryToken = request.nextUrl.searchParams.get("token");
   const queryApiKey = request.nextUrl.searchParams.get("api_key");
+  const queryFont = request.nextUrl.searchParams.get("font");
   const cookieToken = request.cookies.get("auth_token")?.value;
 
   let token: string | null = null;
@@ -95,12 +97,13 @@ function getRequestAuth(request: NextRequest): {
   return {
     token,
     apiKey: headerApiKey || queryApiKey || null,
+    font: queryFont || null,
   };
 }
 
 async function getBrowserAndPage(
   id: string,
-  auth: { token: string | null; apiKey: string | null }
+  auth: { token: string | null; apiKey: string | null; font: string | null }
 ): Promise<[Browser, Page]> {
   const browser = await puppeteer.launch({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -134,6 +137,9 @@ async function getBrowserAndPage(
   }
   if (auth.apiKey) {
     pdfMakerParams.set("api_key", auth.apiKey);
+  }
+  if (auth.font) {
+    pdfMakerParams.set("font", auth.font);
   }
   const pdfMakerUrl = `${baseUrl}/pdf-maker?${pdfMakerParams.toString()}`;
   console.log(`PPTX Model Gen: Navigating to ${baseUrl}/pdf-maker?id=${id}`);

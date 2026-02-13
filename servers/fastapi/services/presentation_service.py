@@ -6,6 +6,7 @@ import random
 import traceback
 import uuid
 from datetime import datetime
+from urllib.parse import quote_plus
 from typing import List, Optional
 
 import dirtyjson
@@ -76,6 +77,7 @@ class PresentationService:
         include_table_of_contents: bool = False,
         include_title_slide: bool = True,
         web_search: bool = False,
+        template_font: Optional[str] = None,
     ) -> PresentationModel:
         logger.info(f"Creating presentation with content length: {len(content)}")
         if include_table_of_contents and n_slides < 3:
@@ -98,6 +100,7 @@ class PresentationService:
             include_table_of_contents=include_table_of_contents,
             include_title_slide=include_title_slide,
             web_search=web_search,
+            template_font=template_font.strip() if template_font else None,
         )
 
         sql_session.add(presentation)
@@ -379,7 +382,10 @@ class PresentationService:
             if export_as:
                 logger.info(f"Exporting presentation as {export_as}...")
                 presentation_and_path = await export_presentation(
-                    presentation_id, presentation.title or str(uuid.uuid4()), export_as
+                    presentation_id,
+                    presentation.title or str(uuid.uuid4()),
+                    export_as,
+                    template_font=presentation.template_font,
                 )
                 response_data = presentation_and_path.model_dump()
             else:
@@ -391,7 +397,11 @@ class PresentationService:
             # Response for webhook/status
             response = PresentationPathAndEditPath(
                 **response_data,
-                edit_path=f"/presentation?id={presentation_id}",
+                edit_path=(
+                    f"/presentation?id={presentation_id}&font={quote_plus(presentation.template_font)}"
+                    if presentation.template_font
+                    else f"/presentation?id={presentation_id}"
+                ),
             )
             
             # Update Async Status

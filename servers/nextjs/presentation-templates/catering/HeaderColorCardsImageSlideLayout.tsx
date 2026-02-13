@@ -95,7 +95,7 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
   }
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden font-['Inter']">
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
       <div className="h-full px-[68px] pt-10 pb-10 grid grid-cols-[1.05fr_0.95fr] gap-9">
         <div className="flex flex-col min-h-0">
           <div className="text-[46px] leading-[52px] font-[900] uppercase text-[#3f3f3f]">
@@ -103,12 +103,12 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
-            <div className="text-[26px] leading-[30px] text-[#3f3f3f] font-[500]">
+            <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500]">
               {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(0, 2).join(" ")}
               <br />
               {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(2).join(" ") || " "}
             </div>
-            <div className="text-[26px] leading-[30px] text-[#3f3f3f] font-[500]">
+            <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500]">
               {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
               <br />
               {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(1).join(" ")}
@@ -139,4 +139,5 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 

@@ -1,13 +1,13 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter, usePathname } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation";
 import LoadingStates from "../components/LoadingStates";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Home, Trash2, Code, Save, X, Pencil } from "lucide-react";
+import { ArrowLeft, Home, Trash2, Code, Save, X, Pencil, ChevronsUpDown } from "lucide-react";
 import { useLayout } from "@/app/(presentation-generator)/context/LayoutContext";
 import Editor from "react-simple-code-editor";
 import { highlight, languages } from "prismjs";
@@ -21,10 +21,29 @@ import { useFontLoader } from "../../hooks/useFontLoader";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { getHeader } from "../../services/api/header";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+type FontOption = { family: string; cssUrl?: string };
+
+const FONT_OPTIONS: FontOption[] = [
+  { family: "Inter" },
+  { family: "Arial" },
+  { family: "Helvetica" },
+  { family: "Georgia" },
+  { family: "Times New Roman" },
+  { family: "Montserrat", cssUrl: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" },
+  { family: "Poppins", cssUrl: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" },
+  { family: "Manrope", cssUrl: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" },
+  { family: "Roboto", cssUrl: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" },
+  { family: "Open Sans", cssUrl: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" },
+  { family: "Lora", cssUrl: "https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" },
+  { family: "Playfair Display", cssUrl: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&display=swap" },
+];
 
 const GroupLayoutPreview = () => {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const rawSlug = ((): string => {
     const value: any = (params as any)?.slug;
     if (typeof value === "string") return value;
@@ -32,6 +51,10 @@ const GroupLayoutPreview = () => {
     return "";
   })();
   const pathname = usePathname();
+  const [previewFontFamily, setPreviewFontFamily] = useState("Inter");
+  const [previewFontUrl, setPreviewFontUrl] = useState("");
+  const [fontPickerOpen, setFontPickerOpen] = useState(false);
+  const [fontSearch, setFontSearch] = useState("");
 
   const { getFullDataByTemplateID, loading, refetch } = useLayout();
   const layoutGroup = getFullDataByTemplateID(rawSlug);
@@ -63,6 +86,25 @@ const GroupLayoutPreview = () => {
 
   const isValidSlug = (value: string) =>
     /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(value);
+
+  useEffect(() => {
+    const initialFont = (searchParams.get("font") || "Inter").trim();
+    const initialFontUrl = (searchParams.get("font_url") || "").trim();
+    setPreviewFontFamily(initialFont || "Inter");
+    setPreviewFontUrl(initialFontUrl);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (previewFontUrl) {
+      useFontLoader([previewFontUrl]);
+    }
+  }, [previewFontUrl]);
+
+  const filteredFontOptions = useMemo(() => {
+    const q = fontSearch.trim().toLowerCase();
+    if (!q) return FONT_OPTIONS;
+    return FONT_OPTIONS.filter((f) => f.family.toLowerCase().includes(q));
+  }, [fontSearch]);
 
 
 
@@ -327,6 +369,88 @@ const GroupLayoutPreview = () => {
               </p>
             )}
           </div>
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+            <div className="space-y-1">
+              <Label htmlFor="preview-font-family">Font Family</Label>
+              <Popover open={fontPickerOpen} onOpenChange={setFontPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="preview-font-family"
+                    variant="outline"
+                    className="w-full justify-between"
+                  >
+                    <span className="truncate">{previewFontFamily || "Select font"}</span>
+                    <ChevronsUpDown className="w-4 h-4 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[420px] p-3" align="start">
+                  <div className="space-y-3">
+                    <Input
+                      value={fontSearch}
+                      onChange={(e) => setFontSearch(e.target.value)}
+                      placeholder="Search font..."
+                    />
+                    <div className="overflow-x-auto pb-1">
+                      <div className="flex gap-2 min-w-max">
+                        {filteredFontOptions.length > 0 ? (
+                          filteredFontOptions.map((option) => (
+                            <button
+                              key={option.family}
+                              type="button"
+                              className={`px-3 py-2 rounded-md border text-sm whitespace-nowrap transition-colors ${
+                                previewFontFamily === option.family
+                                  ? "bg-blue-600 text-white border-blue-600"
+                                  : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+                              }`}
+                              onClick={() => {
+                                setPreviewFontFamily(option.family);
+                                if (option.cssUrl !== undefined) {
+                                  setPreviewFontUrl(option.cssUrl);
+                                }
+                                setFontPickerOpen(false);
+                              }}
+                            >
+                              {option.family}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-sm text-gray-500 px-2 py-1">No fonts found</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="preview-font-url">Font CSS URL (optional)</Label>
+              <Input
+                id="preview-font-url"
+                value={previewFontUrl}
+                onChange={(e) => setPreviewFontUrl(e.target.value)}
+                placeholder="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const params = new URLSearchParams(window.location.search);
+                if (previewFontFamily.trim()) {
+                  params.set("font", previewFontFamily.trim());
+                } else {
+                  params.delete("font");
+                }
+                if (previewFontUrl.trim()) {
+                  params.set("font_url", previewFontUrl.trim());
+                } else {
+                  params.delete("font_url");
+                }
+                router.replace(`${pathname}?${params.toString()}`);
+              }}
+            >
+              Apply
+            </Button>
+          </div>
 
         </div>
       </header>
@@ -388,7 +512,9 @@ const GroupLayoutPreview = () => {
 
                 {/* Layout Content */}
                 <div className="bg-gray-50 aspect-video max-w-[1280px] w-full">
-                  <LayoutComponent data={sampleData} />
+                  <div style={{ ["--template-font" as any]: previewFontFamily }}>
+                    <LayoutComponent data={sampleData} />
+                  </div>
                 </div>
               </Card>
             );

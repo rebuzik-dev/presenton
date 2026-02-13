@@ -48,7 +48,7 @@ interface CoverKickerTitleSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<CoverKickerTitleSlideLayoutProps> = ({ data: slideData }) => {
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden font-['Inter']">
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
       <div className="absolute inset-0">
         <div className="absolute -top-32 -left-40 w-[720px] h-[520px] rounded-full bg-[#EAEAEA] opacity-60 blur-2xl"></div>
         <div className="absolute -bottom-40 -right-48 w-[880px] h-[640px] rounded-full bg-[#D8D6D3] opacity-55 blur-2xl"></div>
@@ -56,7 +56,7 @@ const dynamicSlideLayout: React.FC<CoverKickerTitleSlideLayoutProps> = ({ data: 
       </div>
 
       <div className="relative h-full px-20 pt-44">
-        <div className="text-[30px] leading-[36px] text-[#3f3f3f] font-[500] overflow-hidden">
+        <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500] overflow-hidden">
           {slideData?.kicker || "Концепция кейтеринга"}
         </div>
 
@@ -70,4 +70,5 @@ const dynamicSlideLayout: React.FC<CoverKickerTitleSlideLayoutProps> = ({ data: 
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 
