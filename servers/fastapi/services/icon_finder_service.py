@@ -3,13 +3,13 @@ import json
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
-
+from utils.get_env import get_app_data_directory_env
+import os
 
 class IconFinderService:
     def __init__(self):
         self.collection_name = "icons"
-        from utils.get_env import get_app_data_directory_env
-        import os
+
         
         app_data_dir = get_app_data_directory_env()
         chroma_path = os.path.join(app_data_dir, "chroma") if app_data_dir else "chroma"
@@ -22,9 +22,6 @@ class IconFinderService:
         print("Icons collection initialized.")
 
     def _initialize_icons_collection(self):
-        from utils.get_env import get_app_data_directory_env
-        import os
-        
         app_data_dir = get_app_data_directory_env()
         chroma_path = os.path.join(app_data_dir, "chroma") if app_data_dir else "chroma"
 
