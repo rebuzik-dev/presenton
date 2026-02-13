@@ -60,6 +60,7 @@ export class PresentationGenerationApi {
     include_table_of_contents,
     include_title_slide,
     web_search,
+    font,
     
   }: {
     content: string;
@@ -72,6 +73,7 @@ export class PresentationGenerationApi {
     include_table_of_contents?: boolean;
     include_title_slide?: boolean;
     web_search?: boolean;
+    font?: string | null;
   }) {
     try {
       const response = await fetch(
@@ -90,6 +92,7 @@ export class PresentationGenerationApi {
             include_table_of_contents,
             include_title_slide,
             web_search,
+            font,
           }),
           cache: "no-cache",
         }

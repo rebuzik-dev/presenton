@@ -25,6 +25,10 @@ class GeneratePresentationRequest(BaseModel):
     template: str = Field(
         default="general", description="Template to use for the presentation"
     )
+    font: Optional[str] = Field(
+        default=None,
+        description="Optional font family to apply during rendering/export (e.g. Inter, Montserrat)",
+    )
     ordered: Optional[bool] = Field(
         default=None,
         description="Override template layout ordering: true for strict sequence, false for smart selection",

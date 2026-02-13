@@ -18,6 +18,7 @@ async def export_presentation(
     export_as: Literal["pptx", "pdf"],
     auth_token: Optional[str] = None,
     api_key: Optional[str] = None,
+    template_font: Optional[str] = None,
 ) -> PresentationAndPath:
     base_url = os.environ.get("NEXTJS_API_URL", "http://localhost:3000")
     headers = {}
@@ -28,6 +29,8 @@ async def export_presentation(
     if api_key:
         headers["X-API-Key"] = api_key
         params["api_key"] = api_key
+    if template_font:
+        params["font"] = template_font
 
     if export_as == "pptx":
 

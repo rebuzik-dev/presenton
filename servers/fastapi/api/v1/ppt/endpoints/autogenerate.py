@@ -45,6 +45,7 @@ async def autogenerate_presentation(
         include_table_of_contents=request.include_table_of_contents,
         include_title_slide=request.include_title_slide,
         web_search=request.web_search,
+        template_font=request.font,
     )
     
     # 3. Create Async Status Record (for polling)

@@ -5,7 +5,7 @@ import { RootState } from "@/store/store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { AlertCircle } from "lucide-react";
 import { setPresentationData } from "@/store/slices/presentationGeneration";
@@ -21,6 +21,8 @@ const PresentationPage = ({
 }) => {
   const { renderSlideContent, loading } = useTemplateLayouts();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const templateFont = (searchParams.get("font") || "Inter").trim() || "Inter";
   const [contentLoading, setContentLoading] = useState(true);
   const { getCustomTemplateFonts } = useLayout()
   const dispatch = useDispatch();
@@ -101,6 +103,7 @@ const PresentationPage = ({
           <div
             id="presentation-slides-wrapper"
             className="mx-auto flex flex-col items-center  overflow-hidden  justify-center   "
+            style={{ ["--template-font" as any]: templateFont }}
           >
             {!presentationData ||
               loading ||

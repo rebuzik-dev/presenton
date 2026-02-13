@@ -5,6 +5,7 @@ import math
 import os
 import random
 import traceback
+from urllib.parse import quote_plus
 from typing import Annotated, List, Literal, Optional, Tuple
 import dirtyjson
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Path, Request
@@ -90,6 +91,13 @@ def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optiona
     return auth_token, api_key
 
 
+def _build_edit_path(presentation_id: uuid.UUID, template_font: Optional[str]) -> str:
+    base_path = f"/presentation?id={presentation_id}"
+    if not template_font:
+        return base_path
+    return f"{base_path}&font={quote_plus(template_font)}"
+
+
 @PRESENTATION_ROUTER.get("/all", response_model=List[PresentationWithSlides])
 async def get_all_presentations(sql_session: AsyncSession = Depends(get_async_session)):
     presentations_with_slides = []
@@ -158,6 +166,7 @@ async def create_presentation(
     include_table_of_contents: Annotated[bool, Body()] = False,
     include_title_slide: Annotated[bool, Body()] = True,
     web_search: Annotated[bool, Body()] = False,
+    font: Annotated[Optional[str], Body()] = None,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
 
@@ -179,6 +188,7 @@ async def create_presentation(
         include_table_of_contents,
         include_title_slide,
         web_search,
+        font,
     )
 
 
@@ -447,11 +457,12 @@ async def export_presentation_as_pptx_or_pdf(
         export_as,
         auth_token=auth_token,
         api_key=api_key,
+        template_font=presentation.template_font,
     )
 
     return PresentationPathAndEditPath(
         **presentation_and_path.model_dump(),
-        edit_path=f"/presentation?id={id}",
+        edit_path=_build_edit_path(id, presentation.template_font),
     )
 
 
@@ -512,11 +523,12 @@ async def edit_presentation_with_new_content(
         data.export_as,
         auth_token=auth_token,
         api_key=api_key,
+        template_font=presentation.template_font,
     )
 
     return PresentationPathAndEditPath(
         **presentation_and_path.model_dump(),
-        edit_path=f"/presentation?id={presentation.id}",
+        edit_path=_build_edit_path(presentation.id, presentation.template_font),
     )
 
 
@@ -558,9 +570,10 @@ async def derive_presentation_from_existing_one(
         data.export_as,
         auth_token=auth_token,
         api_key=api_key,
+        template_font=new_presentation.template_font,
     )
 
     return PresentationPathAndEditPath(
         **presentation_and_path.model_dump(),
-        edit_path=f"/presentation?id={new_presentation.id}",
+        edit_path=_build_edit_path(new_presentation.id, new_presentation.template_font),
     )

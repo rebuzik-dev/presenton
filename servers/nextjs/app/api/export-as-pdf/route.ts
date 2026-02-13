@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     const headerApiKey = req.headers.get("x-api-key");
     const queryToken = req.nextUrl.searchParams.get("token");
     const queryApiKey = req.nextUrl.searchParams.get("api_key");
+    const queryFont = req.nextUrl.searchParams.get("font");
     const cookieToken = req.cookies.get("auth_token")?.value;
 
     let token: string | null = null;
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
     return {
       token,
       apiKey: headerApiKey || queryApiKey || null,
+      font: queryFont || null,
     };
   };
 
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { token, apiKey } = extractAuth();
+  const { token, apiKey, font } = extractAuth();
   const browser = await puppeteer.launch({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     headless: true,
@@ -64,6 +66,9 @@ export async function POST(req: NextRequest) {
   }
   if (apiKey) {
     pdfMakerParams.set("api_key", apiKey);
+  }
+  if (font) {
+    pdfMakerParams.set("font", font);
   }
   const pdfMakerUrl = `${baseUrl}/pdf-maker?${pdfMakerParams.toString()}`;
   console.log(`Navigating to: ${baseUrl}/pdf-maker?id=${id}`);

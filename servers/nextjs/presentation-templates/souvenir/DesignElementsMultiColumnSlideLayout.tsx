@@ -124,7 +124,7 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
   )
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-[#F3F3F1] z-20 mx-auto overflow-hidden" style={{ fontFamily: "Inter, Arial, sans-serif" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-[#F3F3F1] z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
       <div
         className="absolute inset-0 opacity-70"
         style={{
