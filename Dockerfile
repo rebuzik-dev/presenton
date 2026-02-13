@@ -1,4 +1,5 @@
 FROM python:3.11-slim-bookworm
+RUN sed -i 's/deb.debian.org/mirror.docker.ru/g' /etc/apt/sources.list.d/debian.sources
 
 # Install Node.js and npm
 RUN apt-get update && apt-get install -y \
@@ -9,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     chromium \
     zstd \
     ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Install Node.js 20 using NodeSource repository
@@ -27,12 +28,15 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 
 # Install ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
+#RUN curl -fsSL https://ollama.com/install.sh | sh
+
+RUN pip config set global.index-url https://pypi.mirrors.ustc.edu.cn/simple/ 
 
 # Install dependencies for FastAPI
 RUN pip install aiohttp aiomysql aiosqlite asyncpg fastapi[standard] \
     pathvalidate pdfplumber chromadb sqlmodel \
     anthropic google-genai openai fastmcp dirtyjson
+
 RUN pip install docling --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Install dependencies for Next.js
