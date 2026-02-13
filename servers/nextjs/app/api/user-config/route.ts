@@ -1,9 +1,61 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
+import path from "path";
 import { LLMConfig } from "@/types/llm_config";
 
 const userConfigPath = process.env.USER_CONFIG_PATH || "./user_config.json";
 const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
+
+function getConfigFromEnv(): LLMConfig {
+  return {
+    LLM: process.env.LLM,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+    GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+    GOOGLE_MODEL: process.env.GOOGLE_MODEL,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+    OLLAMA_URL: process.env.OLLAMA_URL,
+    OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+    CUSTOM_LLM_URL: process.env.CUSTOM_LLM_URL,
+    CUSTOM_LLM_API_KEY: process.env.CUSTOM_LLM_API_KEY,
+    CUSTOM_MODEL: process.env.CUSTOM_MODEL,
+    PEXELS_API_KEY: process.env.PEXELS_API_KEY,
+    PIXABAY_API_KEY: process.env.PIXABAY_API_KEY,
+    IMAGE_PROVIDER: process.env.IMAGE_PROVIDER,
+    COMFYUI_URL: process.env.COMFYUI_URL,
+    COMFYUI_WORKFLOW: process.env.COMFYUI_WORKFLOW,
+    DALL_E_3_QUALITY: process.env.DALL_E_3_QUALITY,
+    GPT_IMAGE_1_5_QUALITY: process.env.GPT_IMAGE_1_5_QUALITY,
+    IMAGE_GEN_API_KEY: process.env.IMAGE_GEN_API_KEY,
+    IMAGE_GEN_BASE_URL: process.env.IMAGE_GEN_BASE_URL,
+    IMAGE_GEN_MODEL: process.env.IMAGE_GEN_MODEL,
+    TOOL_CALLS:
+      process.env.TOOL_CALLS === undefined
+        ? undefined
+        : process.env.TOOL_CALLS === "true",
+    DISABLE_THINKING:
+      process.env.DISABLE_THINKING === undefined
+        ? undefined
+        : process.env.DISABLE_THINKING === "true",
+    EXTENDED_REASONING:
+      process.env.EXTENDED_REASONING === undefined
+        ? undefined
+        : process.env.EXTENDED_REASONING === "true",
+    WEB_GROUNDING:
+      process.env.WEB_GROUNDING === undefined
+        ? undefined
+        : process.env.WEB_GROUNDING === "true",
+    USE_CUSTOM_URL:
+      process.env.USE_CUSTOM_URL === undefined
+        ? undefined
+        : process.env.USE_CUSTOM_URL === "true",
+    DISABLE_IMAGE_GENERATION:
+      process.env.DISABLE_IMAGE_GENERATION === undefined
+        ? undefined
+        : process.env.DISABLE_IMAGE_GENERATION === "true",
+  };
+}
 
 export async function GET() {
   if (!canChangeKeys) {
@@ -20,10 +72,14 @@ export async function GET() {
   }
 
   if (!fs.existsSync(userConfigPath)) {
-    return NextResponse.json({});
+    return NextResponse.json(getConfigFromEnv());
   }
   const configData = fs.readFileSync(userConfigPath, "utf-8");
-  return NextResponse.json(JSON.parse(configData));
+  const fileConfig = JSON.parse(configData);
+  return NextResponse.json({
+    ...getConfigFromEnv(),
+    ...fileConfig,
+  });
 }
 
 export async function POST(request: Request) {
@@ -34,6 +90,7 @@ export async function POST(request: Request) {
   }
 
   const userConfig = await request.json();
+  fs.mkdirSync(path.dirname(userConfigPath), { recursive: true });
 
   let existingConfig: LLMConfig = {};
   if (fs.existsSync(userConfigPath)) {

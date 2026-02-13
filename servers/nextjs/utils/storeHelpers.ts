@@ -6,10 +6,23 @@ export const handleSaveLLMConfig = async (llmConfig: LLMConfig) => {
   if (!hasValidLLMConfig(llmConfig)) {
     throw new Error("Provided configuration is not valid");
   }
-  await fetch("/api/user-config", {
+  const response = await fetch("/api/user-config", {
     method: "POST",
     body: JSON.stringify(llmConfig),
   });
+
+  if (!response.ok) {
+    let errorMessage = "Failed to save configuration";
+    try {
+      const data = await response.json();
+      if (data?.error) {
+        errorMessage = data.error;
+      }
+    } catch {
+      // Ignore JSON parse errors and keep generic message.
+    }
+    throw new Error(errorMessage);
+  }
 
   store.dispatch(setLLMConfig(llmConfig));
 };
