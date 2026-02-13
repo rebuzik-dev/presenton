@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /app/servers/fastapi
-    command: ["python", "server.py", "--port", "8000", "--reload", "false"]
+    command: [ "python", "server.py", "--port", "8000", "--reload", "false" ]
     volumes:
       - ./app_data:/app_data
     environment:
@@ -51,11 +51,48 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /app/servers/nextjs
-    command: ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"]
+    command: [ "npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000" ]
     depends_on:
       - backend
     environment:
       - NEXT_INTERNAL_API_URL=http://backend:8000
+      - APP_DATA_DIRECTORY=/app_data
+      - USER_CONFIG_PATH=/app_data/userConfig.json
+      - TEMP_DIRECTORY=/tmp/presenton
+      - NEXTJS_API_URL=http://frontend:3000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - JWT_EXPIRES_MINUTES=${JWT_EXPIRES_MINUTES}
+      - API_KEY_SECRET=${API_KEY_SECRET}
+      - CAN_CHANGE_KEYS=${CAN_CHANGE_KEYS}
+      - LLM=${LLM}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_MODEL=${GOOGLE_MODEL}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL}
+      - OLLAMA_URL=${OLLAMA_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+      - CUSTOM_LLM_URL=${CUSTOM_LLM_URL}
+      - CUSTOM_LLM_API_KEY=${CUSTOM_LLM_API_KEY}
+      - CUSTOM_MODEL=${CUSTOM_MODEL}
+      - PEXELS_API_KEY=${PEXELS_API_KEY}
+      - EXTENDED_REASONING=${EXTENDED_REASONING}
+      - TOOL_CALLS=${TOOL_CALLS}
+      - DISABLE_THINKING=${DISABLE_THINKING}
+      - WEB_GROUNDING=${WEB_GROUNDING}
+      - DISABLE_ANONYMOUS_TRACKING=${DISABLE_ANONYMOUS_TRACKING}
+      - COMFYUI_URL=${COMFYUI_URL}
+      - COMFYUI_WORKFLOW=${COMFYUI_WORKFLOW}
+      - TEMPLATE_API_KEY=${TEMPLATE_API_KEY}
+      - TEMPLATE_MODEL=${TEMPLATE_MODEL}
+      - TEMPLATE_API_BASE=${TEMPLATE_API_BASE}
+      - IMAGE_GEN_API_KEY=${IMAGE_GEN_API_KEY}
+      - IMAGE_GEN_BASE_URL=${IMAGE_GEN_BASE_URL}
+      - IMAGE_GEN_MODEL=${IMAGE_GEN_MODEL}
+      - IMAGE_PROVIDER=${IMAGE_PROVIDER}
 
   nginx:
     image: nginx:1.27-alpine
