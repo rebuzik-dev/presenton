@@ -6,8 +6,8 @@ services:
       dockerfile: Dockerfile
     ports:
       # You can replace 5000 with any other port number of your choice to run Presenton on a different port number.
-      - "5000:5000"
-      - "8000:8080"
+      - "3000:3000"
+      - "8080:8000"
     volumes:
       - ./app_data:/app_data
     environment:
