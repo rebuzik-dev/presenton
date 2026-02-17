@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { Check, ChevronsUpDown, Info } from "lucide-react";
+import { Check, ChevronsUpDown, Info, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import {
@@ -25,6 +25,7 @@ import {
 } from "@/utils/providerUtils";
 import { IMAGE_PROVIDERS, LLM_PROVIDERS } from "@/utils/providerConstants";
 import { LLMConfig } from "@/types/llm_config";
+import { toast } from "sonner";
 
 const DALLE_3_QUALITY_OPTIONS = [
   {
@@ -83,6 +84,16 @@ export default function LLMProviderSelection({
 }: LLMProviderSelectionProps) {
   const [llmConfig, setLlmConfig] = useState<LLMConfig>(initialLLMConfig);
   const [openImageProviderSelect, setOpenImageProviderSelect] = useState(false);
+  const [openImageModelSelect, setOpenImageModelSelect] = useState(false);
+  const [imageProviderModels, setImageProviderModels] = useState<string[]>([]);
+  const [imageProviderModelsLoading, setImageProviderModelsLoading] =
+    useState(false);
+  const [imageProviderModelsChecked, setImageProviderModelsChecked] =
+    useState(false);
+  const previousCustomCredentialsRef = useRef({
+    url: initialLLMConfig.CUSTOM_LLM_URL || "",
+    apiKey: initialLLMConfig.CUSTOM_LLM_API_KEY || "",
+  });
   const isImageGenerationDisabled = llmConfig.DISABLE_IMAGE_GENERATION ?? false;
 
   useEffect(() => {
@@ -159,6 +170,45 @@ export default function LLMProviderSelection({
     setLlmConfig(updatedConfig);
   };
 
+  const isOpenAiCompatibleImageProvider = (provider?: string) =>
+    provider === "custom_openai" || provider === "vsellm";
+
+  const fetchImageProviderModels = async () => {
+    if (!llmConfig.IMAGE_GEN_BASE_URL) return;
+
+    try {
+      setImageProviderModelsLoading(true);
+      const response = await fetch("/api/v1/ppt/openai/models/available", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: llmConfig.IMAGE_GEN_BASE_URL,
+          api_key: llmConfig.IMAGE_GEN_API_KEY || "",
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        setImageProviderModels(models);
+        setImageProviderModelsChecked(true);
+      } else {
+        setImageProviderModels([]);
+        setImageProviderModelsChecked(true);
+        toast.error("Failed to fetch image models");
+      }
+    } catch (error) {
+      console.error("Error fetching image models:", error);
+      setImageProviderModels([]);
+      setImageProviderModelsChecked(true);
+      toast.error("Error fetching image models");
+    } finally {
+      setImageProviderModelsLoading(false);
+    }
+  };
+
   const getApiKeyValue = (field?: string) => {
     switch (field) {
       case "OPENAI_API_KEY":
@@ -201,6 +251,27 @@ export default function LLMProviderSelection({
   const handleProviderChange = (provider: string) => {
     const newConfig = changeProviderUtil(llmConfig, provider);
     setLlmConfig(newConfig);
+  };
+
+  const handleImageProviderChange = (provider: string) => {
+    setLlmConfig((prevConfig) => {
+      const updatedConfig: LLMConfig = {
+        ...prevConfig,
+        IMAGE_PROVIDER: provider,
+      };
+
+      if (provider === "vsellm") {
+        if (!updatedConfig.IMAGE_GEN_BASE_URL) {
+          updatedConfig.IMAGE_GEN_BASE_URL =
+            prevConfig.CUSTOM_LLM_URL || "https://api.vsellm.ru/v1";
+        }
+        if (!updatedConfig.IMAGE_GEN_API_KEY && prevConfig.CUSTOM_LLM_API_KEY) {
+          updatedConfig.IMAGE_GEN_API_KEY = prevConfig.CUSTOM_LLM_API_KEY;
+        }
+      }
+
+      return updatedConfig;
+    });
   };
 
   useEffect(() => {
@@ -264,6 +335,66 @@ export default function LLMProviderSelection({
       return { ...prevConfig, ...updates };
     });
   }, [llmConfig.IMAGE_PROVIDER]);
+
+  useEffect(() => {
+    if (!isOpenAiCompatibleImageProvider(llmConfig.IMAGE_PROVIDER)) {
+      setImageProviderModels([]);
+      setImageProviderModelsChecked(false);
+      return;
+    }
+    setImageProviderModels([]);
+    setImageProviderModelsChecked(false);
+  }, [
+    llmConfig.IMAGE_PROVIDER,
+    llmConfig.IMAGE_GEN_BASE_URL,
+    llmConfig.IMAGE_GEN_API_KEY,
+  ]);
+
+  useEffect(() => {
+    const previousCustomCredentials = previousCustomCredentialsRef.current;
+    const currentCustomCredentials = {
+      url: llmConfig.CUSTOM_LLM_URL || "",
+      apiKey: llmConfig.CUSTOM_LLM_API_KEY || "",
+    };
+
+    if (llmConfig.IMAGE_PROVIDER === "vsellm") {
+      setLlmConfig((prevConfig) => {
+        const updates: Partial<LLMConfig> = {};
+        const canSyncUrl =
+          !!currentCustomCredentials.url &&
+          (!prevConfig.IMAGE_GEN_BASE_URL ||
+            prevConfig.IMAGE_GEN_BASE_URL === previousCustomCredentials.url);
+        const canSyncApiKey =
+          !!currentCustomCredentials.apiKey &&
+          (!prevConfig.IMAGE_GEN_API_KEY ||
+            prevConfig.IMAGE_GEN_API_KEY === previousCustomCredentials.apiKey);
+
+        if (
+          canSyncUrl &&
+          prevConfig.IMAGE_GEN_BASE_URL !== currentCustomCredentials.url
+        ) {
+          updates.IMAGE_GEN_BASE_URL = currentCustomCredentials.url;
+        }
+        if (
+          canSyncApiKey &&
+          prevConfig.IMAGE_GEN_API_KEY !== currentCustomCredentials.apiKey
+        ) {
+          updates.IMAGE_GEN_API_KEY = currentCustomCredentials.apiKey;
+        }
+
+        if (Object.keys(updates).length === 0) {
+          return prevConfig;
+        }
+        return { ...prevConfig, ...updates };
+      });
+    }
+
+    previousCustomCredentialsRef.current = currentCustomCredentials;
+  }, [
+    llmConfig.CUSTOM_LLM_URL,
+    llmConfig.CUSTOM_LLM_API_KEY,
+    llmConfig.IMAGE_PROVIDER,
+  ]);
 
   const renderQualitySelector = () => {
     if (llmConfig.IMAGE_PROVIDER === "dall-e-3") {
@@ -486,7 +617,7 @@ export default function LLMProviderSelection({
                                 key={index}
                                 value={provider.value}
                                 onSelect={(value) => {
-                                  input_field_changed(value, "image_provider");
+                                  handleImageProviderChange(value);
                                   setOpenImageProviderSelect(false);
                                 }}
                               >
@@ -646,8 +777,133 @@ export default function LLMProviderSelection({
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
+                          API Key
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="sk-..."
+                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                            value={llmConfig.IMAGE_GEN_API_KEY || ""}
+                            onChange={(e) => {
+                              input_field_changed(
+                                e.target.value,
+                                "image_gen_api_key"
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {isVsellm && (
+                        <p className="text-sm text-gray-500 flex items-center gap-2">
+                          <span className="block w-1 h-1 rounded-full bg-gray-400"></span>
+                          By default, URL and API key are auto-filled from
+                          Custom LLM settings.
+                        </p>
+                      )}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Model Name
                         </label>
+                        <button
+                          onClick={fetchImageProviderModels}
+                          disabled={
+                            imageProviderModelsLoading ||
+                            !llmConfig.IMAGE_GEN_BASE_URL
+                          }
+                          className={`w-full py-2.5 px-4 rounded-lg transition-all duration-200 border-2 ${
+                            imageProviderModelsLoading ||
+                            !llmConfig.IMAGE_GEN_BASE_URL
+                              ? "bg-gray-100 border-gray-300 cursor-not-allowed text-gray-500"
+                              : "bg-white border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-2 focus:ring-blue-500/20"
+                          }`}
+                        >
+                          {imageProviderModelsLoading ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Checking for models...
+                            </div>
+                          ) : (
+                            "Check for available models"
+                          )}
+                        </button>
+                      </div>
+                      {imageProviderModelsChecked &&
+                        imageProviderModels.length === 0 && (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-sm text-yellow-800">
+                              No models found. You can still enter model name
+                              manually.
+                            </p>
+                          </div>
+                        )}
+                      {imageProviderModelsChecked &&
+                      imageProviderModels.length > 0 ? (
+                        <div>
+                          <div className="w-full">
+                            <Popover
+                              open={openImageModelSelect}
+                              onOpenChange={setOpenImageModelSelect}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={openImageModelSelect}
+                                  className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
+                                >
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {llmConfig.IMAGE_GEN_MODEL ||
+                                      "Select a model"}
+                                  </span>
+                                  <ChevronsUpDown className="w-4 h-4 text-gray-500" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="p-0"
+                                align="start"
+                                style={{
+                                  width: "var(--radix-popover-trigger-width)",
+                                }}
+                              >
+                                <Command>
+                                  <CommandInput placeholder="Search model..." />
+                                  <CommandList>
+                                    <CommandEmpty>No model found.</CommandEmpty>
+                                    <CommandGroup>
+                                      {imageProviderModels.map((model, index) => (
+                                        <CommandItem
+                                          key={index}
+                                          value={model}
+                                          onSelect={(value) => {
+                                            input_field_changed(
+                                              value,
+                                              "image_gen_model"
+                                            );
+                                            setOpenImageModelSelect(false);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              llmConfig.IMAGE_GEN_MODEL === model
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                          />
+                                          <span className="text-sm font-medium text-gray-900">
+                                            {model}
+                                          </span>
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      ) : (
                         <div className="relative">
                           <input
                             type="text"
@@ -666,26 +922,7 @@ export default function LLMProviderSelection({
                             }}
                           />
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          API Key
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="sk-..."
-                            className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                            value={llmConfig.IMAGE_GEN_API_KEY || ""}
-                            onChange={(e) => {
-                              input_field_changed(
-                                e.target.value,
-                                "image_gen_api_key"
-                              );
-                            }}
-                          />
-                        </div>
-                      </div>
+                      )}
                     </div>
                   );
                 }

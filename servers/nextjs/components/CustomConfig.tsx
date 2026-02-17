@@ -38,6 +38,9 @@ export default function CustomConfig({
   const [openModelSelect, setOpenModelSelect] = useState(false);
   const [url, setUrl] = useState(customLlmUrl);
   const [apiKey, setApiKey] = useState(customLlmApiKey);
+  const [urlPreset, setUrlPreset] = useState<"generic" | "vsellm">(
+    customLlmUrl.includes("api.vsellm.ru") ? "vsellm" : "generic"
+  );
 
   useEffect(() => {
     setCustomModels([]);
@@ -45,8 +48,18 @@ export default function CustomConfig({
     onInputChange("", "custom_model");
   }, [url, apiKey]);
 
+  useEffect(() => {
+    setUrl(customLlmUrl);
+    setUrlPreset(customLlmUrl.includes("api.vsellm.ru") ? "vsellm" : "generic");
+  }, [customLlmUrl]);
+
+  useEffect(() => {
+    setApiKey(customLlmApiKey);
+  }, [customLlmApiKey]);
+
   const onUrlChange = (value: string) => {
     setUrl(value);
+    setUrlPreset(value.includes("api.vsellm.ru") ? "vsellm" : "generic");
     onInputChange(value, "custom_llm_url");
   };
 
@@ -55,8 +68,15 @@ export default function CustomConfig({
     onInputChange(value, "custom_llm_api_key");
   };
 
+  const onUrlPresetChange = (preset: "generic" | "vsellm") => {
+    setUrlPreset(preset);
+    if (preset === "vsellm" && !url) {
+      onUrlChange("https://api.vsellm.ru/v1");
+    }
+  };
+
   const fetchCustomModels = async () => {
-    if (!customLlmUrl) return;
+    if (!url) return;
 
     try {
       setCustomModelsLoading(true);
@@ -66,8 +86,8 @@ export default function CustomConfig({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          url: customLlmUrl,
-          api_key: customLlmApiKey,
+          url: url,
+          api_key: apiKey,
         }),
       });
 
@@ -93,6 +113,36 @@ export default function CustomConfig({
 
   return (
     <div className="space-y-6">
+      <div className="mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          URL Preset
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onUrlPresetChange("generic")}
+            className={`border rounded-lg py-2 text-sm transition-colors ${
+              urlPreset === "generic"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-gray-200 hover:border-gray-300 text-gray-700"
+            }`}
+          >
+            Generic OpenAI
+          </button>
+          <button
+            type="button"
+            onClick={() => onUrlPresetChange("vsellm")}
+            className={`border rounded-lg py-2 text-sm transition-colors ${
+              urlPreset === "vsellm"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-gray-200 hover:border-gray-300 text-gray-700"
+            }`}
+          >
+            vSellm
+          </button>
+        </div>
+      </div>
+
       {/* URL Input */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -102,9 +152,13 @@ export default function CustomConfig({
           <input
             type="text"
             required
-            placeholder="Enter your URL"
+            placeholder={
+              urlPreset === "vsellm"
+                ? "https://api.vsellm.ru/v1"
+                : "Enter your URL"
+            }
             className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-            value={customLlmUrl}
+            value={url}
             onChange={(e) => onUrlChange(e.target.value)}
           />
         </div>
@@ -121,7 +175,7 @@ export default function CustomConfig({
             required
             placeholder="Enter your API Key"
             className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-            value={customLlmApiKey}
+            value={apiKey}
             onChange={(e) => onApiKeyChange(e.target.value)}
           />
         </div>
@@ -132,8 +186,8 @@ export default function CustomConfig({
         <div className="mb-4">
           <button
             onClick={fetchCustomModels}
-            disabled={customModelsLoading || !customLlmUrl}
-            className={`w-full py-2.5 px-4 rounded-lg transition-all duration-200 border-2 ${customModelsLoading || !customLlmUrl
+            disabled={customModelsLoading || !url}
+            className={`w-full py-2.5 px-4 rounded-lg transition-all duration-200 border-2 ${customModelsLoading || !url
               ? "bg-gray-100 border-gray-300 cursor-not-allowed text-gray-500"
               : "bg-white border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-2 focus:ring-blue-500/20"
               }`}
