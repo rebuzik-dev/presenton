@@ -51,11 +51,17 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /app/servers/nextjs
-    command: [ "npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000" ]
+    command:
+      [
+        "sh",
+        "-c",
+        "python /app/servers/fastapi/utils/extract_icons.py && npm run start -- -H 0.0.0.0 -p 3000",
+      ]
     depends_on:
       - backend
     volumes:
       - presenton_app_data:/app_data
+      - presenton_icons:/app/servers/nextjs/public/static/icons
     environment:
       - NEXT_INTERNAL_API_URL=http://backend:8000
       - APP_DATA_DIRECTORY=/app_data
@@ -99,3 +105,5 @@ services:
 volumes:
   presenton_app_data:
     name: presenton_app_data
+  presenton_icons:
+    name: presenton_icons
