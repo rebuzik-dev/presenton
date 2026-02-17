@@ -97,6 +97,15 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderOption> = {
     apiKeyField: "IMAGE_GEN_API_KEY",
     apiKeyFieldLabel: "API Key",
   },
+  vsellm: {
+    value: "vsellm",
+    label: "vSellm",
+    description: "vSellm multimodal image generation (supports reference images)",
+    icon: "/icons/google.png",
+    requiresApiKey: true,
+    apiKeyField: "IMAGE_GEN_API_KEY",
+    apiKeyFieldLabel: "API Key",
+  },
 };
 
 export const LLM_PROVIDERS: Record<string, LLMProviderOption> = {

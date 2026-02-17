@@ -69,6 +69,21 @@ class TestImageGenerationService:
                             with patch.dict(os.environ, {"IMAGE_PROVIDER": "custom_openai"}):
                                 service = ImageGenerationService(mock_images_directory)
                                 assert service.image_gen_func == service.generate_image_custom_openai
+
+    def test_get_image_gen_func_vsellm_selected(self, mock_images_directory):
+        """
+        Test function selection when vSellm is selected
+        """
+        with patch('services.image_generation_service.is_pixabay_selected', return_value=False):
+            with patch('services.image_generation_service.is_pixels_selected', return_value=False):
+                with patch('services.image_generation_service.is_gemini_flash_selected', return_value=False):
+                    with patch('services.image_generation_service.is_dalle3_selected', return_value=False):
+                        with patch('services.image_generation_service.is_comfyui_selected', return_value=False):
+                            with patch('services.image_generation_service.is_custom_openai_selected', return_value=False):
+                                with patch('services.image_generation_service.is_vsellm_selected', return_value=True):
+                                    with patch.dict(os.environ, {"IMAGE_PROVIDER": "vsellm"}):
+                                        service = ImageGenerationService(mock_images_directory)
+                                        assert service.image_gen_func == service.generate_image_vsellm
     
     def test_get_image_gen_func_pexels_selected(self, mock_images_directory):
         """

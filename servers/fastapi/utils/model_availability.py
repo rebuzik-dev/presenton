@@ -12,6 +12,9 @@ from utils.get_env import (
     get_anthropic_model_env,
     get_can_change_keys_env,
     get_google_model_env,
+    get_image_gen_api_key_env,
+    get_image_gen_base_url_env,
+    get_image_gen_model_env,
     get_openai_api_key_env,
     get_openai_model_env,
     get_pixabay_api_key_env,
@@ -152,3 +155,14 @@ async def check_llm_and_image_provider_api_or_model_availability():
             workflow_json = get_comfyui_workflow_env()
             if not workflow_json:
                 raise Exception("COMFYUI_WORKFLOW must be provided")
+
+        elif (
+            selected_image_provider == ImageProvider.CUSTOM_OPENAI
+            or selected_image_provider == ImageProvider.VSELLM
+        ):
+            if not get_image_gen_api_key_env():
+                raise Exception("IMAGE_GEN_API_KEY must be provided")
+            if not get_image_gen_base_url_env():
+                raise Exception("IMAGE_GEN_BASE_URL must be provided")
+            if not get_image_gen_model_env():
+                raise Exception("IMAGE_GEN_MODEL must be provided")

@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import mimetypes
 import os
 import aiohttp
 from fastapi import HTTPException
@@ -29,6 +30,7 @@ from utils.image_provider import (
     is_dalle3_selected,
     is_comfyui_selected,
     is_custom_openai_selected,
+    is_vsellm_selected,
 )
 import uuid
 
@@ -43,6 +45,7 @@ class ImageGenerationService:
         print(f"DEBUG: Initialized ImageGenerationService. Provider func: {self.image_gen_func}")
         print(f"DEBUG: Pexels Selected: {is_pixels_selected()}")
         print(f"DEBUG: Custom OpenAI Selected: {is_custom_openai_selected()}")
+        print(f"DEBUG: vSellm Selected: {is_vsellm_selected()}")
 
     def get_image_gen_func(self):
         if self.is_image_generation_disabled:
@@ -62,6 +65,8 @@ class ImageGenerationService:
             return self.generate_image_openai_gpt_image_1_5
         elif is_comfyui_selected():
             return self.generate_image_comfyui
+        elif is_vsellm_selected():
+            return self.generate_image_vsellm
         elif is_custom_openai_selected():
             return self.generate_image_custom_openai
         return None
@@ -94,9 +99,16 @@ class ImageGenerationService:
             if self.is_stock_provider_selected():
                 image_path = await self.image_gen_func(image_prompt)
             else:
-                image_path = await self.image_gen_func(
-                    image_prompt, self.output_directory
-                )
+                if getattr(self.image_gen_func, "__name__", "") == "generate_image_vsellm":
+                    image_path = await self.image_gen_func(
+                        image_prompt,
+                        self.output_directory,
+                        prompt.reference_images,
+                    )
+                else:
+                    image_path = await self.image_gen_func(
+                        image_prompt, self.output_directory
+                    )
             if image_path:
                 if image_path.startswith("http"):
                     return image_path
@@ -138,6 +150,177 @@ class ImageGenerationService:
             f.write(image_bytes)
 
         return image_path
+
+    def _save_base64_image(
+        self,
+        image_b64: str,
+        output_directory: str,
+        extension: str = "png",
+    ) -> str:
+        os.makedirs(output_directory, exist_ok=True)
+        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.{extension}")
+        with open(image_path, "wb") as f:
+            f.write(base64.b64decode(image_b64))
+        return image_path
+
+    def _parse_data_url(self, data_url: str) -> tuple[str, str]:
+        if not data_url.startswith("data:image/"):
+            raise ValueError("Unsupported data URL format for image")
+        if "," not in data_url:
+            raise ValueError("Invalid data URL: missing data payload")
+
+        header, image_b64 = data_url.split(",", 1)
+        mime_type = header.split(";", 1)[0].replace("data:", "", 1)
+        extension = (mimetypes.guess_extension(mime_type) or ".png").lstrip(".")
+        return image_b64, extension
+
+    async def _image_source_to_data_url(self, image_source: str) -> str:
+        if image_source.startswith("data:image/"):
+            return image_source
+
+        if image_source.startswith("http://") or image_source.startswith("https://"):
+            async with aiohttp.ClientSession(trust_env=True) as session:
+                response = await session.get(
+                    image_source,
+                    timeout=aiohttp.ClientTimeout(total=60),
+                )
+                if response.status != 200:
+                    body = await response.text()
+                    raise Exception(
+                        f"Failed to fetch reference image URL. Status={response.status}, Body={body[:300]}"
+                    )
+                image_bytes = await response.read()
+                content_type = (response.headers.get("Content-Type") or "image/png").split(";")[0]
+            image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+            return f"data:{content_type};base64,{image_b64}"
+
+        local_path = image_source.replace("file://", "", 1)
+        if image_source.startswith("/static/images/"):
+            maybe_local = os.path.join(
+                self.output_directory,
+                os.path.basename(image_source),
+            )
+            if os.path.exists(maybe_local):
+                local_path = maybe_local
+
+        if not os.path.exists(local_path):
+            raise FileNotFoundError(
+                f"Reference image path does not exist: {image_source}"
+            )
+
+        mime_type = mimetypes.guess_type(local_path)[0] or "image/png"
+        with open(local_path, "rb") as f:
+            image_bytes = f.read()
+        image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+        return f"data:{mime_type};base64,{image_b64}"
+
+    async def _save_image_from_vsellm_response(
+        self,
+        payload: dict,
+        output_directory: str,
+    ) -> str:
+        images = ((payload.get("choices") or [{}])[0].get("message", {}) or {}).get(
+            "images", []
+        )
+        if not images:
+            raise Exception("vSellm returned no images in choices[0].message.images")
+
+        for image_item in images:
+            if not isinstance(image_item, dict):
+                continue
+
+            image_b64 = image_item.get("b64_json")
+            if image_b64:
+                return self._save_base64_image(image_b64, output_directory, "png")
+
+            image_url = image_item.get("image_url")
+            if isinstance(image_url, dict):
+                image_url = image_url.get("url")
+
+            if isinstance(image_url, str):
+                if image_url.startswith("data:image/"):
+                    data_b64, extension = self._parse_data_url(image_url)
+                    return self._save_base64_image(
+                        data_b64,
+                        output_directory,
+                        extension,
+                    )
+                if image_url.startswith("http://") or image_url.startswith("https://"):
+                    return await self._download_image_from_url(image_url, output_directory)
+
+        raise Exception("vSellm returned images in unsupported format")
+
+    async def generate_image_vsellm(
+        self,
+        prompt: str,
+        output_directory: str,
+        reference_images: list[str] | None = None,
+    ) -> str:
+        api_key = get_image_gen_api_key_env()
+        model = get_image_gen_model_env()
+        base_url = (get_image_gen_base_url_env() or "https://api.vsellm.ru/v1").rstrip("/")
+        endpoint = f"{base_url}/chat/completions"
+
+        if not api_key:
+            raise ValueError("IMAGE_GEN_API_KEY is required for vSellm provider")
+        if not model:
+            raise ValueError("IMAGE_GEN_MODEL is required for vSellm provider")
+
+        references = [ref for ref in (reference_images or []) if ref]
+        if references:
+            content = [{"type": "text", "text": prompt}]
+            for reference in references:
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": await self._image_source_to_data_url(reference)},
+                    }
+                )
+        else:
+            content = prompt
+
+        request_payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": content,
+                }
+            ],
+            "max_tokens": 1,
+            "extra_body": {
+                "tools": [{"image_generation": {}}],
+                "generation_config": {
+                    "response_mime_type": "image/png",
+                    "temperature": 0.4,
+                },
+            },
+        }
+
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            response = await session.post(
+                endpoint,
+                json=request_payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=aiohttp.ClientTimeout(total=300),
+            )
+            raw_body = await response.text()
+            if response.status >= 400:
+                raise Exception(
+                    f"vSellm request failed. Status={response.status}, Body={raw_body[:800]}"
+                )
+            try:
+                response_payload = json.loads(raw_body)
+            except json.JSONDecodeError as e:
+                raise Exception(f"Invalid JSON response from vSellm: {str(e)}")
+
+        return await self._save_image_from_vsellm_response(
+            response_payload,
+            output_directory,
+        )
 
     async def generate_image_openai(
         self,

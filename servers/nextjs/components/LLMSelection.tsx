@@ -123,9 +123,10 @@ export default function LLMProviderSelection({
       llmConfig.IMAGE_PROVIDER === "comfyui" &&
       (!llmConfig.COMFYUI_URL || !llmConfig.COMFYUI_WORKFLOW);
 
-    const needsCustomOpenAIConfig =
+    const needsCustomImageProviderConfig =
       !llmConfig.DISABLE_IMAGE_GENERATION &&
-      llmConfig.IMAGE_PROVIDER === "custom_openai" &&
+      (llmConfig.IMAGE_PROVIDER === "custom_openai" ||
+        llmConfig.IMAGE_PROVIDER === "vsellm") &&
       (!llmConfig.IMAGE_GEN_BASE_URL ||
         !llmConfig.IMAGE_GEN_MODEL ||
         !llmConfig.IMAGE_GEN_API_KEY);
@@ -137,7 +138,7 @@ export default function LLMProviderSelection({
         needsApiKey ||
         needsOllamaUrl ||
         needsComfyUIConfig ||
-        needsCustomOpenAIConfig,
+        needsCustomImageProviderConfig,
       text: needsModelSelection
         ? "Please Select a Model"
         : needsApiKey
@@ -146,8 +147,8 @@ export default function LLMProviderSelection({
             ? "Please Enter Ollama URL"
             : needsComfyUIConfig
               ? "Please Configure ComfyUI"
-              : needsCustomOpenAIConfig
-                ? "Please Configure Custom OpenAI"
+              : needsCustomImageProviderConfig
+                ? "Please Configure Image Provider"
                 : "Save Configuration",
       showProgress: false,
     });
@@ -612,18 +613,26 @@ export default function LLMProviderSelection({
                   );
                 }
 
-                // Show Custom OpenAI configuration
-                if (provider.value === "custom_openai") {
+                // Show custom image provider configuration
+                if (
+                  provider.value === "custom_openai" ||
+                  provider.value === "vsellm"
+                ) {
+                  const isVsellm = provider.value === "vsellm";
                   return (
                     <div className="mb-8 space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          OpenAI Compatible URL
+                          {isVsellm ? "vSellm API URL" : "OpenAI Compatible URL"}
                         </label>
                         <div className="relative">
                           <input
                             type="text"
-                            placeholder="https://api.example.com/v1"
+                            placeholder={
+                              isVsellm
+                                ? "https://api.vsellm.ru/v1"
+                                : "https://api.example.com/v1"
+                            }
                             className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                             value={llmConfig.IMAGE_GEN_BASE_URL || ""}
                             onChange={(e) => {
@@ -642,7 +651,11 @@ export default function LLMProviderSelection({
                         <div className="relative">
                           <input
                             type="text"
-                            placeholder="stabilityai/sdxl-turbo"
+                            placeholder={
+                              isVsellm
+                                ? "google/gemini-2.5-flash-image"
+                                : "stabilityai/sdxl-turbo"
+                            }
                             className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                             value={llmConfig.IMAGE_GEN_MODEL || ""}
                             onChange={(e) => {

@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -17,10 +17,15 @@ IMAGES_ROUTER = APIRouter(prefix="/images", tags=["Images"])
 
 @IMAGES_ROUTER.get("/generate")
 async def generate_image(
-    prompt: str, sql_session: AsyncSession = Depends(get_async_session)
+    prompt: str,
+    reference_image_paths: List[str] | None = Query(default=None),
+    sql_session: AsyncSession = Depends(get_async_session),
 ):
     images_directory = get_images_directory()
-    image_prompt = ImagePrompt(prompt=prompt)
+    image_prompt = ImagePrompt(
+        prompt=prompt,
+        reference_images=reference_image_paths or [],
+    )
     image_generation_service = ImageGenerationService(images_directory)
 
     image = await image_generation_service.generate_image(image_prompt)

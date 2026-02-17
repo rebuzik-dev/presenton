@@ -173,8 +173,13 @@ export class PresentationGenerationApi {
   
   static async generateImage(imageGenerate: ImageGenerate) {
     try {
+      const params = new URLSearchParams({ prompt: imageGenerate.prompt });
+      (imageGenerate.reference_image_paths || []).forEach((path) => {
+        params.append("reference_image_paths", path);
+      });
+
       const response = await fetch(
-        `/api/v1/ppt/images/generate?prompt=${imageGenerate.prompt}`,
+        `/api/v1/ppt/images/generate?${params.toString()}`,
         {
           method: "GET",
           headers: getHeader(),

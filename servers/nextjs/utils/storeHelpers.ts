@@ -94,6 +94,7 @@ export const hasValidLLMConfig = (llmConfig: LLMConfig) => {
       case "comfyui":
         return llmConfig.COMFYUI_URL && llmConfig.COMFYUI_URL !== "";
       case "custom_openai":
+      case "vsellm":
         return (
           llmConfig.IMAGE_GEN_BASE_URL !== "" &&
           llmConfig.IMAGE_GEN_BASE_URL !== null &&

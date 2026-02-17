@@ -6,9 +6,8 @@ export interface ImageSearch {
 }
 
 export interface ImageGenerate {
-  
-
   prompt: string;
+  reference_image_paths?: string[];
 }
 export interface IconSearch {
  
