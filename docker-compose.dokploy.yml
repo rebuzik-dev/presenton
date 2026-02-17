@@ -6,7 +6,7 @@ services:
     working_dir: /app/servers/fastapi
     command: [ "python", "server.py", "--port", "8000", "--reload", "false" ]
     volumes:
-      - ./app_data:/app_data
+      - presenton_app_data:/app_data
     environment:
       - APP_DATA_DIRECTORY=/app_data
       - USER_CONFIG_PATH=/app_data/userConfig.json
@@ -55,7 +55,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./app_data:/app_data
+      - presenton_app_data:/app_data
     environment:
       - NEXT_INTERNAL_API_URL=http://backend:8000
       - APP_DATA_DIRECTORY=/app_data
@@ -96,13 +96,6 @@ services:
       - IMAGE_GEN_MODEL=${IMAGE_GEN_MODEL}
       - IMAGE_PROVIDER=${IMAGE_PROVIDER}
 
-  nginx:
-    image: nginx:1.27-alpine
-    depends_on:
-      - frontend
-      - backend
-    ports:
-      - "5000:80"
-      - "8080:8080"
-    volumes:
-      - ./nginx.dokploy.conf:/etc/nginx/nginx.conf:ro
+volumes:
+  presenton_app_data:
+    name: presenton_app_data
