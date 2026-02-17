@@ -144,6 +144,37 @@ curl -X POST "http://localhost:8000/api/v1/ppt/presentation/generate" \
 - Предпочитайте `http(s)` URL.
 - Base64 передавайте только в Data URL формате: `data:image/png;base64,...`.
 
+### 3.4 Получить summary по изображениям для шаблона (для внешнего сервиса)
+```bash
+curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
+  -H "Authorization: Bearer <JWT>"
+```
+
+Пример ответа:
+```json
+{
+  "template": "general",
+  "ordered": false,
+  "total_image_prompt_slots": 12,
+  "slides": [
+    {
+      "index": 0,
+      "layout_id": "intro-slide",
+      "layout_name": "Intro Slide",
+      "schema_title": "Intro Slide",
+      "slide_description": "Slide intro layout... | Schema: Intro Slide | Fields: title, description, image",
+      "image_prompt_slots": 1,
+      "count_is_approximate": false
+    }
+  ]
+}
+```
+
+Подсчет:
+- учитываются только image-slots по `__image_prompt__`;
+- иконки (`__icon_query__`) игнорируются;
+- для массивов используется `maxItems` (или `minItems`, если `maxItems` нет).
+
 ## 4. Что передавать в поле `template`
 
 Поддерживаются оба варианта:

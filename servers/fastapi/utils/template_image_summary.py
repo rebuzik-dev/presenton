@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
+from models.presentation_layout import PresentationLayoutModel
 
 
 def _decode_json_pointer_token(token: str) -> str:
@@ -168,4 +168,3 @@ def build_layout_image_summary(
         "total_image_prompt_slots": total_slots,
         "slides": slides,
     }
-

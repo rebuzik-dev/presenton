@@ -3,15 +3,17 @@ Templates API Endpoints
 CRUD operations for presentation templates.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from services.template_service import template_service
 from api.deps import get_current_user_or_api_key
 from models.sql.user import UserModel
+from utils.get_layout_by_name import get_layout_by_name
+from utils.template_image_summary import build_layout_image_summary
 
 
 TEMPLATES_ROUTER = APIRouter(prefix="/templates", tags=["Templates"])
@@ -66,6 +68,46 @@ class SeedResponse(BaseModel):
     """Response from seed operation."""
     count: int
     message: str
+
+
+class SlideImageSummaryResponse(BaseModel):
+    """Image-slot summary for one slide layout."""
+
+    index: int
+    layout_id: str
+    layout_name: Optional[str] = None
+    schema_title: Optional[str] = None
+    slide_description: str
+    image_prompt_slots: int
+    count_is_approximate: bool = False
+
+
+class TemplateImageSummaryResponse(BaseModel):
+    """Template-level image-slot summary."""
+
+    template: str
+    ordered: bool
+    total_image_prompt_slots: int
+    slides: List[SlideImageSummaryResponse]
+
+
+def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optional[str]]:
+    authorization_header = http_request.headers.get("Authorization")
+    auth_token = None
+    if authorization_header and authorization_header.lower().startswith("bearer "):
+        auth_token = authorization_header.split(" ", 1)[1].strip()
+
+    if not auth_token:
+        auth_token = (
+            http_request.cookies.get("auth_token")
+            or http_request.query_params.get("token")
+        )
+
+    api_key = (
+        http_request.headers.get("X-API-Key")
+        or http_request.query_params.get("api_key")
+    )
+    return auth_token, api_key
 
 
 # --- Endpoints ---
@@ -127,6 +169,28 @@ async def get_template_by_slug(slug: str):
         layouts=template.layouts,
         created_at=template.created_at.isoformat(),
         updated_at=template.updated_at.isoformat(),
+    )
+
+
+@TEMPLATES_ROUTER.get(
+    "/{slug}/image-summary",
+    response_model=TemplateImageSummaryResponse,
+)
+async def get_template_image_summary(slug: str, http_request: Request):
+    """
+    Get image-generation slot summary for a template.
+
+    Returns per-layout image prompt slot counts and short slide descriptions.
+    """
+    auth_token, api_key = _extract_auth_context(http_request)
+    layout = await get_layout_by_name(
+        slug,
+        auth_token=auth_token,
+        api_key=api_key,
+    )
+
+    return TemplateImageSummaryResponse(
+        **build_layout_image_summary(slug, layout)
     )
 
 
