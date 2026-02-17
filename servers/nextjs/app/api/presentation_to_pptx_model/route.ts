@@ -145,7 +145,8 @@ async function getBrowserAndPage(
   console.log(`PPTX Model Gen: Navigating to ${baseUrl}/pdf-maker?id=${id}`);
 
   await page.goto(pdfMakerUrl, {
-    waitUntil: "networkidle0",
+    // /pdf-maker may keep background requests alive; rely on explicit slide checks below.
+    waitUntil: "domcontentloaded",
     timeout: 120000,
   });
 

@@ -63,8 +63,21 @@ const Header = ({
     const response = await fetch(`/api/presentation_to_pptx_model?id=${id}`, {
       headers: getHeader(),
     });
-    const pptx_model = await response.json();
-    return pptx_model;
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const errorMessage =
+        payload?.detail ||
+        payload?.message ||
+        "Failed to get presentation PPTX model";
+      throw new Error(errorMessage);
+    }
+
+    if (!payload || !Array.isArray(payload.slides)) {
+      throw new Error("Invalid PPTX model response");
+    }
+
+    return payload as PptxPresentationModel;
   };
 
   const handleExportPptx = async () => {
