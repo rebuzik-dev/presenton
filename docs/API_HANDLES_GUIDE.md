@@ -139,6 +139,11 @@ curl -X POST "http://localhost:8000/api/v1/ppt/presentation/generate" \
 
 Детальный контракт: `docs/AUTOGENERATE_CUSTOM_STRUCTURE.md`.
 
+Важно для multi-container setup:
+- Не передавайте локальные пути как references, если файл не примонтирован в backend-контейнер.
+- Предпочитайте `http(s)` URL.
+- Base64 передавайте только в Data URL формате: `data:image/png;base64,...`.
+
 ## 4. Что передавать в поле `template`
 
 Поддерживаются оба варианта:
