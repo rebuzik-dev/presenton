@@ -99,7 +99,15 @@ class ImageGenerationService:
             if self.is_stock_provider_selected():
                 image_path = await self.image_gen_func(image_prompt)
             else:
-                if getattr(self.image_gen_func, "__name__", "") == "generate_image_vsellm":
+                current_provider = getattr(self.image_gen_func, "__name__", "")
+                if (
+                    prompt.reference_images
+                    and current_provider != "generate_image_vsellm"
+                ):
+                    print(
+                        f"WARNING: reference_images were provided, but provider '{current_provider}' does not support them. Ignoring references."
+                    )
+                if current_provider == "generate_image_vsellm":
                     image_path = await self.image_gen_func(
                         image_prompt,
                         self.output_directory,

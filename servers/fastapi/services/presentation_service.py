@@ -111,12 +111,44 @@ class PresentationService:
 
     @staticmethod
     async def generate_outlines(
-        sql_session: AsyncSession, presentation_id: uuid.UUID
+        sql_session: AsyncSession,
+        presentation_id: uuid.UUID,
+        slides_markdown: Optional[List[SlideOutlineModel]] = None,
+        global_reference_image_source: Optional[str] = None,
     ) -> PresentationModel:
         logger.info(f"Generating outlines for presentation: {presentation_id}")
         presentation = await sql_session.get(PresentationModel, presentation_id)
         if not presentation:
             raise HTTPException(status_code=404, detail="Presentation not found")
+        
+        if slides_markdown is not None:
+            logger.info(
+                f"Using user-provided slides_markdown outlines ({len(slides_markdown)} slides), skipping outline LLM call"
+            )
+            presentation_outlines = PresentationOutlineModel(
+                slides=[
+                    SlideOutlineModel(
+                        content=slide.content,
+                        image_prompt=slide.image_prompt,
+                        reference_image_source=(
+                            slide.reference_image_source
+                            or global_reference_image_source
+                        ),
+                    )
+                    for slide in slides_markdown
+                ]
+            )
+            presentation.outlines = presentation_outlines.model_dump(mode="json")
+            presentation.n_slides = len(presentation_outlines.slides)
+            presentation.title = get_presentation_title_from_outlines(
+                presentation_outlines
+            )
+
+            sql_session.add(presentation)
+            await sql_session.commit()
+
+            logger.info("User-provided outlines saved.")
+            return presentation
 
         temp_dir = TEMP_FILE_SERVICE.create_temp_dir()
         additional_context = ""
@@ -195,6 +227,7 @@ class PresentationService:
         layout: PresentationLayoutModel,
         outlines: Optional[List[SlideOutlineModel]] = None,
         title: Optional[str] = None,
+        using_slides_markdown: bool = False,
     ) -> PresentationModel:
         logger.info(f"Preparing structure for presentation: {presentation_id}")
         presentation = await sql_session.get(PresentationModel, presentation_id)
@@ -223,6 +256,7 @@ class PresentationService:
                     presentation_outline=presentation_outline_model,
                     presentation_layout=layout,
                     instructions=presentation.instructions,
+                    using_slides_markdown=using_slides_markdown,
                 )
             )
 

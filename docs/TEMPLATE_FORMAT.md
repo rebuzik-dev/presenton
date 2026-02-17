@@ -137,6 +137,10 @@ image: z.object({
 })
 ```
 
+> Примечание: в runtime (autogeneration) backend может добавлять служебное поле
+> `__reference_image_source__` для передачи reference-image в image provider.
+> Добавлять это поле в template schema не обязательно.
+
 ### Иконки
 ```typescript
 icon: z.object({

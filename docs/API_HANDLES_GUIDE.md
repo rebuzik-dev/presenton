@@ -1,6 +1,6 @@
 # API Guide: Вызов Ручек (Templates + Generate)
 
-Дата обновления: февраль 2026
+Дата обновления: 17 февраля 2026
 
 Этот документ фиксирует актуальный способ работы с кастомными шаблонами и автогенерацией через API.
 
@@ -107,6 +107,37 @@ curl -X POST "http://localhost:8000/api/v1/ppt/presentation/generate" \
 curl "http://localhost:8000/api/v1/ppt/presentation/status/<presentation_id>" \
   -H "Authorization: Bearer <JWT>"
 ```
+
+### 3.3 Передача своей структуры слайдов + image guidance
+`/presentation/generate` поддерживает `slides_markdown` в двух форматах:
+- legacy: список строк;
+- новый: список объектов с полями `content`, `image_prompt`, `reference_image_source`.
+
+Также доступен глобальный reference:
+- `global_reference_image_source` (применяется ко всем слайдам без slide-level override).
+
+Пример:
+```bash
+curl -X POST "http://localhost:8000/api/v1/ppt/presentation/generate" \
+  -H "Authorization: Bearer <JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Презентация компании",
+    "template": "general",
+    "language": "Russian",
+    "slides_markdown": [
+      {
+        "content": "## О нас\n- Рост x3",
+        "image_prompt": "Современный стеклянный офис, дневной свет",
+        "reference_image_source": "https://example.com/slide-ref.png"
+      },
+      "## Команда\n- CEO\n- CTO"
+    ],
+    "global_reference_image_source": "https://example.com/global-style.png"
+  }'
+```
+
+Детальный контракт: `docs/AUTOGENERATE_CUSTOM_STRUCTURE.md`.
 
 ## 4. Что передавать в поле `template`
 

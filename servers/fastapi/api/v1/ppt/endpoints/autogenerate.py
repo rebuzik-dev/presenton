@@ -1,11 +1,13 @@
 
 import asyncio
 import uuid
+from typing import Optional, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.generate_presentation_request import GeneratePresentationRequest
+from models.presentation_outline_model import SlideOutlineModel
 from models.sql.async_presentation_generation_status import (
     AsyncPresentationGenerationTaskModel,
 )
@@ -28,15 +30,36 @@ async def autogenerate_presentation(
     It returns the presentation_id immediately and runs the generation in the background.
     """
     
+    normalized_slides_markdown = request.normalized_slides_markdown()
+    if normalized_slides_markdown is not None and len(normalized_slides_markdown) == 0:
+        raise HTTPException(status_code=400, detail="slides_markdown cannot be empty")
+
+    slide_outline_inputs: Optional[List[SlideOutlineModel]] = None
+    if normalized_slides_markdown is not None:
+        slide_outline_inputs = [
+            SlideOutlineModel(
+                content=slide.content,
+                image_prompt=slide.image_prompt,
+                reference_image_source=slide.reference_image_source,
+            )
+            for slide in normalized_slides_markdown
+        ]
+
+    effective_n_slides = (
+        len(slide_outline_inputs)
+        if slide_outline_inputs is not None
+        else request.n_slides
+    )
+
     # 1. Validation (Basic)
-    if request.n_slides < 1:
+    if effective_n_slides < 1:
         raise HTTPException(status_code=400, detail="n_slides must be at least 1")
 
     # 2. Create Presentation
     presentation = await PresentationService.create_presentation(
         sql_session=sql_session,
         content=request.content,
-        n_slides=request.n_slides,
+        n_slides=effective_n_slides,
         language=request.language,
         file_paths=request.files,
         tone=request.tone,
@@ -89,7 +112,12 @@ async def autogenerate_presentation(
                 session.add(status)
                 await session.commit()
                 
-                await PresentationService.generate_outlines(session, presentation.id)
+                await PresentationService.generate_outlines(
+                    session,
+                    presentation.id,
+                    slides_markdown=slide_outline_inputs,
+                    global_reference_image_source=request.global_reference_image_source,
+                )
                 
                 # B. Prepare Structure
                 status.message = "Preparing structure..."
@@ -103,7 +131,10 @@ async def autogenerate_presentation(
                     api_key=api_key,
                 )
                 await PresentationService.prepare_structure(
-                    session, presentation.id, layout_model
+                    session,
+                    presentation.id,
+                    layout_model,
+                    using_slides_markdown=slide_outline_inputs is not None,
                 )
                 
                 # C. Run Full Pipeline (Content + Assets + Export)

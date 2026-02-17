@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 from enums.tone import Tone
@@ -6,9 +6,24 @@ from enums.verbosity import Verbosity
 
 
 class GeneratePresentationRequest(BaseModel):
+    class SlideMarkdownInput(BaseModel):
+        content: str = Field(..., description="Markdown content for one slide")
+        image_prompt: Optional[str] = Field(
+            default=None,
+            description="Optional user-provided image guidance for the slide",
+        )
+        reference_image_source: Optional[str] = Field(
+            default=None,
+            description="Optional reference image source (URL/path/data URL) for the slide",
+        )
+
     content: str = Field(..., description="The content for generating the presentation")
-    slides_markdown: Optional[List[str]] = Field(
+    slides_markdown: Optional[List[Union[str, SlideMarkdownInput]]] = Field(
         default=None, description="The markdown for the slides"
+    )
+    global_reference_image_source: Optional[str] = Field(
+        default=None,
+        description="Optional global reference image source (URL/path/data URL) applied to slides without slide-level override",
     )
     instructions: Optional[str] = Field(
         default=None, description="The instruction for generating the presentation"
@@ -48,3 +63,17 @@ class GeneratePresentationRequest(BaseModel):
     trigger_webhook: bool = Field(
         default=False, description="Whether to trigger subscribed webhooks"
     )
+
+    def normalized_slides_markdown(self) -> Optional[List[SlideMarkdownInput]]:
+        if self.slides_markdown is None:
+            return None
+
+        normalized: List[GeneratePresentationRequest.SlideMarkdownInput] = []
+        for slide in self.slides_markdown:
+            if isinstance(slide, str):
+                normalized.append(
+                    GeneratePresentationRequest.SlideMarkdownInput(content=slide)
+                )
+            else:
+                normalized.append(slide)
+        return normalized

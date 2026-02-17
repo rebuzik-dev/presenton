@@ -8,6 +8,7 @@ from models.presentation_outline_model import SlideOutlineModel
 from services.llm_client import LLMClient
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_provider import get_model
+from utils.dict_utils import get_dict_at_path, get_dict_paths_with_key, set_dict_at_path
 from utils.schema_utils import add_field_in_schema, remove_fields_from_schema
 from utils.custom_logger import setup_logger
 
@@ -18,6 +19,7 @@ def get_system_prompt(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
+    user_image_guidance: Optional[str] = None,
 ):
     return f"""
         Generate structured slide based on provided outline, follow mentioned steps and notes and provide structured output.
@@ -53,6 +55,11 @@ def get_system_prompt(
             - If verbosity is 'concise', then generate description as 1/3 or lower of the max character limit. Don't worry if you miss content or context.
             - If verbosity is 'standard', then generate description as 2/3 of the max character limit.
             - If verbosity is 'text-heavy', then generate description as 3/4 or higher of the max character limit. Make sure it does not exceed the max character limit.
+        {"# User-Provided Image Guidance:" if user_image_guidance else ""}
+        {user_image_guidance or ""}
+        {"- Treat user-provided image guidance as primary intent for all __image_prompt__ fields on this slide." if user_image_guidance else ""}
+        {"- If the schema has ARRAY items containing images, split the guidance into N separate prompts and assign one per array element in order." if user_image_guidance else ""}
+        {"- If guidance is shorter than required N prompts, infer missing prompts while preserving the same style/topic." if user_image_guidance else ""}
 
         User instructions, tone and verbosity should always be followed and should supercede any other instruction, except for max and min character limit, slide schema and number of items.
 
@@ -69,7 +76,11 @@ def get_system_prompt(
     """
 
 
-def get_user_prompt(outline: str, language: str):
+def get_user_prompt(
+    outline: str,
+    language: str,
+    user_image_guidance: Optional[str] = None,
+):
     return f"""
         ## Current Date and Time
         {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -82,6 +93,9 @@ def get_user_prompt(outline: str, language: str):
 
         ## Slide Outline
         {outline}
+
+        {"## User Image Guidance" if user_image_guidance else ""}
+        {user_image_guidance or ""}
     """
 
 
@@ -91,16 +105,40 @@ def get_messages(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
+    user_image_guidance: Optional[str] = None,
 ):
 
     return [
         LLMSystemMessage(
-            content=get_system_prompt(tone, verbosity, instructions),
+            content=get_system_prompt(
+                tone,
+                verbosity,
+                instructions,
+                user_image_guidance,
+            ),
         ),
         LLMUserMessage(
-            content=get_user_prompt(outline, language),
+            content=get_user_prompt(outline, language, user_image_guidance),
         ),
     ]
+
+
+def inject_reference_image_source(
+    slide_content: dict,
+    reference_image_source: Optional[str],
+) -> dict:
+    if not reference_image_source or not isinstance(slide_content, dict):
+        return slide_content
+
+    image_paths = get_dict_paths_with_key(slide_content, "__image_prompt__")
+    for image_path in image_paths:
+        image_dict = get_dict_at_path(slide_content, image_path)
+        if not isinstance(image_dict, dict):
+            continue
+        image_dict["__reference_image_source__"] = reference_image_source
+        set_dict_at_path(slide_content, image_path, image_dict)
+
+    return slide_content
 
 
 async def get_slide_content_from_type_and_outline(
@@ -144,6 +182,7 @@ async def get_slide_content_from_type_and_outline(
                         tone,
                         verbosity,
                         instructions,
+                        outline.image_prompt,
                     ),
                     response_format=response_schema,
                     strict=False,
@@ -151,7 +190,10 @@ async def get_slide_content_from_type_and_outline(
                 timeout=60.0
             )
             logger.debug("LLM response received successfully")
-            return response
+            return inject_reference_image_source(
+                response,
+                outline.reference_image_source,
+            )
 
         except asyncio.TimeoutError:
             logger.warning(f"LLM call timed out after 60 seconds (Attempt {attempt + 1}/{retries + 1})")

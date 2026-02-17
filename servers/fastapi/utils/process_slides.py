@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Tuple
+from typing import List
 from models.image_prompt import ImagePrompt
 from models.sql.image_asset import ImageAsset
 from models.sql.slide import SlideModel
@@ -12,6 +12,29 @@ from utils.dict_utils import get_dict_at_path, get_dict_paths_with_key, set_dict
 from utils.custom_logger import setup_logger
 
 logger = setup_logger(__name__)
+
+
+def _extract_reference_images(reference_image_source: object) -> list[str]:
+    if isinstance(reference_image_source, str):
+        source = reference_image_source.strip()
+        return [source] if source else []
+
+    if isinstance(reference_image_source, list):
+        return [
+            source.strip()
+            for source in reference_image_source
+            if isinstance(source, str) and source.strip()
+        ]
+
+    return []
+
+
+def _image_identity(image_dict: dict) -> tuple[str, tuple[str, ...]]:
+    prompt = image_dict.get("__image_prompt__", "")
+    references = tuple(
+        _extract_reference_images(image_dict.get("__reference_image_source__"))
+    )
+    return prompt, references
 
 
 async def process_slide_and_fetch_assets(
@@ -29,11 +52,15 @@ async def process_slide_and_fetch_assets(
     for image_path in image_paths:
         __image_prompt__parent = get_dict_at_path(slide.content, image_path)
         prompt = __image_prompt__parent["__image_prompt__"]
+        reference_images = _extract_reference_images(
+            __image_prompt__parent.get("__reference_image_source__")
+        )
         logger.debug(f"Queueing image generation for slide {slide.index}: {prompt[:50]}...")
         async_tasks.append(
             image_generation_service.generate_image(
                 ImagePrompt(
                     prompt=prompt,
+                    reference_images=reference_images,
                 )
             )
         )
@@ -87,9 +114,7 @@ async def process_old_and_new_slides_and_fetch_assets(
     old_image_dicts = [
         get_dict_at_path(old_slide_content, path) for path in old_image_dict_paths
     ]
-    old_image_prompts = [
-        old_image_dict["__image_prompt__"] for old_image_dict in old_image_dicts
-    ]
+    old_image_identities = [_image_identity(old_image_dict) for old_image_dict in old_image_dicts]
 
     # Finds all old icons
     old_icon_dict_paths = get_dict_paths_with_key(old_slide_content, "__icon_query__")
@@ -125,9 +150,10 @@ async def process_old_and_new_slides_and_fetch_assets(
     # Creates async tasks for fetching new images
     # Use old image url if prompt is same
     for new_image in new_image_dicts:
-        if new_image["__image_prompt__"] in old_image_prompts:
+        new_image_identity = _image_identity(new_image)
+        if new_image_identity in old_image_identities:
             old_image_url = old_image_dicts[
-                old_image_prompts.index(new_image["__image_prompt__"])
+                old_image_identities.index(new_image_identity)
             ]["__image_url__"]
             new_image["__image_url__"] = old_image_url
             new_images_fetch_status.append(False)
@@ -137,6 +163,9 @@ async def process_old_and_new_slides_and_fetch_assets(
             image_generation_service.generate_image(
                 ImagePrompt(
                     prompt=new_image["__image_prompt__"],
+                    reference_images=_extract_reference_images(
+                        new_image.get("__reference_image_source__")
+                    ),
                 )
             )
         )
@@ -165,24 +194,33 @@ async def process_old_and_new_slides_and_fetch_assets(
     new_assets = []
 
     # Sets new image and icon urls for assets that were fetched
-    for i, new_image in enumerate(new_images):
-        if new_images_fetch_status[i]:
-            fetched_image = new_images[i]
-            if isinstance(fetched_image, ImageAsset):
-                new_assets.append(fetched_image)
-                image_url = fetched_image.path
-            else:
-                image_url = fetched_image
-            new_image_dicts[i]["__image_url__"] = image_url
+    fetched_image_index = 0
+    for i, should_fetch in enumerate(new_images_fetch_status):
+        if not should_fetch:
+            continue
 
-    for i, new_icon in enumerate(new_icons):
-        if new_icons_fetch_status[i]:
-            icon_result = new_icons[i]
-            if icon_result and len(icon_result) > 0:
-                new_icon_dicts[i]["__icon_url__"] = icon_result[0]
-            else:
-                # Fallback to placeholder if no icon found
-                new_icon_dicts[i]["__icon_url__"] = "/static/icons/placeholder.svg"
+        fetched_image = new_images[fetched_image_index]
+        fetched_image_index += 1
+
+        if isinstance(fetched_image, ImageAsset):
+            new_assets.append(fetched_image)
+            image_url = fetched_image.path
+        else:
+            image_url = fetched_image
+        new_image_dicts[i]["__image_url__"] = image_url
+
+    fetched_icon_index = 0
+    for i, should_fetch in enumerate(new_icons_fetch_status):
+        if not should_fetch:
+            continue
+
+        icon_result = new_icons[fetched_icon_index]
+        fetched_icon_index += 1
+        if icon_result and len(icon_result) > 0:
+            new_icon_dicts[i]["__icon_url__"] = icon_result[0]
+        else:
+            # Fallback to placeholder if no icon found
+            new_icon_dicts[i]["__icon_url__"] = "/static/icons/placeholder.svg"
 
     for i, new_image_dict in enumerate(new_image_dicts):
         set_dict_at_path(new_slide_content, new_image_dict_paths[i], new_image_dict)

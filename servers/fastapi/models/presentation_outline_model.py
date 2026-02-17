@@ -1,9 +1,11 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 
 class SlideOutlineModel(BaseModel):
     content: str
+    image_prompt: Optional[str] = None
+    reference_image_source: Optional[str] = None
 
 
 class PresentationOutlineModel(BaseModel):
@@ -13,5 +15,5 @@ class PresentationOutlineModel(BaseModel):
         message = ""
         for i, slide in enumerate(self.slides):
             message += f"## Slide {i+1}:\n"
-            message += f"  - Content: {slide} \n"
+            message += f"  - Content: {slide.content} \n"
         return message
