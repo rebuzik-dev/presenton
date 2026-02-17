@@ -74,40 +74,56 @@ export async function POST(req: NextRequest) {
   console.log(`Navigating to: ${baseUrl}/pdf-maker?id=${id}`);
 
   await page.goto(pdfMakerUrl, {
-    waitUntil: "networkidle0",
-    timeout: 60000,
+    // /pdf-maker can keep background requests alive; explicit readiness checks are more reliable.
+    waitUntil: "domcontentloaded",
+    timeout: 120000,
   });
 
   await page.waitForFunction('() => document.readyState === "complete"');
 
   try {
-    console.log("Waiting for elements to load...");
+    console.log("Waiting for slides to load...");
+    await page.waitForSelector("#presentation-slides-wrapper > div > div", {
+      timeout: 60000,
+    });
+
     await page.waitForFunction(
       `
       () => {
-        const allElements = document.querySelectorAll('*');
-        let loadedElements = 0;
-        let totalElements = allElements.length;
-        
-        for (let el of allElements) {
-            const style = window.getComputedStyle(el);
-            const isVisible = style.display !== 'none' && 
-                            style.visibility !== 'hidden' && 
-                            style.opacity !== '0';
-            
-            if (isVisible && el.offsetWidth > 0 && el.offsetHeight > 0) {
-                loadedElements++;
-            }
-        }
-        
-        const progress = loadedElements / totalElements;
-        // console.log("Loading progress:", progress, loadedElements, totalElements);
-        return progress >= 0.99;
+        const wrapper = document.querySelector('#presentation-slides-wrapper');
+        if (!wrapper) return false;
+        const slides = wrapper.querySelectorAll(':scope > div > div');
+        const skeletons = wrapper.querySelectorAll('[class*="skeleton"], [class*="Skeleton"]');
+        return slides.length > 0 && skeletons.length === 0;
+      }
+      `,
+      { timeout: 60000 }
+    );
+
+    // Wait until markdown replacement is complete for all rendered text blocks.
+    await page.waitForFunction(
+      `
+      () => {
+        const replacers = Array.from(document.querySelectorAll('.tiptap-text-replacer'));
+        if (replacers.length === 0) return true;
+        return replacers.every((el) => el.getAttribute('data-tiptap-processed') === 'true');
       }
       `,
       { timeout: 30000 }
     );
-    console.log("Elements loaded.");
+
+    // Ensure web fonts are loaded before snapshotting to PDF.
+    await page.waitForFunction(
+      `
+      () => {
+        if (!document.fonts) return true;
+        return document.fonts.status === 'loaded';
+      }
+      `,
+      { timeout: 30000 }
+    );
+
+    console.log("Slides loaded.");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
     console.log("Warning: Some content may not have loaded completely (timeout):", error);

@@ -198,9 +198,12 @@ async function closeBrowserAndPage(browser: Browser | null, page: Page | null) {
 }
 
 function getScreenshotsDir() {
+  const appDataDirectory = process.env.APP_DATA_DIRECTORY;
   const tempDir = process.env.TEMP_DIRECTORY || "./temp";
-
-  const screenshotsDir = path.join(tempDir, "screenshots");
+  // Use shared app_data when available so backend can access generated screenshots.
+  const screenshotsDir = appDataDirectory
+    ? path.join(appDataDirectory, "pptx_screenshots")
+    : path.join(tempDir, "screenshots");
   if (!fs.existsSync(screenshotsDir)) {
     fs.mkdirSync(screenshotsDir, { recursive: true });
   }
@@ -488,10 +491,17 @@ async function getAllChildElementsAttributes({
       }
     }
 
+    const isSvgImageSource =
+      attributes.tagName === "img" &&
+      !!attributes.imageSrc &&
+      (/\.svg([?#].*)?$/i.test(attributes.imageSrc) ||
+        /^data:image\/svg\+xml/i.test(attributes.imageSrc));
+
     if (
       attributes.tagName === "svg" ||
       attributes.tagName === "canvas" ||
-      attributes.tagName === "table"
+      attributes.tagName === "table" ||
+      isSvgImageSource
     ) {
       attributes.should_screenshot = true;
       attributes.element = childElementHandle;
