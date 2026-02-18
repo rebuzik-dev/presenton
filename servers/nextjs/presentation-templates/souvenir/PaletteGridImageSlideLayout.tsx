@@ -71,15 +71,22 @@ interface PaletteGridImageSlideLayoutProps {
 const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: slideData }) => {
   const primary = slideData?.primary || []
   const secondary = slideData?.secondary || []
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const sectionFont = resolveFontFamily(slideData, "section_title", rootFont, "heading")
+  const cardFont = resolveFontFamily(slideData, "color_card", rootFont, "body")
+  const lightCardTextColor = resolveColor(slideData, "color_card", "color", "#3f3f3f", "text_primary")
 
   const ColorCard: React.FC<{ hex: string; name: string }> = ({ hex, name }) => {
     const isDark = hex.toUpperCase() === "#1A1C23" || hex.toUpperCase() === "#5D7079" || hex.toUpperCase() === "#81919E"
+    const textColor = isDark ? "#FFFFFF" : lightCardTextColor
     return (
       <div className="h-[116px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>
-        <div className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}>
+        <div className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`} style={{ color: textColor, fontFamily: cardFont }}>
           {hex}
         </div>
-        <div className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}>
+        <div className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`} style={{ color: textColor, fontFamily: cardFont }}>
           {name}
         </div>
       </div>
@@ -90,17 +97,17 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[68px] pt-10 pb-12 grid grid-cols-[1.05fr_0.95fr] gap-9">
         <div className="flex flex-col min-h-0">
-          <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]">
+          <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
             {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-5 h-[490px] content-start">
-            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]">
+            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
               {(slideData?.leftHeader || "Основные цвета").split(" ").slice(0, 2).join(" ")}
               <br />
               {(slideData?.leftHeader || "Основные цвета").split(" ").slice(2).join(" ") || " "}
             </div>
-            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]">
+            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
               {(slideData?.rightHeader || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
               <br />
               {(slideData?.rightHeader || "Дополнительные цвета").split(" ").slice(1).join(" ")}

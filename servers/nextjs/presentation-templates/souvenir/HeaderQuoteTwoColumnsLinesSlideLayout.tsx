@@ -64,16 +64,27 @@ interface HeaderQuoteTwoColumnsLinesSlideLayoutProps {
 }
 
 const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> = ({ data: slideData }) => {
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const bodyColor = resolveColor(slideData, "body", "color", titleColor, "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const sectionTitleFont = resolveFontFamily(slideData, "section_title", rootFont, "heading")
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
+  const quoteBackground = resolveColor(slideData, "quote_card", "background", "#8F9499", "surface")
+  const quoteTextColor = resolveColor(slideData, "quote_card", "color", "#FFFFFF")
+  const quoteFont = resolveFontFamily(slideData, "quote_card", bodyFont, "body")
+  const accentColor = resolveColor(slideData, "divider", "background", "#3f3f3f", "accent")
+
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-12 pb-10 flex flex-col">
-        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">
+        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.title || "КОНЦЕПЦИЯ МЕРОПРИЯТИЯ"}
         </div>
 
-        <div className="mt-10 rounded-[18px] bg-[#8F9499] shadow-[0_12px_18px_rgba(0,0,0,0.20)] px-14 py-10 flex gap-10 items-start">
-          <div className="text-[64px] leading-[64px] font-[900] text-white -mt-2 flex-shrink-0">&laquo;</div>
-          <div className="text-[26px] leading-[34px] font-[500] text-white overflow-hidden max-w-[980px]">
+        <div className="mt-10 rounded-[18px] bg-[#8F9499] shadow-[0_12px_18px_rgba(0,0,0,0.20)] px-14 py-10 flex gap-10 items-start" style={{ backgroundColor: quoteBackground }}>
+          <div className="text-[64px] leading-[64px] font-[900] text-white -mt-2 flex-shrink-0" style={{ color: quoteTextColor, fontFamily: titleFont }}>&laquo;</div>
+          <div className="text-[26px] leading-[34px] font-[500] text-white overflow-hidden max-w-[980px]" style={{ color: quoteTextColor, fontFamily: quoteFont }}>
             {slideData?.quote ||
               "Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта"}
           </div>
@@ -81,22 +92,22 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
 
         <div className="mt-14 grid grid-cols-2 gap-20 flex-1 min-h-0">
           <div className="min-h-0">
-            <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden">
+            <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
               {slideData?.leftTitle || "Миссия"}
             </div>
-            <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60"></div>
-            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]">
+            <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60" style={{ backgroundColor: accentColor }}></div>
+            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {slideData?.leftBody ||
                 "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
             </div>
           </div>
 
           <div className="min-h-0">
-            <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden">
+            <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
               {slideData?.rightTitle || "Ключевые смыслы"}
             </div>
-            <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60"></div>
-            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]">
+            <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60" style={{ backgroundColor: accentColor }}></div>
+            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {slideData?.rightBody ||
                 "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
             </div>

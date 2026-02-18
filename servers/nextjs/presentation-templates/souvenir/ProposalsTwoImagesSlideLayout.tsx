@@ -64,15 +64,23 @@ interface ProposalsTwoImagesSlideLayoutProps {
 const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data: slideData }) => {
   const tags = slideData?.tags || []
   const imgs = slideData?.images || []
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const tagColor = resolveColor(slideData, "tag", "color", titleColor, "text_primary")
+  const tagFont = resolveFontFamily(slideData, "tag", rootFont, "body")
+  const labelColor = resolveColor(slideData, "image_label", "color", "#FFFFFF")
+  const labelFont = resolveFontFamily(slideData, "image_label", rootFont, "body")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
 
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
-        <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">
+        <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"} {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
         </div>
 
-        <div className="mt-6 flex items-center gap-10 text-[18px] leading-[22px] text-[var(--style-text-primary)]/70">
+        <div className="mt-6 flex items-center gap-10 text-[18px] leading-[22px] text-[var(--style-text-primary)]/70" style={{ color: tagColor, fontFamily: tagFont }}>
           {tags.slice(0, 2).map((t, idx) => (
             <div key={idx} className="overflow-hidden">
               {t}
@@ -82,13 +90,13 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
 
         <div className="mt-6 grid grid-cols-2 gap-8 h-[490px]">
           {imgs.slice(0, 2).map((it, idx) => (
-            <div key={idx} className="relative overflow-hidden bg-[var(--style-surface)]">
+            <div key={idx} className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img
                 src={it.image.__image_url__}
                 alt={it.image.__image_prompt__ || it.label}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-4 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden">
+              <div className="absolute top-4 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
                 {it.label}
               </div>
             </div>

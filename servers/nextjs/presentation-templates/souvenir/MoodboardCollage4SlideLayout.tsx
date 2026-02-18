@@ -54,26 +54,30 @@ const dynamicSlideLayout: React.FC<MoodboardCollage4SlideLayoutProps> = ({ data:
   const i1 = imgs[1]?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
   const i2 = imgs[2]?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
   const i3 = imgs[3]?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
 
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
-        <div className="text-[48px] leading-[54px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">{slideData?.title || "МУДБОРД"}</div>
+        <div className="text-[48px] leading-[54px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>{slideData?.title || "МУДБОРД"}</div>
 
         <div className="mt-6 grid grid-cols-[1.25fr_0.8fr_1.25fr] gap-6 h-[490px]">
-          <div className="overflow-hidden bg-[var(--style-surface)]">
+          <div className="overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
             <img src={i0} alt={imgs[0]?.__image_prompt__ || "moodboard 1"} className="w-full h-full object-cover" />
           </div>
 
-          <div className="overflow-hidden bg-[var(--style-surface)]">
+          <div className="overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
             <img src={i1} alt={imgs[1]?.__image_prompt__ || "moodboard 2"} className="w-full h-full object-cover" />
           </div>
 
           <div className="grid grid-rows-2 gap-6">
-            <div className="overflow-hidden bg-[var(--style-surface)]">
+            <div className="overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img src={i2} alt={imgs[2]?.__image_prompt__ || "moodboard 3"} className="w-full h-full object-cover" />
             </div>
-            <div className="overflow-hidden bg-[var(--style-surface)]">
+            <div className="overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img src={i3} alt={imgs[3]?.__image_prompt__ || "moodboard 4"} className="w-full h-full object-cover" />
             </div>
           </div>

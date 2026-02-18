@@ -59,48 +59,58 @@ interface TypographyTwoColumnsImageSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = ({ data: slideData }) => {
   const bullets = slideData?.leftBullets || []
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const bodyColor = resolveColor(slideData, "body", "color", titleColor, "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const leftTitleFont = resolveFontFamily(slideData, "left_typography", rootFont, "heading")
+  const rightTitleFont = resolveFontFamily(slideData, "right_typography", rootFont, "heading")
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
+  const accentColor = resolveColor(slideData, "bullet_marker", "background", "#3f3f3f", "accent")
+  const cardBackground = resolveColor(slideData, "content_card", "background", "rgba(255,255,255,0.6)", "surface")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
 
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
         <div className="flex items-start justify-between">
-          <div className="text-[48px] leading-[54px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">{slideData?.title || "ТИПОГРАФИКА"}</div>
+          <div className="text-[48px] leading-[54px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>{slideData?.title || "ТИПОГРАФИКА"}</div>
         </div>
 
         <div className="mt-6 grid grid-cols-[1.1fr_1fr] gap-10 items-stretch h-[490px]">
-          <div className="bg-white/60 rounded-[10px] p-8 shadow-[0_6px_14px_rgba(0,0,0,0.08)]">
+          <div className="bg-white/60 rounded-[10px] p-8 shadow-[0_6px_14px_rgba(0,0,0,0.08)]" style={{ backgroundColor: cardBackground }}>
             <div className="grid grid-cols-2 gap-10 h-full">
               <div className="min-h-0">
-                <div className="text-[28px] leading-[32px] font-[800] text-[var(--style-text-primary)] overflow-hidden">{slideData?.leftTitle || "Inter Bold"}</div>
-                <ul className="mt-6 space-y-3 text-[18px] leading-[22px] text-[var(--style-text-primary)]/80">
+                <div className="text-[28px] leading-[32px] font-[800] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: leftTitleFont }}>{slideData?.leftTitle || "Inter Bold"}</div>
+                <ul className="mt-6 space-y-3 text-[18px] leading-[22px] text-[var(--style-text-primary)]/80" style={{ color: bodyColor, fontFamily: bodyFont }}>
                   {bullets.map((t, idx) => (
                     <li key={idx} className="flex gap-3">
-                      <span className="mt-[9px] w-2 h-2 rounded-full bg-[var(--style-accent)]/60 flex-shrink-0"></span>
+                      <span className="mt-[9px] w-2 h-2 rounded-full bg-[var(--style-accent)]/60 flex-shrink-0" style={{ backgroundColor: accentColor }}></span>
                       <span className="overflow-hidden">{t}</span>
                     </li>
                   ))}
                 </ul>
-                <div className="mt-10 text-[26px] leading-[30px] font-[800] text-[var(--style-text-primary)] overflow-hidden">
+                <div className="mt-10 text-[26px] leading-[30px] font-[800] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: leftTitleFont }}>
                   {slideData?.leftSample || "Aa Bb Cc 123"}
                 </div>
-                <div className="mt-8 text-[14px] leading-[20px] text-[var(--style-text-primary)]/60">AbCbZzAa · Aa Bb Cc 123</div>
+                <div className="mt-8 text-[14px] leading-[20px] text-[var(--style-text-primary)]/60" style={{ color: bodyColor, fontFamily: bodyFont }}>AbCbZzAa · Aa Bb Cc 123</div>
               </div>
 
               <div className="min-h-0">
-                <div className="text-[28px] leading-[32px] font-[500] text-[var(--style-text-primary)] overflow-hidden">{slideData?.rightTitle || "Inter Regular"}</div>
-                <div className="mt-6 text-[16px] leading-[22px] text-[var(--style-text-primary)]/75 overflow-hidden">
+                <div className="text-[28px] leading-[32px] font-[500] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: rightTitleFont }}>{slideData?.rightTitle || "Inter Regular"}</div>
+                <div className="mt-6 text-[16px] leading-[22px] text-[var(--style-text-primary)]/75 overflow-hidden" style={{ color: bodyColor, fontFamily: bodyFont }}>
                   {slideData?.rightBody ||
                     "Основное повествование. Нейтральный текст, пригодный как для презентаций, так и для лендингов."}
                 </div>
-                <div className="mt-10 text-[18px] leading-[22px] font-[500] text-[var(--style-text-primary)] overflow-hidden">
+                <div className="mt-10 text-[18px] leading-[22px] font-[500] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: bodyFont }}>
                   {slideData?.rightSample || "Aa Bb Cc 123 AbCbZzAa"}
                 </div>
-                <div className="mt-8 text-[14px] leading-[20px] text-[var(--style-text-primary)]/60">AbCbZzAa · Aa Bb Cc 123</div>
+                <div className="mt-8 text-[14px] leading-[20px] text-[var(--style-text-primary)]/60" style={{ color: bodyColor, fontFamily: bodyFont }}>AbCbZzAa · Aa Bb Cc 123</div>
               </div>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[8px] bg-[var(--style-surface)]">
+          <div className="overflow-hidden rounded-[8px] bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
             <img
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || "typography image"}

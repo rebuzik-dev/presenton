@@ -75,15 +75,22 @@ interface ProposalsCollageLeftRightStackSlideLayoutProps {
 }
 
 const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProps> = ({ data: slideData }) => {
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const labelColor = resolveColor(slideData, "image_label", "color", "#FFFFFF")
+  const labelFont = resolveFontFamily(slideData, "image_label", rootFont, "body")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
+
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
-        <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">
+        <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"} {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
         </div>
 
         <div className="mt-6 grid grid-cols-[1.6fr_1fr] gap-8 h-[490px]">
-          <div className="relative overflow-hidden bg-[var(--style-surface)]">
+          <div className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
             <img
               src={
                 slideData?.left?.image?.__image_url__ ||
@@ -92,13 +99,13 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
               alt={slideData?.left?.image?.__image_prompt__ || slideData?.left?.label || "left image"}
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden">
+            <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
               {slideData?.left?.label || "Брошь"}
             </div>
           </div>
 
           <div className="grid grid-rows-2 gap-8 h-full">
-            <div className="relative overflow-hidden bg-[var(--style-surface)]">
+            <div className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img
                 src={
                   slideData?.rightTop?.image?.__image_url__ ||
@@ -107,12 +114,12 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                 alt={slideData?.rightTop?.image?.__image_prompt__ || slideData?.rightTop?.label || "right top"}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden">
+              <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
                 {slideData?.rightTop?.label || "Набор косметики"}
               </div>
             </div>
 
-            <div className="relative overflow-hidden bg-[var(--style-surface)]">
+            <div className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img
                 src={
                   slideData?.rightBottom?.image?.__image_url__ ||
@@ -121,7 +128,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                 alt={slideData?.rightBottom?.image?.__image_prompt__ || slideData?.rightBottom?.label || "right bottom"}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden">
+              <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
                 {slideData?.rightBottom?.label || "Пригласительное"}
               </div>
             </div>
