@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -71,10 +76,10 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
     const isDark = hex.toUpperCase() === "#1A1C23" || hex.toUpperCase() === "#5D7079" || hex.toUpperCase() === "#81919E"
     return (
       <div className="h-[116px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>
-        <div className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[#3f3f3f]"}`}>
+        <div className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}>
           {hex}
         </div>
-        <div className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[#3f3f3f]"}`}>
+        <div className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}>
           {name}
         </div>
       </div>
@@ -82,20 +87,20 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
   }
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[68px] pt-10 pb-12 grid grid-cols-[1.05fr_0.95fr] gap-9">
         <div className="flex flex-col min-h-0">
-          <div className="text-[46px] leading-[52px] font-[900] uppercase text-[#3f3f3f]">
+          <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]">
             {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-5 h-[490px] content-start">
-            <div className="text-[22px] leading-[28px] text-[#3f3f3f] font-[500]">
+            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]">
               {(slideData?.leftHeader || "Основные цвета").split(" ").slice(0, 2).join(" ")}
               <br />
               {(slideData?.leftHeader || "Основные цвета").split(" ").slice(2).join(" ") || " "}
             </div>
-            <div className="text-[22px] leading-[28px] text-[#3f3f3f] font-[500]">
+            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]">
               {(slideData?.rightHeader || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
               <br />
               {(slideData?.rightHeader || "Дополнительные цвета").split(" ").slice(1).join(" ")}
@@ -127,4 +132,6 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
+
 

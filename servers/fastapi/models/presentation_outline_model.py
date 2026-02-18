@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 
@@ -6,6 +6,7 @@ class SlideOutlineModel(BaseModel):
     content: str
     image_prompt: Optional[str] = None
     reference_image_source: Optional[str] = None
+    style: Optional[Dict[str, Any]] = None
 
 
 class PresentationOutlineModel(BaseModel):

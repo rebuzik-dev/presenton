@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -81,34 +86,44 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
   const cards = slideData?.colorCards || []
   const primary = cards.filter((c) => c.group === "primary")
   const secondary = cards.filter((c) => c.group === "secondary")
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const sectionFont = resolveFontFamily(slideData, "section_title", rootFont, "heading")
+  const cardFont = resolveFontFamily(slideData, "color_card", rootFont, "body")
 
   const Card: React.FC<{ hex: string; description: string }> = ({ hex, description }) => {
     const isDark =
       hex.toUpperCase() === "#7F8C8D" || hex.toUpperCase() === "#4F5D63" || hex.toUpperCase() === "#1A1C23"
-    const textClass = isDark ? "text-white" : "text-[#3f3f3f]"
+    const lightText = resolveColor(slideData, "color_card", "color", "#3f3f3f", "text_primary")
+    const resolvedTextColor = isDark ? "#FFFFFF" : lightText
     return (
       <div className="h-[124px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>
-        <div className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${textClass}`}>{hex}</div>
-        <div className={`text-[18px] leading-[22px] font-[500] ${textClass}`}>{description}</div>
+        <div className="text-[17px] leading-[21px] tracking-[0.4px] font-[700]" style={{ color: resolvedTextColor, fontFamily: cardFont }}>
+          {hex}
+        </div>
+        <div className="text-[18px] leading-[22px] font-[500]" style={{ color: resolvedTextColor, fontFamily: cardFont }}>
+          {description}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[68px] pt-10 pb-10 grid grid-cols-[1.05fr_0.95fr] gap-9">
         <div className="flex flex-col min-h-0">
-          <div className="text-[46px] leading-[52px] font-[900] uppercase text-[#3f3f3f]">
+          <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
             {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
-            <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500]">
+            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
               {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(0, 2).join(" ")}
               <br />
               {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(2).join(" ") || " "}
             </div>
-            <div className="text-[24px] leading-[32px] text-[#3f3f3f] font-[500]">
+            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
               {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
               <br />
               {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(1).join(" ")}
@@ -139,5 +154,6 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 
 

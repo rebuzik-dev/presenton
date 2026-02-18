@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 from enums.tone import Tone
@@ -15,6 +15,10 @@ class GeneratePresentationRequest(BaseModel):
         reference_image_source: Optional[str] = Field(
             default=None,
             description="Optional reference image source (URL/path/data URL) for the slide",
+        )
+        style: Optional[Dict[str, Any]] = Field(
+            default=None,
+            description="Optional style payload for this slide. Supports slide-level tokens and block-level overrides.",
         )
 
     content: str = Field(..., description="The content for generating the presentation")

@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "URL to image. Max 10 words" }),
@@ -98,16 +103,26 @@ interface HeaderQuoteTwoColumnsSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ data: slideData }) => {
   const bullets = slideData?.rightBullets || []
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const bodyColor = resolveColor(slideData, "body", "color", titleColor, "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const sectionTitleFont = resolveFontFamily(slideData, "section_title", rootFont, "heading")
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
+  const quoteBackground = resolveColor(slideData, "quote_card", "background", "#D8D6D3", "surface")
+  const quoteColor = resolveColor(slideData, "quote_card", "color", bodyColor, "text_primary")
+  const quoteFont = resolveFontFamily(slideData, "quote_card", bodyFont, "body")
+  const accentColor = resolveColor(slideData, "bullet_marker", "background", "#3f3f3f", "accent")
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-10 pb-16 flex flex-col">
-        <div className="text-[48px] leading-[54px] font-[800] uppercase text-[#3f3f3f]">
+        <div className="text-[48px] leading-[54px] font-[800] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.title || "КОНЦЕПЦИЯ КЕЙТЕРИНГА"}
         </div>
 
-        <div className="mt-7 rounded-[22px] bg-[#D8D6D3] shadow-[0_10px_18px_rgba(0,0,0,0.12)] px-12 py-8 flex items-center">
-          <div className="text-[24px] leading-[32px] font-[500] text-[#3f3f3f]">
+        <div className="mt-7 rounded-[22px] bg-[#D8D6D3] shadow-[0_10px_18px_rgba(0,0,0,0.12)] px-12 py-8 flex items-center" style={{ backgroundColor: quoteBackground }}>
+          <div className="text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]" style={{ color: quoteColor, fontFamily: quoteFont }}>
             {slideData?.quote ||
               "Кейтеринг рассматривается как часть сценария пребывания гостя, а не как отдельная сервисная зона."}
           </div>
@@ -115,34 +130,34 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
 
         <div className="mt-12 grid grid-cols-2 gap-12">
           <div className="flex flex-col min-h-0">
-            <div className="text-[29px] leading-[34px] font-[800] text-[#3f3f3f]">
+            <div className="text-[29px] leading-[34px] font-[800] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
               {slideData?.leftColumnTitle || "Ключевые смыслы"}
             </div>
 
-            <div className="mt-7 text-[24px] leading-[32px] text-[#3f3f3f] font-[500]">
+            <div className="mt-7 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {`${slideData?.leftStrongLine || "Поддержка делового ритма и концентрации,"} ${slideData?.leftWeakLine || "без отвлечения от содержательной части программы."}`}
             </div>
 
-            <div className="mt-6 text-[24px] leading-[32px] text-[#3f3f3f] font-[500] max-w-[520px]">
+            <div className="mt-6 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] max-w-[520px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {slideData?.leftBody ||
                 "Еда работает как фоновый, но структурирующий элемент: помогает переключаться между блоками, фиксировать паузы и выстраивать неформальное общение."}
             </div>
           </div>
 
           <div className="flex flex-col min-h-0">
-            <div className="text-[29px] leading-[34px] font-[800] text-[#3f3f3f]">
+            <div className="text-[29px] leading-[34px] font-[800] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
               {slideData?.rightColumnTitle || "Ключевая идея"}
             </div>
 
-            <div className="mt-7 text-[24px] leading-[32px] text-[#3f3f3f] font-[500] max-w-[560px]">
+            <div className="mt-7 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] max-w-[560px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {slideData?.rightBody ||
                 "Концепция соответствует формату делового форума с участием управленческой и экспертной аудитории:"}
             </div>
 
-            <ul className="mt-5 space-y-3 text-[24px] leading-[32px] text-[#3f3f3f] font-[500] min-h-0">
+            <ul className="mt-5 space-y-3 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] min-h-0" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {bullets.map((t, idx) => (
                 <li key={idx} className="flex gap-4">
-                  <span className="mt-[14px] w-2.5 h-1 bg-[#3f3f3f] flex-shrink-0"></span>
+                  <span className="mt-[14px] w-2.5 h-1 bg-[var(--style-accent)] flex-shrink-0" style={{ backgroundColor: accentColor }}></span>
                   <span>{t}</span>
                 </li>
               ))}
@@ -156,5 +171,6 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 
 

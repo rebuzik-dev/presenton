@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -60,9 +65,9 @@ interface HeaderQuoteTwoColumnsLinesSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> = ({ data: slideData }) => {
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-12 pb-10 flex flex-col">
-        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[#3f3f3f] overflow-hidden">
+        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">
           {slideData?.title || "КОНЦЕПЦИЯ МЕРОПРИЯТИЯ"}
         </div>
 
@@ -76,22 +81,22 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
 
         <div className="mt-14 grid grid-cols-2 gap-20 flex-1 min-h-0">
           <div className="min-h-0">
-            <div className="text-[24px] leading-[28px] font-[700] text-[#3f3f3f] overflow-hidden">
+            <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden">
               {slideData?.leftTitle || "Миссия"}
             </div>
-            <div className="mt-6 h-[2px] w-full bg-[#3f3f3f]/60"></div>
-            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[#3f3f3f] overflow-hidden max-w-[520px]">
+            <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60"></div>
+            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]">
               {slideData?.leftBody ||
                 "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
             </div>
           </div>
 
           <div className="min-h-0">
-            <div className="text-[24px] leading-[28px] font-[700] text-[#3f3f3f] overflow-hidden">
+            <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden">
               {slideData?.rightTitle || "Ключевые смыслы"}
             </div>
-            <div className="mt-6 h-[2px] w-full bg-[#3f3f3f]/60"></div>
-            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[#3f3f3f] overflow-hidden max-w-[520px]">
+            <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60"></div>
+            <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]">
               {slideData?.rightBody ||
                 "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
             </div>
@@ -104,4 +109,6 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
+
 

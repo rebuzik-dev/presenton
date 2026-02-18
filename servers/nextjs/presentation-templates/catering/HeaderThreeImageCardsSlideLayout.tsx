@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -71,24 +76,31 @@ interface HeaderThreeImageCardsSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<HeaderThreeImageCardsSlideLayoutProps> = ({ data: slideData }) => {
   const cards = slideData?.cards || []
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const cardTitleColor = resolveColor(slideData, "card_title", "color", "#FFFFFF")
+  const cardTitleFont = resolveFontFamily(slideData, "card_title", rootFont, "heading")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
+  const overlayColor = resolveColor(slideData, "card_overlay", "background", "rgba(0,0,0,0.45)")
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-12 pb-12">
-        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[#3f3f3f]">
+        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.title || "ПРЕДЛОЖЕНИЯ ПО ДЕКОРУ"}
         </div>
 
         <div className="mt-14 grid grid-cols-3 gap-7">
           {cards.slice(0, 3).map((c, idx) => (
-            <div key={idx} className="relative h-[470px] overflow-hidden bg-[#E6E6E6]">
+            <div key={idx} className="relative h-[470px] overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img
                 src={c.image.__image_url__}
                 alt={c.image.__image_prompt__ || c.title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-0 left-0 right-0 px-6 pt-8 pb-5 bg-gradient-to-b from-black/40 to-transparent">
-                <div className="text-white text-[22px] leading-[27px] font-[500] drop-shadow">{c.title}</div>
+              <div className="absolute top-0 left-0 right-0 px-6 pt-8 pb-5" style={{ background: `linear-gradient(to bottom, ${overlayColor}, transparent)` }}>
+                <div className="text-white text-[22px] leading-[27px] font-[500] drop-shadow" style={{ color: cardTitleColor, fontFamily: cardTitleFont }}>{c.title}</div>
               </div>
             </div>
           ))}
@@ -100,5 +112,6 @@ const dynamicSlideLayout: React.FC<HeaderThreeImageCardsSlideLayoutProps> = ({ d
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 
 

@@ -41,6 +41,7 @@ async def autogenerate_presentation(
                 content=slide.content,
                 image_prompt=slide.image_prompt,
                 reference_image_source=slide.reference_image_source,
+                style=slide.style,
             )
             for slide in normalized_slides_markdown
         ]

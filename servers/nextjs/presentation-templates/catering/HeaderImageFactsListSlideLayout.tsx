@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -76,16 +81,22 @@ interface HeaderImageFactsListSlideLayoutProps {
 const dynamicSlideLayout: React.FC<HeaderImageFactsListSlideLayoutProps> = ({ data: slideData }) => {
   const facts = slideData?.facts || []
   const listItems = slideData?.listItems || []
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
+  const accentColor = resolveColor(slideData, "bullet_marker", "background", "#3f3f3f", "accent")
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-12 pb-12">
-        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[#3f3f3f]">
+        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.title || "ОБЩАЯ ИНФОРМАЦИЯ"}
         </div>
 
         <div className="mt-8 grid grid-cols-[1.45fr_0.85fr] gap-10 items-start">
-          <div className="w-full h-[472px] overflow-hidden bg-[#E6E6E6]">
+          <div className="w-full h-[472px] overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
             <img
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || slideData?.title || ""}
@@ -97,19 +108,19 @@ const dynamicSlideLayout: React.FC<HeaderImageFactsListSlideLayoutProps> = ({ da
             <div className="space-y-6">
               {facts.map((f, idx) => (
                 <div key={idx}>
-                  <div className="text-[24px] leading-[32px] font-[800] text-[#3f3f3f]">{f.label}</div>
-                  <div className="mt-2 text-[24px] leading-[32px] font-[500] text-[#3f3f3f]">{f.value}</div>
+                  <div className="text-[24px] leading-[32px] font-[800] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>{f.label}</div>
+                  <div className="mt-2 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>{f.value}</div>
                 </div>
               ))}
 
               <div>
-                <div className="text-[24px] leading-[32px] font-[800] text-[#3f3f3f]">
+                <div className="text-[24px] leading-[32px] font-[800] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>
                   {slideData?.listTitle || "Ассортимент"}
                 </div>
-                <ul className="mt-3 space-y-2 text-[24px] leading-[32px] font-[500] text-[#3f3f3f]">
+                <ul className="mt-3 space-y-2 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>
                   {listItems.map((t, idx) => (
                     <li key={idx} className="flex gap-3 items-start">
-                      <span className="mt-[12px] w-2.5 h-1 bg-[#3f3f3f] flex-shrink-0"></span>
+                      <span className="mt-[12px] w-2.5 h-1 bg-[var(--style-accent)] flex-shrink-0" style={{ backgroundColor: accentColor }}></span>
                       <span>{t}</span>
                     </li>
                   ))}
@@ -125,5 +136,4 @@ const dynamicSlideLayout: React.FC<HeaderImageFactsListSlideLayoutProps> = ({ da
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
-
 

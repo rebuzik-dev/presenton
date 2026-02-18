@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -59,28 +64,32 @@ const dynamicSlideLayout: React.FC<HeaderMoodboardCollageSlideLayoutProps> = ({ 
   const i1 = imgs[1]?.__image_url__ || "https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg"
   const i2 = imgs[2]?.__image_url__ || "https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg"
   const i3 = imgs[3]?.__image_url__ || "https://images.pexels.com/photos/2693212/pexels-photo-2693212.jpeg"
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-12 pb-12">
-        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[#3f3f3f]">
+        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.title || "МУДБОРД"}
         </div>
 
         <div className="mt-6 grid grid-cols-[1.15fr_0.7fr_1.15fr] gap-7 h-[492px]">
-          <div className="overflow-hidden bg-[#E6E6E6] h-full">
+          <div className="overflow-hidden bg-[var(--style-surface)] h-full" style={{ backgroundColor: surfaceColor }}>
             <img src={i0} alt={imgs[0]?.__image_prompt__ || "moodboard 1"} className="w-full h-full object-cover" />
           </div>
 
-          <div className="overflow-hidden bg-[#E6E6E6] h-full">
+          <div className="overflow-hidden bg-[var(--style-surface)] h-full" style={{ backgroundColor: surfaceColor }}>
             <img src={i1} alt={imgs[1]?.__image_prompt__ || "moodboard 2"} className="w-full h-full object-cover" />
           </div>
 
           <div className="grid grid-rows-2 gap-7 h-full">
-            <div className="overflow-hidden bg-[#E6E6E6]">
+            <div className="overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img src={i2} alt={imgs[2]?.__image_prompt__ || "moodboard 3"} className="w-full h-full object-cover" />
             </div>
-            <div className="overflow-hidden bg-[#E6E6E6]">
+            <div className="overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img src={i3} alt={imgs[3]?.__image_prompt__ || "moodboard 4"} className="w-full h-full object-cover" />
             </div>
           </div>
@@ -92,5 +101,6 @@ const dynamicSlideLayout: React.FC<HeaderMoodboardCollageSlideLayoutProps> = ({ 
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 
 

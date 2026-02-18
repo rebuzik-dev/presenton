@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -43,22 +48,29 @@ interface CoverBackgroundKickerTitleSlideLayoutProps {
 }
 
 const dynamicSlideLayout: React.FC<CoverBackgroundKickerTitleSlideLayoutProps> = ({ data: slideData }) => {
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const kickerColor = resolveColor(slideData, "kicker", "color", "#5a5a5a", "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const kickerFont = resolveFontFamily(slideData, "kicker", rootFont, "body")
+  const overlayColor = resolveColor(slideData, "overlay", "background", "rgba(255,255,255,0.6)")
+
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="absolute inset-0">
         <img
           src={slideData?.background?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
           alt={slideData?.background?.__image_prompt__ || "background"}
           className="w-full h-full object-cover opacity-30"
         />
-        <div className="absolute inset-0 bg-white/60"></div>
+        <div className="absolute inset-0 bg-white/60" style={{ backgroundColor: overlayColor }}></div>
       </div>
 
       <div className="relative h-full px-20 pt-[250px]">
-        <div className="text-[26px] leading-[32px] text-[#5a5a5a] font-[500] overflow-hidden">
+        <div className="text-[26px] leading-[32px] text-[#5a5a5a] font-[500] overflow-hidden" style={{ color: kickerColor, fontFamily: kickerFont }}>
           {slideData?.kicker || "Наименование типа документа"}
         </div>
-        <div className="mt-6 text-[64px] leading-[70px] tracking-[0.5px] text-[#3f3f3f] font-[900] uppercase overflow-hidden max-w-[980px]">
+        <div className="mt-6 text-[64px] leading-[70px] tracking-[0.5px] text-[var(--style-text-primary)] font-[900] uppercase overflow-hidden max-w-[980px]" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.title || "НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ"}
         </div>
       </div>
@@ -68,4 +80,6 @@ const dynamicSlideLayout: React.FC<CoverBackgroundKickerTitleSlideLayoutProps> =
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
+
 

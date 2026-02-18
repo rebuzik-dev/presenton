@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -46,16 +51,16 @@ interface HeaderParagraphPatternImageSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<HeaderParagraphPatternImageSlideLayoutProps> = ({ data: slideData }) => {
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-12 pb-12">
-        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[#3f3f3f] overflow-hidden">{slideData?.title || "ФИРМЕННЫЙ ПАТТЕРН"}</div>
+        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">{slideData?.title || "ФИРМЕННЫЙ ПАТТЕРН"}</div>
 
-        <div className="mt-6 text-[18px] leading-[26px] text-[#3f3f3f]/70 max-w-[980px] overflow-hidden">
+        <div className="mt-6 text-[18px] leading-[26px] text-[var(--style-text-primary)]/70 max-w-[980px] overflow-hidden">
           {slideData?.description ||
             "Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна"}
         </div>
 
-        <div className="mt-10 h-[490px] overflow-hidden bg-[#E6E6E6]">
+        <div className="mt-10 h-[490px] overflow-hidden bg-[var(--style-surface)]">
           <img
             src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
             alt={slideData?.image?.__image_prompt__ || "pattern"}
@@ -69,4 +74,6 @@ const dynamicSlideLayout: React.FC<HeaderParagraphPatternImageSlideLayoutProps> 
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
+
 

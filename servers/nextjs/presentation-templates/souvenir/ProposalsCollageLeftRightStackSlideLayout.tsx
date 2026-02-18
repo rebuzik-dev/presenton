@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -71,14 +76,14 @@ interface ProposalsCollageLeftRightStackSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProps> = ({ data: slideData }) => {
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
-        <div className="text-[46px] leading-[52px] font-[900] uppercase text-[#3f3f3f] overflow-hidden">
+        <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">
           {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"} {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
         </div>
 
         <div className="mt-6 grid grid-cols-[1.6fr_1fr] gap-8 h-[490px]">
-          <div className="relative overflow-hidden bg-[#E6E6E6]">
+          <div className="relative overflow-hidden bg-[var(--style-surface)]">
             <img
               src={
                 slideData?.left?.image?.__image_url__ ||
@@ -93,7 +98,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
           </div>
 
           <div className="grid grid-rows-2 gap-8 h-full">
-            <div className="relative overflow-hidden bg-[#E6E6E6]">
+            <div className="relative overflow-hidden bg-[var(--style-surface)]">
               <img
                 src={
                   slideData?.rightTop?.image?.__image_url__ ||
@@ -107,7 +112,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
               </div>
             </div>
 
-            <div className="relative overflow-hidden bg-[#E6E6E6]">
+            <div className="relative overflow-hidden bg-[var(--style-surface)]">
               <img
                 src={
                   slideData?.rightBottom?.image?.__image_url__ ||
@@ -129,4 +134,6 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
+
 

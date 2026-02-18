@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 from fastapi import HTTPException
 from models.llm_message import LLMSystemMessage, LLMUserMessage
 from models.presentation_layout import SlideLayoutModel
@@ -141,6 +141,17 @@ def inject_reference_image_source(
     return slide_content
 
 
+def inject_slide_style_metadata(
+    slide_content: dict,
+    style: Optional[Dict[str, Any]],
+) -> dict:
+    if not style or not isinstance(slide_content, dict):
+        return slide_content
+
+    slide_content["__style__"] = style
+    return slide_content
+
+
 async def get_slide_content_from_type_and_outline(
     slide_layout: SlideLayoutModel,
     outline: SlideOutlineModel,
@@ -190,6 +201,10 @@ async def get_slide_content_from_type_and_outline(
                 timeout=60.0
             )
             logger.debug("LLM response received successfully")
+            response = inject_slide_style_metadata(
+                response,
+                outline.style,
+            )
             return inject_reference_image_source(
                 response,
                 outline.reference_image_source,

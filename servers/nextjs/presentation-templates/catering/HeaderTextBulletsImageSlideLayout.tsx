@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -72,41 +77,48 @@ interface HeaderTextBulletsImageSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<HeaderTextBulletsImageSlideLayoutProps> = ({ data: slideData }) => {
   const bullets = slideData?.bullets || []
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
+  const bodyColor = resolveColor(slideData, "body", "color", titleColor, "text_primary")
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
+  const accentColor = resolveColor(slideData, "bullet_marker", "background", "#3f3f3f", "accent")
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-12 pb-12">
-        <div className="text-[50px] leading-[56px] font-[900] uppercase text-[#3f3f3f]">
+        <div className="text-[50px] leading-[56px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
           {slideData?.title || "ОСНОВНЫЕ ПРИНЦИПЫ ФОРМИРОВАНИЯ МЕНЮ"}
         </div>
 
         <div className="mt-8 grid grid-cols-[1fr_1.35fr] gap-10 items-start">
           <div className="pt-1">
-            <div className="text-[24px] leading-[32px] font-[700] text-[#3f3f3f]">
+            <div className="text-[24px] leading-[32px] font-[700] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {(slideData?.lead || "Меню формируется по функциональной логике.").split(" ").slice(0, 3).join(" ")}
               <br />
               {(slideData?.lead || "Меню формируется по функциональной логике.").split(" ").slice(3).join(" ")}
             </div>
 
-            <div className="mt-7 text-[24px] leading-[32px] font-[600] text-[#3f3f3f]">
+            <div className="mt-7 text-[24px] leading-[32px] font-[600] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {slideData?.listTitle || "Принципы:"}
             </div>
 
-            <ul className="mt-5 space-y-5 text-[24px] leading-[32px] font-[500] text-[#3f3f3f]">
+            <ul className="mt-5 space-y-5 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {bullets.map((t, idx) => (
                 <li key={idx} className="flex gap-4">
-                  <span className="mt-[14px] w-2.5 h-1 bg-[#3f3f3f] flex-shrink-0"></span>
+                  <span className="mt-[14px] w-2.5 h-1 bg-[var(--style-accent)] flex-shrink-0" style={{ backgroundColor: accentColor }}></span>
                   <span>{t}</span>
                 </li>
               ))}
             </ul>
 
-            <div className="mt-7 text-[24px] leading-[32px] font-[500] text-[#3f3f3f] max-w-[420px]">
+            <div className="mt-7 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)] max-w-[420px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
               {slideData?.footerNote || "Фокус — удобство и скорость потребления."}
             </div>
           </div>
 
-          <div className="w-full h-[470px] overflow-hidden bg-[#E6E6E6]">
+          <div className="w-full h-[470px] overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
             <img
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || slideData?.title || ""}
@@ -121,5 +133,6 @@ const dynamicSlideLayout: React.FC<HeaderTextBulletsImageSlideLayoutProps> = ({ 
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
 
 

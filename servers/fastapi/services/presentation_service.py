@@ -134,6 +134,7 @@ class PresentationService:
                             slide.reference_image_source
                             or global_reference_image_source
                         ),
+                        style=slide.style,
                     )
                     for slide in slides_markdown
                 ]

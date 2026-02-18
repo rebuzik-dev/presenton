@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -87,7 +92,7 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
   )
 
   const GenericIcon: React.FC<{ label: string }> = ({ label }) => (
-    <div className="w-[34px] h-[34px] rounded-full border border-[#3f3f3f]/35 flex items-center justify-center text-[#3f3f3f]/75 bg-white/70">
+    <div className="w-[34px] h-[34px] rounded-full border border-[#3f3f3f]/35 flex items-center justify-center text-[var(--style-text-primary)]/75 bg-white/70">
       <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {label.toLowerCase().includes("calendar") && (
           <>
@@ -124,7 +129,7 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
   )
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-[#F3F3F1] z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-[#F3F3F1] z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div
         className="absolute inset-0 opacity-70"
         style={{
@@ -133,7 +138,7 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
         }}
       />
       <div className="relative h-full px-[64px] pt-9 pb-12">
-        <div className="text-[42px] leading-[48px] font-[800] uppercase text-[#3f3f3f]">
+        <div className="text-[42px] leading-[48px] font-[800] uppercase text-[var(--style-text-primary)]">
           {slideData?.title || "ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"}
         </div>
 
@@ -145,7 +150,7 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
               ))}
             </div>
 
-            <div className="w-[220px] h-[150px] overflow-hidden rounded-[10px] bg-[#E6E6E6]">
+            <div className="w-[220px] h-[150px] overflow-hidden rounded-[10px] bg-[var(--style-surface)]">
               <img
                 src={slideData?.leftImage?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
                 alt={slideData?.leftImage?.__image_prompt__ || "left image"}
@@ -164,7 +169,7 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
           <div className="flex flex-col justify-between py-1">
             <div className="h-[132px] rounded-[18px] bg-[#9AA6AE]/25 border border-[#9AA6AE]/35 relative overflow-hidden">
               <div className="absolute -left-10 top-[18px] w-[200px] h-[200px] rounded-full border-[20px] border-[#6D7E89]/50"></div>
-              <div className="absolute left-6 top-5 text-[14px] leading-[18px] text-[#3f3f3f]/65">arc block</div>
+              <div className="absolute left-6 top-5 text-[14px] leading-[18px] text-[var(--style-text-primary)]/65">arc block</div>
             </div>
 
             <div className="h-[132px] rounded-[16px] bg-white/70 border border-[#9AA6AE]/30 p-4">
@@ -185,7 +190,7 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
           </div>
 
           <div className="grid grid-cols-[1.2fr_0.8fr] gap-7">
-            <div className="relative h-full overflow-hidden rounded-[10px] bg-[#E6E6E6]">
+            <div className="relative h-full overflow-hidden rounded-[10px] bg-[var(--style-surface)]">
                 <img
                   src={slideData?.mainImage?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
                   alt={slideData?.mainImage?.__image_prompt__ || "main image"}
@@ -198,11 +203,11 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
             </div>
 
             <div className="flex flex-col justify-start gap-7 pt-1">
-              <div className="text-[16px] leading-[22px] text-[#3f3f3f]/70">
+              <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70">
                 {slideData?.topText ||
                   "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
               </div>
-              <div className="text-[16px] leading-[22px] text-[#3f3f3f]/70">
+              <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70">
                 {slideData?.bottomText ||
                   "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
               </div>
@@ -216,4 +221,6 @@ const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = 
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
+
 

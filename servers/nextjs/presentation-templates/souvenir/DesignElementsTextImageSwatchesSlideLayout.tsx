@@ -1,5 +1,10 @@
 ﻿import React from 'react'
 import * as z from 'zod'
+import {
+  resolveColor,
+  resolveFontFamily,
+  resolveRootStyle,
+} from '../_shared/style'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -62,27 +67,27 @@ const dynamicSlideLayout: React.FC<DesignElementsTextImageSwatchesSlideLayoutPro
   const swatches = slideData?.swatches || []
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={{ fontFamily: "var(--template-font, Inter)" }}>
+    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
-        <div className="text-[48px] leading-[54px] font-[900] uppercase text-[#3f3f3f] overflow-hidden">
+        <div className="text-[48px] leading-[54px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden">
           {slideData?.title || "ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"}
         </div>
 
         <div className="mt-6 grid grid-cols-[0.85fr_1.15fr] gap-10 h-[490px]">
           <div className="flex flex-col justify-between py-2">
-            <div className="text-[16px] leading-[22px] text-[#3f3f3f]/70">
+            <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70">
               {slideData?.topText ||
                 "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
             </div>
 
-            <div className="text-[16px] leading-[22px] text-[#3f3f3f]/70">
+            <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70">
               {slideData?.bottomText ||
                 "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
             </div>
           </div>
 
           <div className="flex flex-col gap-6">
-            <div className="flex-1 overflow-hidden rounded-[10px] bg-[#E6E6E6]">
+            <div className="flex-1 overflow-hidden rounded-[10px] bg-[var(--style-surface)]">
               <img
                 src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
                 alt={slideData?.image?.__image_prompt__ || "image"}
@@ -110,4 +115,6 @@ const dynamicSlideLayout: React.FC<DesignElementsTextImageSwatchesSlideLayoutPro
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
+
+
 
