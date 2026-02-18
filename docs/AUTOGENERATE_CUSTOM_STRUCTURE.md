@@ -1,6 +1,6 @@
 # Autogeneration: Custom Structure + Smart Image Guidance
 
-Дата обновления: 17 февраля 2026
+Дата обновления: 18 февраля 2026
 
 Документ описывает новый контракт `POST /api/v1/ppt/presentation/generate` для передачи пользовательской структуры слайдов, image-guidance и image references.
 
@@ -28,7 +28,27 @@
 {
   "content": "## Заголовок\n- Пункт 1\n- Пункт 2",
   "image_prompt": "Подсказка для генерации изображений на этом слайде",
-  "reference_image_source": "https://example.com/ref.png"
+  "reference_image_source": "https://example.com/ref.png",
+  "style": {
+    "slide": {
+      "colors": {
+        "background": "#FFFFFF",
+        "text_primary": "#3F3F3F",
+        "surface": "#E6E6E6",
+        "accent": "#1A1C23"
+      },
+      "fonts": {
+        "display": "Manrope",
+        "heading": "Manrope",
+        "body": "Inter"
+      }
+    },
+    "blocks": {
+      "title": { "color": "#3F3F3F", "font": "display" },
+      "body": { "font": "body" },
+      "bullet_marker": { "background": "#1A1C23" }
+    }
+  }
 }
 ```
 
@@ -49,6 +69,7 @@
 - генерация outline через LLM пропускается;
 - outlines формируются напрямую из входного payload;
 - количество слайдов берется из длины `slides_markdown`.
+- если в элементе есть `style`, оно переносится в результат слайда как `__style__`.
 
 Если `slides_markdown` не передан:
 - работает стандартный flow с генерацией outline через LLM.
@@ -133,3 +154,15 @@
 - возвращает количество image generation slots по `__image_prompt__`;
 - возвращает короткое описание слайда (`layout description + schema title + fields`);
 - иконки не учитываются.
+
+## 11. Endpoint для внешнего сервиса: style-summary по шаблону
+
+Если внешнему сервису нужно понять, какие block IDs и slide-level tokens поддерживает шаблон:
+
+`GET /api/v1/ppt/templates/{slug}/style-summary`
+
+Возвращает:
+- агрегированные `block_ids`;
+- `slide_color_tokens`;
+- `slide_font_tokens`;
+- детализацию по каждому layout (`color_bindings`, `font_bindings`, `source_file`).

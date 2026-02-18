@@ -1,6 +1,6 @@
 # API Guide: Вызов Ручек (Templates + Generate)
 
-Дата обновления: 17 февраля 2026
+Дата обновления: 18 февраля 2026
 
 Этот документ фиксирует актуальный способ работы с кастомными шаблонами и автогенерацией через API.
 
@@ -111,7 +111,7 @@ curl "http://localhost:8000/api/v1/ppt/presentation/status/<presentation_id>" \
 ### 3.3 Передача своей структуры слайдов + image guidance
 `/presentation/generate` поддерживает `slides_markdown` в двух форматах:
 - legacy: список строк;
-- новый: список объектов с полями `content`, `image_prompt`, `reference_image_source`.
+- новый: список объектов с полями `content`, `image_prompt`, `reference_image_source`, `style`.
 
 Также доступен глобальный reference:
 - `global_reference_image_source` (применяется ко всем слайдам без slide-level override).
@@ -129,7 +129,27 @@ curl -X POST "http://localhost:8000/api/v1/ppt/presentation/generate" \
       {
         "content": "## О нас\n- Рост x3",
         "image_prompt": "Современный стеклянный офис, дневной свет",
-        "reference_image_source": "https://example.com/slide-ref.png"
+        "reference_image_source": "https://example.com/slide-ref.png",
+        "style": {
+          "slide": {
+            "colors": {
+              "background": "#FFFFFF",
+              "text_primary": "#3F3F3F",
+              "surface": "#E6E6E6",
+              "accent": "#1A1C23"
+            },
+            "fonts": {
+              "display": "Manrope",
+              "heading": "Manrope",
+              "body": "Inter"
+            }
+          },
+          "blocks": {
+            "title": { "color": "#3F3F3F", "font": "display" },
+            "body": { "font": "body" },
+            "bullet_marker": { "background": "#1A1C23" }
+          }
+        }
       },
       "## Команда\n- CEO\n- CTO"
     ],
@@ -175,6 +195,19 @@ curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
 - иконки (`__icon_query__`) игнорируются;
 - для массивов используется `maxItems` (или `minItems`, если `maxItems` нет).
 
+### 3.5 Получить style-summary шаблона (block IDs + style tokens)
+```bash
+curl "http://localhost:8000/api/v1/ppt/templates/catering/style-summary" \
+  -H "Authorization: Bearer <JWT>"
+```
+
+Ручка возвращает:
+- список `block_ids`, которые реально используются в TSX-лейаутах шаблона;
+- `slide_color_tokens` и `slide_font_tokens`;
+- детализацию по каждому layout-файлу (`color_bindings`, `font_bindings`).
+
+Это удобно для внешнего конструктора payload `slides_markdown[].style`.
+
 ## 4. Что передавать в поле `template`
 
 Поддерживаются оба варианта:
@@ -203,5 +236,6 @@ curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
 - `POST /api/v1/ppt/templates`
 - `PUT /api/v1/ppt/templates/{template_id}`
 - `DELETE /api/v1/ppt/templates/{template_id}`
+- `GET /api/v1/ppt/templates/{slug}/style-summary`
 
 Он используется как общий реестр, но в текущем UI custom-template поток все еще использует `template-management/*`.

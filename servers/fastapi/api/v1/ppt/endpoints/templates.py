@@ -14,6 +14,7 @@ from api.deps import get_current_user_or_api_key
 from models.sql.user import UserModel
 from utils.get_layout_by_name import get_layout_by_name
 from utils.template_image_summary import build_layout_image_summary
+from utils.template_style_summary import build_template_style_summary
 
 
 TEMPLATES_ROUTER = APIRouter(prefix="/templates", tags=["Templates"])
@@ -89,6 +90,36 @@ class TemplateImageSummaryResponse(BaseModel):
     ordered: bool
     total_image_prompt_slots: int
     slides: List[SlideImageSummaryResponse]
+
+
+class StyleColorBindingResponse(BaseModel):
+    block_id: str
+    property: str
+    slide_color_token: Optional[str] = None
+
+
+class StyleFontBindingResponse(BaseModel):
+    block_id: str
+    slide_font_token: Optional[str] = None
+
+
+class LayoutStyleSummaryResponse(BaseModel):
+    layout_id: str
+    source_file: str
+    color_bindings: List[StyleColorBindingResponse]
+    font_bindings: List[StyleFontBindingResponse]
+    block_ids: List[str]
+    slide_color_tokens: List[str]
+    slide_font_tokens: List[str]
+
+
+class TemplateStyleSummaryResponse(BaseModel):
+    template: str
+    layout_count: int
+    block_ids: List[str]
+    slide_color_tokens: List[str]
+    slide_font_tokens: List[str]
+    layouts: List[LayoutStyleSummaryResponse]
 
 
 def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optional[str]]:
@@ -192,6 +223,35 @@ async def get_template_image_summary(slug: str, http_request: Request):
     return TemplateImageSummaryResponse(
         **build_layout_image_summary(slug, layout)
     )
+
+
+@TEMPLATES_ROUTER.get(
+    "/{slug}/style-summary",
+    response_model=TemplateStyleSummaryResponse,
+)
+async def get_template_style_summary(slug: str):
+    """
+    Get style-contract summary for a template.
+
+    The response is extracted from template TSX files by collecting:
+    - block IDs used in resolveColor/resolveFontFamily
+    - slide-level token names (colors/fonts)
+    """
+    template = await template_service.get_by_slug(slug)
+    if not template:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Template with slug '{slug}' not found",
+        )
+
+    try:
+        summary = build_template_style_summary(slug)
+        return TemplateStyleSummaryResponse(**summary)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @TEMPLATES_ROUTER.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
