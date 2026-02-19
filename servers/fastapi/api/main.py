@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from api.lifespan import app_lifespan
 from api.middlewares import UserConfigEnvUpdateMiddleware
 from api.v1.ppt.router import API_V1_PPT_ROUTER
@@ -9,6 +10,11 @@ from api.v1.mock.router import API_V1_MOCK_ROUTER
 
 
 app = FastAPI(lifespan=app_lifespan)
+
+
+@app.get("/", include_in_schema=False)
+async def root_to_docs():
+    return RedirectResponse(url="/docs")
 
 
 # Routers
