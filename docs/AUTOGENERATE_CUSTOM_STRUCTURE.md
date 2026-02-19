@@ -166,3 +166,18 @@
 - `slide_color_tokens`;
 - `slide_font_tokens`;
 - детализацию по каждому layout (`color_bindings`, `font_bindings`, `source_file`).
+
+## 12. Endpoint для внешнего сервиса: schema-summary по шаблону
+
+Если внешнему сервису нужно понимать контентную структуру слайдов (например поля
+`colorCards[].hex`, `colorCards[].group`, `colorCards[].description`), используйте:
+
+`GET /api/v1/ppt/templates/{slug}/schema-summary`
+
+Возвращает:
+- `json_schema` каждого layout;
+- плоский `fields_summary` с типами/ограничениями/enum/default;
+- `content_slots` (image/icon/arrays);
+- `render_hints.visible_items_from_schema` (generic hints из schema).
+
+Важно: `style-summary` и `schema-summary` решают разные задачи.

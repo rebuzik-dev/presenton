@@ -208,6 +208,23 @@ curl "http://localhost:8000/api/v1/ppt/templates/catering/style-summary" \
 
 Это удобно для внешнего конструктора payload `slides_markdown[].style`.
 
+### 3.6 Получить schema-summary шаблона (контентные поля и ограничения)
+```bash
+curl "http://localhost:8000/api/v1/ppt/templates/catering/schema-summary" \
+  -H "Authorization: Bearer <JWT>"
+```
+
+Ручка возвращает по каждому layout:
+- `layout_id`, `layout_name`, `layout_description`, `source_file`
+- `json_schema` (полная схема layout)
+- `fields_summary` (плоский список полей с `path`, `type`, `required`, `constraints`, `enum_values`, `special_kind`)
+- `content_slots` (включая `image_slots`, `icon_slots`, `array_slots`)
+- `render_hints.visible_items_from_schema` (generic hints из `minItems/maxItems`)
+
+Важно:
+- Для задачи бриф-формы и валидации контентных данных используйте именно `schema-summary`.
+- `style-summary` покрывает только style tokens и block bindings.
+
 ## 4. Что передавать в поле `template`
 
 Поддерживаются оба варианта:
@@ -237,5 +254,6 @@ curl "http://localhost:8000/api/v1/ppt/templates/catering/style-summary" \
 - `PUT /api/v1/ppt/templates/{template_id}`
 - `DELETE /api/v1/ppt/templates/{template_id}`
 - `GET /api/v1/ppt/templates/{slug}/style-summary`
+- `GET /api/v1/ppt/templates/{slug}/schema-summary`
 
 Он используется как общий реестр, но в текущем UI custom-template поток все еще использует `template-management/*`.

@@ -3,7 +3,7 @@ Templates API Endpoints
 CRUD operations for presentation templates.
 """
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -14,6 +14,7 @@ from api.deps import get_current_user_or_api_key
 from models.sql.user import UserModel
 from utils.get_layout_by_name import get_layout_by_name
 from utils.template_image_summary import build_layout_image_summary
+from utils.template_schema_summary import build_template_schema_summary
 from utils.template_style_summary import build_template_style_summary
 
 
@@ -120,6 +121,53 @@ class TemplateStyleSummaryResponse(BaseModel):
     slide_color_tokens: List[str]
     slide_font_tokens: List[str]
     layouts: List[LayoutStyleSummaryResponse]
+
+
+class ArraySlotSummaryResponse(BaseModel):
+    path: str
+    min_items: Optional[int] = None
+    max_items: Optional[int] = None
+    approximate: bool = False
+
+
+class LayoutContentSlotsResponse(BaseModel):
+    image_slots: int
+    icon_slots: int
+    array_slots: List[ArraySlotSummaryResponse]
+
+
+class LayoutRenderHintsResponse(BaseModel):
+    visible_items_from_schema: List[ArraySlotSummaryResponse]
+
+
+class SchemaFieldSummaryResponse(BaseModel):
+    path: str
+    type: str
+    required: bool
+    description: Optional[str] = None
+    enum_values: Optional[List[Any]] = None
+    default: Optional[Any] = None
+    constraints: dict[str, Any] = Field(default_factory=dict)
+    special_kind: Optional[str] = None
+
+
+class LayoutSchemaSummaryResponse(BaseModel):
+    index: int
+    layout_id: str
+    layout_name: Optional[str] = None
+    layout_description: Optional[str] = None
+    source_file: Optional[str] = None
+    json_schema: dict[str, Any] = Field(default_factory=dict)
+    fields_summary: List[SchemaFieldSummaryResponse]
+    content_slots: LayoutContentSlotsResponse
+    render_hints: LayoutRenderHintsResponse
+
+
+class TemplateSchemaSummaryResponse(BaseModel):
+    template: str
+    ordered: bool
+    layout_count: int
+    layouts: List[LayoutSchemaSummaryResponse]
 
 
 def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optional[str]]:
@@ -252,6 +300,32 @@ async def get_template_style_summary(slug: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
+
+@TEMPLATES_ROUTER.get(
+    "/{slug}/schema-summary",
+    response_model=TemplateSchemaSummaryResponse,
+)
+async def get_template_schema_summary(slug: str, http_request: Request):
+    """
+    Get content-schema summary for a template.
+
+    Returns full JSON schema, flattened field summary, and generic render hints.
+    """
+    auth_token, api_key = _extract_auth_context(http_request)
+    template = await template_service.get_by_slug(slug)
+    layout = await get_layout_by_name(
+        slug,
+        auth_token=auth_token,
+        api_key=api_key,
+    )
+
+    summary = build_template_schema_summary(
+        slug,
+        layout,
+        template.layouts if template else None,
+    )
+    return TemplateSchemaSummaryResponse(**summary)
 
 
 @TEMPLATES_ROUTER.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
