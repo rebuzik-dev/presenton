@@ -39,6 +39,7 @@ export interface TemplateSetting {
   description: string;
   ordered: boolean;
   default?: boolean;
+  layoutOrder?: string[];
 }
 
 export interface TemplateResponse {

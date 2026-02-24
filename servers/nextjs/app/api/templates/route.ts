@@ -3,6 +3,42 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { TemplateSetting } from '@/app/(presentation-generator)/template-preview/types'
 
+interface ExtendedTemplateSetting extends TemplateSetting {
+    layoutOrder?: string[]
+}
+
+const normalizeLayoutName = (value: string): string =>
+    value.replace(/\.tsx$/i, '').trim().toLowerCase()
+
+const naturalSort = (a: string, b: string): number =>
+    a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+
+const sortLayoutFiles = (
+    files: string[],
+    settings: ExtendedTemplateSetting | null
+): string[] => {
+    const fallbackSorted = [...files].sort(naturalSort)
+
+    const rawOrder = settings?.layoutOrder
+    if (!settings?.ordered || !Array.isArray(rawOrder) || rawOrder.length === 0) {
+        return fallbackSorted
+    }
+
+    const orderMap = new Map(
+        rawOrder.map((name, index) => [normalizeLayoutName(name), index])
+    )
+
+    return [...files].sort((a, b) => {
+        const aRank = orderMap.get(normalizeLayoutName(a))
+        const bRank = orderMap.get(normalizeLayoutName(b))
+
+        if (aRank !== undefined && bRank !== undefined) return aRank - bRank
+        if (aRank !== undefined) return -1
+        if (bRank !== undefined) return 1
+        return naturalSort(a, b)
+    })
+}
+
 export async function GET() {
     try {
         // Get the path to the presentation-templates directory
@@ -34,11 +70,11 @@ export async function GET() {
                 )
                 
                 // Read settings.json if it exists
-                let settings: TemplateSetting | null = null
+                let settings: ExtendedTemplateSetting | null = null
                 const settingsPath = path.join(templatePath, 'settings.json')
                 try {
                     const settingsContent = await fs.readFile(settingsPath, 'utf-8')
-                    settings = JSON.parse(settingsContent) as TemplateSetting
+                    settings = JSON.parse(settingsContent) as ExtendedTemplateSetting
                 } catch (settingsError) {
                     
                     console.warn(`No settings.json found for template ${templateName} or invalid JSON`)
@@ -51,11 +87,13 @@ export async function GET() {
                    
                 }
 
+                const orderedLayoutFiles = sortLayoutFiles(layoutFiles, settings)
+
                 if (layoutFiles.length > 0) {
                     allLayouts.push({
                         templateName: templateName,
                         templateID: templateName,
-                        files: layoutFiles,
+                        files: orderedLayoutFiles,
                         settings: settings
                     })
                 }
