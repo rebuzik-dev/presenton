@@ -1,139 +1,137 @@
-﻿import React from 'react'
-import * as z from 'zod'
-import {
-  resolveColor,
-  resolveFontFamily,
-  resolveRootStyle,
-} from '../_shared/style'
+﻿import React from "react";
+import * as z from "zod";
+import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
-  }),
+  __image_url__: z
+    .string()
+    .url()
+    .default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg")
+    .meta({ description: "URL to image" }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
     .default("Overview photo")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
-})
+    .meta({ description: "Prompt used to generate the image" }),
+});
 
-const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z
-    .string()
-    .min(1)
-    .max(60)
-    .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
-})
+const layoutId = "header-image-facts-list-slide";
+const layoutName = "Header Image Facts List Slide";
+const layoutDescription = "Static title + image left + right text blocks (AI-filled).";
 
-const layoutId = "header-image-facts-list-slide"
-const layoutName = "Header Image Facts List Slide"
-const layoutDescription = "A slide with a header, a large image, a facts column, and a bullet list."
-
-const FactSchema = z.object({
-  label: z.string().min(3).max(40).default("Параметр").meta({ description: "Fact label. Max 3 words" }),
-  value: z.string().min(1).max(30).default("Значение").meta({ description: "Fact value. Max 3 words" }),
-})
-
+// ✅ Заголовки не заполняются ИИ — поэтому title/listTitle убраны из Schema
 const Schema = z.object({
-  title: z
-    .string()
-    .min(5)
-    .max(30)
-    .default("ОБЩАЯ ИНФОРМАЦИЯ")
-    .meta({ description: "Main header. Max 2 words" }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Catering photo",
-  }).meta({ description: "Main image. Max 30 words" }),
-  facts: z
-    .array(FactSchema)
-    .min(2)
-    .max(5)
-    .default([
-      { label: "Количество человек", value: "200 человек" },
-      { label: "Выход еды на человека", value: "700 гр./человек" },
-      { label: "Выход напитков на человека", value: "400 гр./человек" },
-    ])
-    .meta({ description: "Facts list. Max 5 items" }),
-  listTitle: z
+    __image_prompt__: "Catering overview photo",
+  }).meta({ description: "Main image" }),
+
+  // ✅ ЦЕЛЬНЫЙ блок под факты (ИИ заполняет одним текстом)
+  factsText: z
     .string()
-    .min(3)
-    .max(20)
-    .default("Ассортимент")
-    .meta({ description: "List header. Max 1 word" }),
-  listItems: z
-    .array(z.string().min(4).max(40).meta({ description: "List item text. Max 4 words" }))
-    .min(2)
-    .max(6)
-    .default(["Горячие – 2 вида", "Салаты – 3 вида", "Закуски – 3 вида", "Десерты – 2 вида"])
-    .meta({ description: "Bullet list items. Max 6 items" }),
-})
+    .min(10)
+    .max(420)
+    .default(
+      "Количество человек: 200 человек. Выход еды на человека: 700 гр./человек. Выход напитков на человека: 400 гр./человек."
+    )
+    .meta({ description: "Facts block (single text, auto-wrap)" }),
 
-type HeaderImageFactsListSlideData = z.infer<typeof Schema>
+  // ✅ ЦЕЛЬНЫЙ блок под ассортимент (ИИ заполняет одним текстом)
+  assortmentText: z
+    .string()
+    .min(10)
+    .max(420)
+    .default("Горячие – 2 вида. Салаты – 3 вида. Закуски – 3 вида. Десерты – 2 вида.")
+    .meta({ description: "Assortment block (single text, auto-wrap)" }),
+});
 
-interface HeaderImageFactsListSlideLayoutProps {
-  data?: Partial<HeaderImageFactsListSlideData>
+type HeaderImageFactsListSlideData = z.infer<typeof Schema>;
+
+interface Props {
+  data?: Partial<HeaderImageFactsListSlideData>;
 }
 
-const dynamicSlideLayout: React.FC<HeaderImageFactsListSlideLayoutProps> = ({ data: slideData }) => {
-  const facts = slideData?.facts || []
-  const listItems = slideData?.listItems || []
-  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
-  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
-  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
-  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
-  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
-  const accentColor = resolveColor(slideData, "bullet_marker", "background", "#3f3f3f", "accent")
+const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body");
+
+  // 🔧 Чтобы не уходить в “серифный display”
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "heading");
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body");
+
+  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary");
+  const bodyColor = resolveColor(slideData, "body", "color", titleColor, "text_primary");
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface");
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
+    <div
+      className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white z-20 mx-auto overflow-hidden"
+      style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}
+    >
       <div className="h-full px-[72px] pt-12 pb-12">
-        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
-          {slideData?.title || "ОБЩАЯ ИНФОРМАЦИЯ"}
+        {/* ✅ Статичный заголовок — не из данных */}
+        <div
+          className="text-[52px] leading-[58px] font-[900] uppercase tracking-[0.2px]"
+          style={{ color: titleColor, fontFamily: titleFont }}
+        >
+          ОБЩАЯ ИНФОРМАЦИЯ
         </div>
 
         <div className="mt-8 grid grid-cols-[1.45fr_0.85fr] gap-10 items-start">
-          <div className="w-full h-[472px] overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
+          {/* Image */}
+          <div className="w-full h-[472px] overflow-hidden" style={{ backgroundColor: surfaceColor }}>
             <img
-              src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
-              alt={slideData?.image?.__image_prompt__ || slideData?.title || ""}
+              src={
+                slideData?.image?.__image_url__ ||
+                "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
+              }
+              alt={slideData?.image?.__image_prompt__ || "Overview"}
               className="w-full h-full object-cover"
             />
           </div>
 
-          <div className="pt-2">
-            <div className="space-y-6">
-              {facts.map((f, idx) => (
-                <div key={idx}>
-                  <div className="text-[24px] leading-[32px] font-[800] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>{f.label}</div>
-                  <div className="mt-2 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>{f.value}</div>
+          {/* Right text blocks */}
+          <div className="pt-1 max-h-[472px] overflow-hidden">
+            {/* ✅ Заголовки секций статичные */}
+            <div className="space-y-8">
+              <div>
+                <div
+                  className="text-[22px] leading-[28px] font-[800]"
+                  style={{ color: titleColor, fontFamily: bodyFont }}
+                >
+                  Количество человек / нормы
                 </div>
-              ))}
+                <div
+                  className="mt-3 text-[20px] leading-[28px] font-[500]"
+                  style={{ color: bodyColor, fontFamily: bodyFont }}
+                >
+                  {slideData?.factsText ||
+                    "Количество человек: 200 человек. Выход еды на человека: 700 гр./человек. Выход напитков на человека: 400 гр./человек."}
+                </div>
+              </div>
 
               <div>
-                <div className="text-[24px] leading-[32px] font-[800] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>
-                  {slideData?.listTitle || "Ассортимент"}
+                <div
+                  className="text-[22px] leading-[28px] font-[800]"
+                  style={{ color: titleColor, fontFamily: bodyFont }}
+                >
+                  Ассортимент
                 </div>
-                <ul className="mt-3 space-y-2 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: bodyFont }}>
-                  {listItems.map((t, idx) => (
-                    <li key={idx} className="flex gap-3 items-start">
-                      <span className="mt-[12px] w-2.5 h-1 bg-[var(--style-accent)] flex-shrink-0" style={{ backgroundColor: accentColor }}></span>
-                      <span>{t}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div
+                  className="mt-3 text-[20px] leading-[28px] font-[500]"
+                  style={{ color: bodyColor, fontFamily: bodyFont }}
+                >
+                  {slideData?.assortmentText ||
+                    "Горячие – 2 вида. Салаты – 3 вида. Закуски – 3 вида. Десерты – 2 вида."}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export { Schema, layoutId, layoutName, layoutDescription }
-export default dynamicSlideLayout
-
+export { Schema, layoutId, layoutName, layoutDescription };
+export default dynamicSlideLayout;
