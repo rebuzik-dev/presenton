@@ -171,3 +171,102 @@ def test_build_layout_image_summary_prefers_concrete_prompt_defaults():
         "Gallery image A",
         "Gallery image B",
     ]
+
+
+def test_build_layout_image_summary_uses_source_prompts_when_schema_defaults_are_removed(
+    tmp_path,
+    monkeypatch,
+):
+    template_slug = "catering"
+    template_dir = tmp_path / template_slug
+    template_dir.mkdir(parents=True)
+    (template_dir / "HeaderImageSlideLayout.tsx").write_text(
+        """
+const layoutId = "header-image-slide"
+const sample = {
+  image: {
+    __image_prompt__: "Catering hero photo"
+  }
+}
+        """.strip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("NEXTJS_PRESENTATION_TEMPLATES_DIR", str(tmp_path))
+
+    layout = PresentationLayoutModel(
+        name=template_slug,
+        ordered=False,
+        slides=[
+            SlideLayoutModel(
+                id="catering:header-image-slide",
+                name="Header Image Slide",
+                description="Header with one image",
+                json_schema={
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "__image_prompt__": {"type": "string"},
+                            },
+                        }
+                    },
+                },
+            )
+        ],
+    )
+
+    summary = build_layout_image_summary(template_slug, layout)
+    assert summary["slides"][0]["image_prompt_slots"] == 1
+    assert summary["slides"][0]["image_prompts"] == ["Catering hero photo"]
+
+
+def test_build_layout_image_summary_trims_source_prompts_to_slot_count(
+    tmp_path,
+    monkeypatch,
+):
+    template_slug = "catering"
+    template_dir = tmp_path / template_slug
+    template_dir.mkdir(parents=True)
+    (template_dir / "HeaderImageSlideLayout.tsx").write_text(
+        """
+const layoutId = "header-image-slide"
+const sample = {
+  image: {
+    __image_prompt__: "Generic image prompt"
+  },
+  imageDefaults: {
+    __image_prompt__: "Specific catering hero photo"
+  }
+}
+        """.strip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("NEXTJS_PRESENTATION_TEMPLATES_DIR", str(tmp_path))
+
+    layout = PresentationLayoutModel(
+        name=template_slug,
+        ordered=False,
+        slides=[
+            SlideLayoutModel(
+                id="catering:header-image-slide",
+                name="Header Image Slide",
+                description="Header with one image",
+                json_schema={
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "__image_prompt__": {"type": "string"},
+                            },
+                        }
+                    },
+                },
+            )
+        ],
+    )
+
+    summary = build_layout_image_summary(template_slug, layout)
+    assert summary["slides"][0]["image_prompt_slots"] == 1
+    assert summary["slides"][0]["image_prompts"] == ["Specific catering hero photo"]

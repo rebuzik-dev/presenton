@@ -1,8 +1,17 @@
 from __future__ import annotations
 
+import os
+import re
+from pathlib import Path
 from typing import Any, Optional, Tuple
 
 from models.presentation_layout import PresentationLayoutModel
+from utils.template_style_summary import build_template_style_summary
+
+
+SOURCE_IMAGE_PROMPT_RE = re.compile(
+    r"""__image_prompt__\s*:\s*["']([^"']+)["']"""
+)
 
 
 def _decode_json_pointer_token(token: str) -> str:
@@ -222,6 +231,70 @@ def extract_slide_image_prompts(schema: dict[str, Any]) -> list[str]:
     return concrete_prompts if concrete_prompts else fallback_prompts
 
 
+def _normalize_layout_id_for_lookup(layout_id: str) -> list[str]:
+    candidates = [layout_id]
+    if ":" in layout_id:
+        candidates.append(layout_id.split(":", 1)[1])
+    return candidates
+
+
+def _default_templates_root() -> Path:
+    env_path = os.environ.get("NEXTJS_PRESENTATION_TEMPLATES_DIR")
+    if env_path:
+        return Path(env_path)
+    return Path(__file__).resolve().parents[2] / "nextjs" / "presentation-templates"
+
+
+def _build_layout_source_file_map(template_slug: str) -> dict[str, str]:
+    source_file_map: dict[str, str] = {}
+    try:
+        style_summary = build_template_style_summary(template_slug)
+    except Exception:
+        return source_file_map
+
+    for layout in style_summary.get("layouts", []):
+        layout_id = layout.get("layout_id")
+        source_file = layout.get("source_file")
+        if isinstance(layout_id, str) and isinstance(source_file, str):
+            source_file_map[layout_id] = source_file
+
+    return source_file_map
+
+
+def _extract_image_prompts_from_source(source: str) -> list[str]:
+    prompts: list[str] = []
+    for match in SOURCE_IMAGE_PROMPT_RE.findall(source):
+        _append_unique_prompt(prompts, match)
+    return prompts
+
+
+def _extract_image_prompts_from_layout_source(
+    template_slug: str,
+    layout_id: str,
+    source_file_map: dict[str, str],
+) -> list[str]:
+    template_dir = _default_templates_root() / template_slug
+    for candidate in _normalize_layout_id_for_lookup(layout_id):
+        source_file = source_file_map.get(candidate)
+        if not source_file:
+            continue
+
+        source_path = template_dir / source_file
+        if not source_path.exists():
+            continue
+
+        try:
+            source = source_path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+
+        prompts = _extract_image_prompts_from_source(source)
+        if prompts:
+            return prompts
+
+    return []
+
+
 def build_slide_description(
     layout_description: Optional[str],
     schema: dict[str, Any],
@@ -254,11 +327,21 @@ def build_layout_image_summary(
 ) -> dict[str, Any]:
     slides: list[dict[str, Any]] = []
     total_slots = 0
+    source_file_map = _build_layout_source_file_map(template_slug)
 
     for index, slide in enumerate(layout.slides):
         json_schema = slide.json_schema if isinstance(slide.json_schema, dict) else {}
         image_slots, is_approximate = count_image_prompt_slots(json_schema)
         total_slots += image_slots
+        image_prompts = extract_slide_image_prompts(json_schema)
+        if not image_prompts and image_slots > 0:
+            image_prompts = _extract_image_prompts_from_layout_source(
+                template_slug,
+                slide.id,
+                source_file_map,
+            )
+        if image_slots > 0 and len(image_prompts) > image_slots:
+            image_prompts = image_prompts[-image_slots:]
 
         slides.append(
             {
@@ -273,7 +356,7 @@ def build_layout_image_summary(
                     json_schema,
                 ),
                 "image_prompt_slots": image_slots,
-                "image_prompts": extract_slide_image_prompts(json_schema),
+                "image_prompts": image_prompts,
                 "count_is_approximate": is_approximate,
             }
         )

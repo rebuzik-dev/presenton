@@ -193,7 +193,7 @@ curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
 
 Подсчет:
 - учитываются только image-slots по `__image_prompt__`;
-- `image_prompts` содержит дефолтные prompt'ы изображений из schema (удобно для повторной генерации);
+- `image_prompts` содержит prompt'ы изображений из schema; если defaults в schema отсутствуют, используется fallback-парсинг из исходного layout `.tsx`;
 - иконки (`__icon_query__`) игнорируются;
 - для массивов используется `maxItems` (или `minItems`, если `maxItems` нет).
 
