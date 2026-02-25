@@ -41,19 +41,19 @@ const Schema = z.object({
     .min(5)
     .max(40)
     .default("ЦВЕТОВАЯ ПАЛИТРА")
-    .meta({ description: "Main header. Max 2 words" }),
+    .meta({ description: "Main header" }),
   primaryTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Основные цвета")
-    .meta({ description: "Primary group header. Max 2 words" }),
+    .meta({ description: "Left column header (Primary colors)" }),
   secondaryTitle: z
     .string()
     .min(3)
     .max(40)
     .default("Дополнительные цвета")
-    .meta({ description: "Secondary group header. Max 2 words" }),
+    .meta({ description: "Right column header (Secondary colors)" }),
   primaryColors: z
     .array(ColorItemSchema)
     .min(1)
@@ -63,7 +63,10 @@ const Schema = z.object({
       { hex: "#C9C4BE", label: "Теплый нейтральный, вторичные блоки" },
       { hex: "#999DA9", label: "Холодный серый, акценты и разделители" },
     ])
-    .meta({ description: "Primary colors list. Max 3 items" }),
+    .meta({
+      description:
+        "LEFT column. Primary colors only. Order is important: render top-to-bottom as given (most important first). Max 3 items.",
+    }),
   secondaryColors: z
     .array(ColorItemSchema)
     .min(1)
@@ -73,7 +76,10 @@ const Schema = z.object({
       { hex: "#4F5D63", label: "Темный сланцевый, опорные элементы" },
       { hex: "#1A1C23", label: "Графит, контраст и заземление" },
     ])
-    .meta({ description: "Secondary colors list. Max 3 items" }),
+    .meta({
+      description:
+        "RIGHT column. Secondary colors only. Order is important: render top-to-bottom as given. Max 3 items.",
+    }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
     __image_prompt__: "Video moodboard photo in neutral palette",
@@ -143,23 +149,27 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
-            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-              {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(0, 2).join(" ")}
-              <br />
-              {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(2).join(" ") || " "}
-            </div>
-            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-              {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
-              <br />
-              {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(1).join(" ")}
+            <div className="min-h-0">
+              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+                {slideData?.primaryTitle || "Основные цвета"}
+              </div>
+              <div className="mt-4 grid gap-6">
+                {primary.map((c, idx) => (
+                  <Card key={`p-${idx}`} hex={c.hex} label={c.label} />
+                ))}
+              </div>
             </div>
 
-            {primary.map((c, idx) => (
-              <Card key={`p-${idx}`} hex={c.hex} label={c.label} />
-            ))}
-            {secondary.map((c, idx) => (
-              <Card key={`s-${idx}`} hex={c.hex} label={c.label} />
-            ))}
+            <div className="min-h-0">
+              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+                {slideData?.secondaryTitle || "Дополнительные цвета"}
+              </div>
+              <div className="mt-4 grid gap-6">
+                {secondary.map((c, idx) => (
+                  <Card key={`s-${idx}`} hex={c.hex} label={c.label} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

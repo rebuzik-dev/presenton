@@ -33,9 +33,9 @@ const ColorCardSchema = z.object({
 })
 
 const Schema = z.object({
-  title: z.string().min(5).max(30).default("ЦВЕТОВАЯ ПАЛИТРА").meta({ description: "Header. Max 2 words" }),
-  leftHeader: z.string().min(3).max(30).default("Основные цвета").meta({ description: "Left group title. Max 2 words" }),
-  rightHeader: z.string().min(3).max(40).default("Дополнительные цвета").meta({ description: "Right group title. Max 2 words" }),
+  title: z.string().min(5).max(30).default("ЦВЕТОВАЯ ПАЛИТРА").meta({ description: "Main header" }),
+  leftHeader: z.string().min(3).max(30).default("Основные цвета").meta({ description: "Left column header (Primary colors)" }),
+  rightHeader: z.string().min(3).max(40).default("Дополнительные цвета").meta({ description: "Right column header (Secondary colors)" }),
   primary: z
     .array(ColorCardSchema)
     .min(3)
@@ -45,7 +45,10 @@ const Schema = z.object({
       { hex: "#C2BAC2", name: "Название цвета" },
       { hex: "#999DA9", name: "Название цвета" },
     ])
-    .meta({ description: "Primary color cards. Max 3 items" }),
+    .meta({
+      description:
+        "LEFT column. Primary colors only. Order is important: render top-to-bottom as given (most important first). Max 3 items.",
+    }),
   secondary: z
     .array(ColorCardSchema)
     .min(3)
@@ -55,7 +58,10 @@ const Schema = z.object({
       { hex: "#5D7079", name: "Название цвета" },
       { hex: "#1A1C23", name: "Название цвета" },
     ])
-    .meta({ description: "Secondary color cards. Max 3 items" }),
+    .meta({
+      description:
+        "RIGHT column. Secondary colors only. Order is important: render top-to-bottom as given. Max 3 items.",
+    }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
     __image_prompt__: "Event table setting photo",
@@ -101,24 +107,28 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
             {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-5 h-[490px] content-start">
-            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-              {(slideData?.leftHeader || "Основные цвета").split(" ").slice(0, 2).join(" ")}
-              <br />
-              {(slideData?.leftHeader || "Основные цвета").split(" ").slice(2).join(" ") || " "}
-            </div>
-            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-              {(slideData?.rightHeader || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
-              <br />
-              {(slideData?.rightHeader || "Дополнительные цвета").split(" ").slice(1).join(" ")}
+          <div className="mt-6 grid grid-cols-2 gap-5 h-[490px] content-start min-h-0">
+            <div className="min-h-0">
+              <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+                {slideData?.leftHeader || "Основные цвета"}
+              </div>
+              <div className="mt-4 grid gap-5">
+                {primary.slice(0, 3).map((c, idx) => (
+                  <ColorCard key={`p-${idx}`} hex={c.hex} name={c.name} />
+                ))}
+              </div>
             </div>
 
-            {primary.slice(0, 3).map((c, idx) => (
-              <ColorCard key={`p-${idx}`} hex={c.hex} name={c.name} />
-            ))}
-            {secondary.slice(0, 3).map((c, idx) => (
-              <ColorCard key={`s-${idx}`} hex={c.hex} name={c.name} />
-            ))}
+            <div className="min-h-0">
+              <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+                {slideData?.rightHeader || "Дополнительные цвета"}
+              </div>
+              <div className="mt-4 grid gap-5">
+                {secondary.slice(0, 3).map((c, idx) => (
+                  <ColorCard key={`s-${idx}`} hex={c.hex} name={c.name} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

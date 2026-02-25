@@ -44,19 +44,19 @@ const Schema = z.object({
     .min(5)
     .max(40)
     .default("ЦВЕТОВАЯ ПАЛИТРА")
-    .meta({ description: "Main header. Max 2 words" }),
+    .meta({ description: "Main header" }),
   primaryTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Основные цвета")
-    .meta({ description: "Primary group header. Max 2 words" }),
+    .meta({ description: "Left column header (Primary colors)" }),
   secondaryTitle: z
     .string()
     .min(3)
     .max(40)
     .default("Дополнительные цвета")
-    .meta({ description: "Secondary group header. Max 2 words" }),
+    .meta({ description: "Right column header (Secondary colors)" }),
   colorCards: z
     .array(ColorCardSchema)
     .min(4)
@@ -69,7 +69,10 @@ const Schema = z.object({
       { hex: "#4F5D63", description: "Тёмный сланцевый, конструкции и опоры", group: "secondary" },
       { hex: "#1A1C23", description: "Графит, линии, края, заземление", group: "secondary" },
     ])
-    .meta({ description: "Color cards list. Max 8 items" }),
+    .meta({
+      description:
+        "Two independent columns. LEFT uses items with group='primary', RIGHT uses items with group='secondary'. In each column, render top-to-bottom in the same order as provided. Max 8 items total.",
+    }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
     __image_prompt__: "Catering photo in neutral palette",
@@ -118,23 +121,27 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
-            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-              {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(0, 2).join(" ")}
-              <br />
-              {(slideData?.primaryTitle || "Основные цвета").split(" ").slice(2).join(" ") || " "}
-            </div>
-            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-              {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(0, 1).join(" ")}
-              <br />
-              {(slideData?.secondaryTitle || "Дополнительные цвета").split(" ").slice(1).join(" ")}
+            <div className="min-h-0">
+              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+                {slideData?.primaryTitle || "Основные цвета"}
+              </div>
+              <div className="mt-4 grid gap-6">
+                {primary.slice(0, 3).map((c, idx) => (
+                  <Card key={`p-${idx}`} hex={c.hex} description={c.description} />
+                ))}
+              </div>
             </div>
 
-            {primary.slice(0, 3).map((c, idx) => (
-              <Card key={`p-${idx}`} hex={c.hex} description={c.description} />
-            ))}
-            {secondary.slice(0, 3).map((c, idx) => (
-              <Card key={`s-${idx}`} hex={c.hex} description={c.description} />
-            ))}
+            <div className="min-h-0">
+              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+                {slideData?.secondaryTitle || "Дополнительные цвета"}
+              </div>
+              <div className="mt-4 grid gap-6">
+                {secondary.slice(0, 3).map((c, idx) => (
+                  <Card key={`s-${idx}`} hex={c.hex} description={c.description} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
