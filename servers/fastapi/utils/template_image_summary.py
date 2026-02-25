@@ -107,6 +107,121 @@ def count_image_prompt_slots(schema: dict[str, Any]) -> Tuple[int, bool]:
     return _count_image_prompt_slots(schema, schema, set())
 
 
+def _append_unique_prompt(prompts: list[str], value: str) -> None:
+    prompt = value.strip()
+    if prompt and prompt not in prompts:
+        prompts.append(prompt)
+
+
+def _collect_prompts_from_default_value(
+    default_value: Any,
+    prompts: list[str],
+) -> None:
+    if isinstance(default_value, dict):
+        image_prompt = default_value.get("__image_prompt__")
+        if isinstance(image_prompt, str):
+            _append_unique_prompt(prompts, image_prompt)
+
+        for nested_value in default_value.values():
+            _collect_prompts_from_default_value(nested_value, prompts)
+        return
+
+    if isinstance(default_value, list):
+        for item in default_value:
+            _collect_prompts_from_default_value(item, prompts)
+
+
+def _collect_image_prompt_candidates(
+    schema: Any,
+    root_schema: dict[str, Any],
+    seen_refs: set[str],
+    field_name: Optional[str],
+    concrete_prompts: list[str],
+    fallback_prompts: list[str],
+) -> None:
+    if not isinstance(schema, dict):
+        return
+
+    if "default" in schema:
+        _collect_prompts_from_default_value(schema.get("default"), concrete_prompts)
+
+    if field_name == "__image_prompt__":
+        field_default = schema.get("default")
+        if isinstance(field_default, str):
+            _append_unique_prompt(fallback_prompts, field_default)
+
+    ref = schema.get("$ref")
+    if isinstance(ref, str):
+        if ref in seen_refs:
+            return
+        resolved = _resolve_local_ref(ref, root_schema)
+        if not resolved:
+            return
+        _collect_image_prompt_candidates(
+            resolved,
+            root_schema,
+            seen_refs | {ref},
+            field_name,
+            concrete_prompts,
+            fallback_prompts,
+        )
+        return
+
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        for key, child_schema in properties.items():
+            _collect_image_prompt_candidates(
+                child_schema,
+                root_schema,
+                seen_refs,
+                key,
+                concrete_prompts,
+                fallback_prompts,
+            )
+
+    if schema.get("type") == "array":
+        _collect_image_prompt_candidates(
+            schema.get("items"),
+            root_schema,
+            seen_refs,
+            field_name,
+            concrete_prompts,
+            fallback_prompts,
+        )
+
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        variants = schema.get(keyword)
+        if isinstance(variants, list):
+            for variant in variants:
+                _collect_image_prompt_candidates(
+                    variant,
+                    root_schema,
+                    seen_refs,
+                    field_name,
+                    concrete_prompts,
+                    fallback_prompts,
+                )
+
+
+def extract_slide_image_prompts(schema: dict[str, Any]) -> list[str]:
+    if not isinstance(schema, dict):
+        return []
+
+    concrete_prompts: list[str] = []
+    fallback_prompts: list[str] = []
+
+    _collect_image_prompt_candidates(
+        schema,
+        schema,
+        set(),
+        None,
+        concrete_prompts,
+        fallback_prompts,
+    )
+
+    return concrete_prompts if concrete_prompts else fallback_prompts
+
+
 def build_slide_description(
     layout_description: Optional[str],
     schema: dict[str, Any],
@@ -158,6 +273,7 @@ def build_layout_image_summary(
                     json_schema,
                 ),
                 "image_prompt_slots": image_slots,
+                "image_prompts": extract_slide_image_prompts(json_schema),
                 "count_is_approximate": is_approximate,
             }
         )

@@ -108,6 +108,9 @@ def test_build_layout_image_summary_contains_descriptions():
                         "title": {"type": "string"},
                         "image": {
                             "type": "object",
+                            "default": {
+                                "__image_prompt__": "Hero visual prompt",
+                            },
                             "properties": {"__image_prompt__": {"type": "string"}},
                         },
                     },
@@ -123,3 +126,48 @@ def test_build_layout_image_summary_contains_descriptions():
     assert len(summary["slides"]) == 1
     assert "Hero layout with one image" in summary["slides"][0]["slide_description"]
     assert "Schema: Hero Slide" in summary["slides"][0]["slide_description"]
+    assert summary["slides"][0]["image_prompts"] == ["Hero visual prompt"]
+
+
+def test_build_layout_image_summary_prefers_concrete_prompt_defaults():
+    layout = PresentationLayoutModel(
+        name="general",
+        ordered=False,
+        slides=[
+            SlideLayoutModel(
+                id="gallery-slide",
+                name="Gallery",
+                description="Gallery layout",
+                json_schema={
+                    "type": "object",
+                    "properties": {
+                        "images": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "__image_prompt__": {
+                                        "type": "string",
+                                        "default": "Generic gallery image",
+                                    }
+                                },
+                            },
+                            "default": [
+                                {"__image_prompt__": "Gallery image A"},
+                                {"__image_prompt__": "Gallery image B"},
+                            ],
+                        }
+                    },
+                },
+            )
+        ],
+    )
+
+    summary = build_layout_image_summary("general", layout)
+    assert summary["slides"][0]["image_prompt_slots"] == 2
+    assert summary["slides"][0]["image_prompts"] == [
+        "Gallery image A",
+        "Gallery image B",
+    ]

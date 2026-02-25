@@ -184,6 +184,7 @@ curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
       "schema_title": "Intro Slide",
       "slide_description": "Slide intro layout... | Schema: Intro Slide | Fields: title, description, image",
       "image_prompt_slots": 1,
+      "image_prompts": ["Corporate office lobby photo"],
       "count_is_approximate": false
     }
   ]
@@ -192,6 +193,7 @@ curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
 
 Подсчет:
 - учитываются только image-slots по `__image_prompt__`;
+- `image_prompts` содержит дефолтные prompt'ы изображений из schema (удобно для повторной генерации);
 - иконки (`__icon_query__`) игнорируются;
 - для массивов используется `maxItems` (или `minItems`, если `maxItems` нет).
 

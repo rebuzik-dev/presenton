@@ -22,7 +22,15 @@ def _build_sample_layout() -> PresentationLayoutModel:
                     "properties": {
                         "image": {
                             "type": "object",
-                            "properties": {"__image_prompt__": {"type": "string"}},
+                            "default": {
+                                "__image_prompt__": "Hero skyline photo",
+                            },
+                            "properties": {
+                                "__image_prompt__": {
+                                    "type": "string",
+                                    "default": "Generic hero prompt",
+                                }
+                            },
                         }
                     },
                 },
@@ -38,13 +46,21 @@ def _build_sample_layout() -> PresentationLayoutModel:
                         "teamMembers": {
                             "type": "array",
                             "maxItems": 3,
+                            "default": [
+                                {"image": {"__image_prompt__": "Chef portrait"}},
+                                {"image": {"__image_prompt__": "Server portrait"}},
+                                {"image": {"__image_prompt__": "Team candid"}},
+                            ],
                             "items": {
                                 "type": "object",
                                 "properties": {
                                     "image": {
                                         "type": "object",
                                         "properties": {
-                                            "__image_prompt__": {"type": "string"}
+                                            "__image_prompt__": {
+                                                "type": "string",
+                                                "default": "Generic team prompt",
+                                            }
                                         },
                                     }
                                 },
@@ -75,6 +91,12 @@ def test_get_template_image_summary_success():
     assert len(payload["slides"]) == 2
     assert payload["slides"][0]["image_prompt_slots"] == 1
     assert payload["slides"][1]["image_prompt_slots"] == 3
+    assert payload["slides"][0]["image_prompts"] == ["Hero skyline photo"]
+    assert payload["slides"][1]["image_prompts"] == [
+        "Chef portrait",
+        "Server portrait",
+        "Team candid",
+    ]
     assert "Schema: Hero Slide" in payload["slides"][0]["slide_description"]
 
     mock_get_layout.assert_awaited_once()
@@ -113,4 +135,3 @@ def test_get_template_image_summary_not_found():
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Template not found"
-

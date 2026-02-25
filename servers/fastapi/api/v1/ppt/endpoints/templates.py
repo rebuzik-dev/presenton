@@ -81,6 +81,7 @@ class SlideImageSummaryResponse(BaseModel):
     schema_title: Optional[str] = None
     slide_description: str
     image_prompt_slots: int
+    image_prompts: List[str] = Field(default_factory=list)
     count_is_approximate: bool = False
 
 
