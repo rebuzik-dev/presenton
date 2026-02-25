@@ -56,15 +56,16 @@ class TestAutogenerationAPI:
             id=presentation_id, content="Test Content", n_slides=5
         )
 
-        response = client.post(
-            "/api/v1/ppt/presentation/generate",
-            json={
-                "content": "Generate a presentation about testing",
-                "n_slides": 5,
-                "language": "English",
-                "template": "general"
-            }
-        )
+        with patch("api.v1.ppt.endpoints.autogenerate.logger.info") as mock_logger_info:
+            response = client.post(
+                "/api/v1/ppt/presentation/generate",
+                json={
+                    "content": "Generate a presentation about testing",
+                    "n_slides": 5,
+                    "language": "English",
+                    "template": "general"
+                }
+            )
 
         assert response.status_code == 200
         data = response.json()
@@ -73,7 +74,11 @@ class TestAutogenerationAPI:
         
         # Verify Service Create was called
         mock_presentation_service.create_presentation.assert_called_once()
-        
+        assert any(
+            "Autogenerate request received" in str(call.args[0])
+            for call in mock_logger_info.call_args_list
+        )
+
         # We cannot easily verify background tasks execution in TestClient without more setup,
         # but we verified the endpoint returned 200 and called the first service method.
 

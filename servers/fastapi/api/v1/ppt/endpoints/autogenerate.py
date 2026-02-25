@@ -1,7 +1,8 @@
 
 import asyncio
+import json
 import uuid
-from typing import Optional, List
+from typing import Any, Optional, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,9 +14,34 @@ from models.sql.async_presentation_generation_status import (
 )
 from services.database import get_async_session
 from services.presentation_service import PresentationService
+from utils.custom_logger import setup_logger
 from utils.get_layout_by_name import get_layout_by_name
 
 AUTOGENERATE_ROUTER = APIRouter(prefix="/presentation", tags=["Autogenerate"])
+logger = setup_logger(__name__)
+
+_MAX_LOG_STRING_LENGTH = 500
+_TRUNCATED_MARKER = " ...[truncated]"
+
+
+def _truncate_for_log(value: Any) -> Any:
+    if isinstance(value, str):
+        if len(value) <= _MAX_LOG_STRING_LENGTH:
+            return value
+        return f"{value[:_MAX_LOG_STRING_LENGTH]}{_TRUNCATED_MARKER}"
+
+    if isinstance(value, list):
+        return [_truncate_for_log(item) for item in value]
+
+    if isinstance(value, dict):
+        return {key: _truncate_for_log(item) for key, item in value.items()}
+
+    return value
+
+
+def _build_request_payload_for_log(request: GeneratePresentationRequest) -> dict[str, Any]:
+    payload = request.model_dump(mode="json")
+    return _truncate_for_log(payload)
 
 
 @AUTOGENERATE_ROUTER.post("/generate", response_model=dict)
@@ -50,6 +76,15 @@ async def autogenerate_presentation(
         len(slide_outline_inputs)
         if slide_outline_inputs is not None
         else request.n_slides
+    )
+
+    logger.info(
+        "Autogenerate request received for /api/v1/ppt/presentation/generate: "
+        "template=%s, n_slides=%s, slides_markdown_count=%s, payload=%s",
+        request.template,
+        effective_n_slides,
+        len(slide_outline_inputs) if slide_outline_inputs is not None else 0,
+        json.dumps(_build_request_payload_for_log(request), ensure_ascii=False),
     )
 
     # 1. Validation (Basic)
@@ -153,7 +188,10 @@ async def autogenerate_presentation(
             except Exception as e:
                  # Error handling is largely done inside run_full_generation_pipeline 
                  # but we catch top-level errors here for the earlier steps
-                 print(f"Autogeneration failed: {e}")
+                 logger.exception(
+                     "Autogeneration failed for presentation_id=%s",
+                     presentation.id,
+                 )
                  # Ensure status is updated if not already
                  if status and status.status != "error":
                      status.status = "error"
