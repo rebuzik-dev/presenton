@@ -9,6 +9,7 @@ import { Markdown } from "tiptap-markdown";
 import Underline from "@tiptap/extension-underline";
 
 const extensions = [StarterKit, Markdown, Underline];
+const GLOBAL_SCALE_KEY = "__all__";
 
 interface TiptapTextReplacerProps {
   children: ReactNode;
@@ -54,14 +55,12 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
     dataPath: string,
     baseFontSize: number | null
   ) => {
-    if (!dataPath) return;
-    const block = layoutValidationBlocks[dataPath];
+    const block =
+      layoutValidationBlocks[GLOBAL_SCALE_KEY] ||
+      (dataPath ? layoutValidationBlocks[dataPath] : undefined);
     const scale = block?.fontScale;
 
     if (!scale || scale >= 1 || !baseFontSize || !Number.isFinite(baseFontSize)) {
-      if (container.style.fontSize) {
-        container.style.removeProperty("font-size");
-      }
       return;
     }
 
@@ -75,19 +74,21 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
     rootsRef.current.forEach(
       ({ root, dataPath, fallbackText, baseFontSize }, containerEl) => {
         applyLayoutValidationBlock(containerEl, dataPath, baseFontSize);
-      const content = dataPath ? getValueByPath(slideData, dataPath) ?? fallbackText : fallbackText;
-      root.render(
-        <TiptapText
-          content={content}
-          onContentChange={(newContent: string) => {
-            if (dataPath && onContentChange) {
-              onContentChange(newContent, dataPath, slideIndex);
-            }
-          }}
-          isEditable={isEditable}
-          placeholder="Enter text..."
-        />
-      );
+        const content = dataPath
+          ? getValueByPath(slideData, dataPath) ?? fallbackText
+          : fallbackText;
+        root.render(
+          <TiptapText
+            content={content}
+            onContentChange={(newContent: string) => {
+              if (dataPath && onContentChange) {
+                onContentChange(newContent, dataPath, slideIndex);
+              }
+            }}
+            isEditable={isEditable}
+            placeholder="Enter text..."
+          />
+        );
       }
     );
   }, [isEditable, slideData, slideIndex, layoutValidationBlocks]);
@@ -103,7 +104,7 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
       // Get all elements in the container
       const allElements = container.querySelectorAll("*");
 
-      allElements.forEach((element) => {
+      allElements.forEach((element, index) => {
         const htmlElement = element as HTMLElement;
 
         // Skip if already processed
@@ -138,12 +139,13 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
 
         const dataPath = findDataPath(slideData, trimmedText);
         const dataPathValue = dataPath.path || "";
+        const layoutPath = dataPathValue || `__dom_${index}`;
 
         // Create a container for the TiptapText
         const tiptapContainer = document.createElement("div");
         tiptapContainer.style.cssText = allStyles || "";
         tiptapContainer.className = Array.from(allClasses).join(" ");
-        tiptapContainer.setAttribute("data-layout-path", dataPathValue);
+        tiptapContainer.setAttribute("data-layout-path", layoutPath);
 
         // Replace the element
         if (htmlElement.parentNode) {

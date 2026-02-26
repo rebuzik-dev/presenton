@@ -54,6 +54,7 @@ const runLayoutValidationInPage = async (
       const CLIPPING_VALUES = new Set(["hidden", "clip", "auto", "scroll"]);
       const minScale = 0.72;
       const scaleStep = 0.92;
+      const GLOBAL_SCALE_KEY = "__all__";
 
       const waitForStableLayout = async () => {
         const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
@@ -174,9 +175,9 @@ const runLayoutValidationInPage = async (
             slideRoot.querySelectorAll<HTMLElement>("[data-layout-path]")
           );
 
-          for (const textNode of textNodes) {
-            const path = textNode.dataset.layoutPath || "";
-            if (!path) continue;
+          for (const [textNodeIndex, textNode] of textNodes.entries()) {
+            const path =
+              textNode.dataset.layoutPath || `__dom_${textNodeIndex}`;
 
             const rect = textNode.getBoundingClientRect();
             const hasScrollOverflow =
@@ -229,17 +230,14 @@ const runLayoutValidationInPage = async (
             slideRoot.dataset.slideIndex || String(fallbackIndex),
             10
           );
+          const scale = overrides[String(slideIndex)]?.fontScale;
+          if (!scale || scale >= 1) return;
+
           const textNodes = Array.from(
             slideRoot.querySelectorAll<HTMLElement>("[data-layout-path]")
           );
           textNodes.forEach((textNode) => {
-            const path = textNode.dataset.layoutPath || "";
-            if (!path) return;
-            const key = `${slideIndex}:${path}`;
-            const scale = overrides[key]?.fontScale;
-            if (scale && scale < 1) {
-              applyScale(textNode, scale);
-            }
+            applyScale(textNode, scale);
           });
         });
       };
@@ -259,24 +257,24 @@ const runLayoutValidationInPage = async (
         attempt += 1
       ) {
         iterations += 1;
-        const touched = new Set<string>();
+        const touchedSlides = new Set<number>();
 
         for (const issue of issues) {
-          const key = `${issue.slideIndex}:${issue.path}`;
-          if (!issue.path || touched.has(key)) continue;
-          touched.add(key);
+          if (touchedSlides.has(issue.slideIndex)) continue;
+          touchedSlides.add(issue.slideIndex);
 
-          const previousScale = overrides[key]?.fontScale ?? 1;
+          const slideKey = String(issue.slideIndex);
+          const previousScale = overrides[slideKey]?.fontScale ?? 1;
           const nextScale = Math.max(
             minScale,
             Number((previousScale * scaleStep).toFixed(3))
           );
 
           if (nextScale < previousScale) {
-            overrides[key] = { fontScale: nextScale };
+            overrides[slideKey] = { fontScale: nextScale };
             appliedFixes.push({
               slideIndex: issue.slideIndex,
-              path: issue.path,
+              path: GLOBAL_SCALE_KEY,
               previousScale,
               nextScale,
             });

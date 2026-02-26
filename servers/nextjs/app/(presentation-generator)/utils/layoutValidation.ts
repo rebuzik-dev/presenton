@@ -33,6 +33,7 @@ interface ValidateOptions {
 }
 
 const CLIPPING_VALUES = new Set(["hidden", "clip", "auto", "scroll"]);
+const GLOBAL_SCALE_KEY = "__all__";
 
 const waitForStableLayout = async (): Promise<void> => {
   const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
@@ -91,16 +92,15 @@ const applyBlocksToSlide = (
   slideRoot: HTMLElement,
   blocks: Record<string, LayoutValidationBlock>
 ): void => {
+  const globalScale = blocks[GLOBAL_SCALE_KEY]?.fontScale;
   const textNodes = Array.from(
     slideRoot.querySelectorAll<HTMLElement>("[data-layout-path]")
   );
 
   for (const textNode of textNodes) {
     const path = textNode.dataset.layoutPath || "";
-    if (!path) continue;
 
-    const block = blocks[path];
-    const scale = block?.fontScale;
+    const scale = globalScale ?? blocks[path]?.fontScale;
     if (!scale || scale >= 1) continue;
 
     const baseSize = setBaseFontSizeIfMissing(textNode);
@@ -152,9 +152,8 @@ const collectIssues = (
   const seen = new Set<string>();
   const issues: LayoutValidationIssue[] = [];
 
-  for (const textNode of textNodes) {
-    const path = textNode.dataset.layoutPath || "";
-    if (!path) continue;
+  for (const [index, textNode] of textNodes.entries()) {
+    const path = textNode.dataset.layoutPath || `__dom_${index}`;
 
     const rect = textNode.getBoundingClientRect();
     const hasScrollOverflow =
@@ -211,6 +210,22 @@ export const validateAndAutoFixSlideElement = async (
   const slideIndex = options.slideIndex ?? 0;
 
   const blocks: Record<string, LayoutValidationBlock> = { ...initialBlocks };
+  const legacyPathScales = Object.entries(initialBlocks)
+    .filter(
+      ([key, value]) =>
+        key !== GLOBAL_SCALE_KEY &&
+        !!value?.fontScale &&
+        (value.fontScale as number) > 0 &&
+        (value.fontScale as number) < 1
+    )
+    .map(([, value]) => value.fontScale as number);
+  const initialGlobalScale =
+    blocks[GLOBAL_SCALE_KEY]?.fontScale ??
+    (legacyPathScales.length > 0 ? Math.min(...legacyPathScales) : 1);
+  blocks[GLOBAL_SCALE_KEY] = {
+    fontScale: initialGlobalScale,
+  };
+
   const appliedFixes: Array<{
     path: string;
     previousScale: number;
@@ -228,29 +243,22 @@ export const validateAndAutoFixSlideElement = async (
     iteration < maxIterations && issues.length > 0;
     iteration += 1
   ) {
-    const touched = new Set<string>();
+    const previousScale = blocks[GLOBAL_SCALE_KEY]?.fontScale ?? 1;
+    const nextScale = Math.max(
+      minScale,
+      Number((previousScale * scaleStep).toFixed(3))
+    );
 
-    for (const issue of issues) {
-      if (!issue.path || touched.has(issue.path)) continue;
-      touched.add(issue.path);
-
-      const previousScale = blocks[issue.path]?.fontScale ?? 1;
-      const nextScale = Math.max(
-        minScale,
-        Number((previousScale * scaleStep).toFixed(3))
-      );
-
-      if (nextScale < previousScale) {
-        blocks[issue.path] = {
-          ...blocks[issue.path],
-          fontScale: nextScale,
-        };
-        appliedFixes.push({
-          path: issue.path,
-          previousScale,
-          nextScale,
-        });
-      }
+    if (nextScale < previousScale) {
+      blocks[GLOBAL_SCALE_KEY] = {
+        ...blocks[GLOBAL_SCALE_KEY],
+        fontScale: nextScale,
+      };
+      appliedFixes.push({
+        path: GLOBAL_SCALE_KEY,
+        previousScale,
+        nextScale,
+      });
     }
 
     applyBlocksToSlide(slideRoot, blocks);
@@ -274,4 +282,3 @@ export const validateAndAutoFixSlideElement = async (
     appliedFixes,
   };
 };
-
