@@ -138,7 +138,10 @@ export async function POST(req: NextRequest) {
       page,
       presentationId: String(id),
       mode: "pdf",
-      maxIterations: 2,
+      maxIterations: 8,
+      minScale: 0.45,
+      scaleStep: 0.9,
+      failOnUnresolved: false,
     });
 
     const pdfBuffer = await page.pdf({

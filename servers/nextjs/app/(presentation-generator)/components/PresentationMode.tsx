@@ -139,9 +139,9 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
         slideRoot,
         existingBlocks,
         {
-          maxIterations: 2,
-          minScale: 0.72,
-          scaleStep: 0.92,
+          maxIterations: 6,
+          minScale: 0.5,
+          scaleStep: 0.9,
           slideIndex: activeSlide.index ?? currentSlide,
         }
       );

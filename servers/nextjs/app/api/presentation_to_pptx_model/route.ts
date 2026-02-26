@@ -42,7 +42,10 @@ export async function GET(request: NextRequest) {
       page,
       presentationId: id,
       mode: "pptx",
-      maxIterations: 2,
+      maxIterations: 8,
+      minScale: 0.45,
+      scaleStep: 0.9,
+      failOnUnresolved: false,
     });
     const screenshotsDir = getScreenshotsDir();
 

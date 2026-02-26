@@ -204,9 +204,9 @@ export const validateAndAutoFixSlideElement = async (
   initialBlocks: Record<string, LayoutValidationBlock> = {},
   options: ValidateOptions = {}
 ): Promise<LayoutValidationResult> => {
-  const maxIterations = options.maxIterations ?? 2;
-  const minScale = options.minScale ?? 0.72;
-  const scaleStep = options.scaleStep ?? 0.92;
+  const maxIterations = options.maxIterations ?? 6;
+  const minScale = options.minScale ?? 0.5;
+  const scaleStep = options.scaleStep ?? 0.9;
   const slideIndex = options.slideIndex ?? 0;
 
   const blocks: Record<string, LayoutValidationBlock> = { ...initialBlocks };

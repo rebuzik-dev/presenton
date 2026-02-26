@@ -30,14 +30,25 @@ interface RunLayoutValidationOptions {
   presentationId: string;
   mode: "pdf" | "pptx";
   maxIterations?: number;
+  minScale?: number;
+  scaleStep?: number;
+  failOnUnresolved?: boolean;
 }
 
 const runLayoutValidationInPage = async (
   page: Page,
-  maxIterations: number
+  options: {
+    maxIterations: number;
+    minScale: number;
+    scaleStep: number;
+  }
 ): Promise<ExportLayoutValidationResult> => {
   return await page.evaluate(
-    async ({ maxIterations: localMaxIterations }) => {
+    async ({
+      maxIterations: localMaxIterations,
+      minScale,
+      scaleStep,
+    }) => {
       type LocalIssue = {
         type: "overflow" | "out_of_bounds";
         path: string;
@@ -52,8 +63,6 @@ const runLayoutValidationInPage = async (
       };
 
       const CLIPPING_VALUES = new Set(["hidden", "clip", "auto", "scroll"]);
-      const minScale = 0.72;
-      const scaleStep = 0.92;
       const GLOBAL_SCALE_KEY = "__all__";
 
       const waitForStableLayout = async () => {
@@ -294,7 +303,7 @@ const runLayoutValidationInPage = async (
         overrides,
       };
     },
-    { maxIterations }
+    options
   );
 };
 
@@ -356,9 +365,16 @@ export const runAndPersistLayoutValidation = async ({
   page,
   presentationId,
   mode,
-  maxIterations = 2,
+  maxIterations = 8,
+  minScale = 0.45,
+  scaleStep = 0.9,
+  failOnUnresolved = false,
 }: RunLayoutValidationOptions): Promise<ExportLayoutValidationResult> => {
-  const result = await runLayoutValidationInPage(page, maxIterations);
+  const result = await runLayoutValidationInPage(page, {
+    maxIterations,
+    minScale,
+    scaleStep,
+  });
   const artifacts = await persistLayoutValidationArtifacts(
     page,
     presentationId,
@@ -371,7 +387,7 @@ export const runAndPersistLayoutValidation = async ({
     ...artifacts,
   };
 
-  if (enrichedResult.unresolvedIssues.length > 0) {
+  if (enrichedResult.unresolvedIssues.length > 0 && failOnUnresolved) {
     throw new ApiError(
       `Layout validation failed (${mode}). See report: ${enrichedResult.issuesReportPath}`
     );
