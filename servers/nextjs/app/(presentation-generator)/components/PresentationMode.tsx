@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,6 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slide } from "../types/slide";
 import { useTemplateLayouts } from "../hooks/useTemplateLayouts";
+import { useDispatch } from "react-redux";
+import { updateSlideLayoutValidation } from "@/store/slices/presentationGeneration";
+import { validateAndAutoFixSlideElement } from "../utils/layoutValidation";
 
 
 interface PresentationModeProps {
@@ -34,6 +37,10 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
 
 }) => {
   const { renderSlideContent } = useTemplateLayouts();
+  const dispatch = useDispatch();
+  const slideContainerRef = useRef<HTMLDivElement>(null);
+  const validationSignatureRef = useRef<string>("");
+  const activeSlide = slides[currentSlide];
   // Modify the handleKeyPress to prevent default behavior
   const handleKeyPress = useCallback(
     (event: KeyboardEvent) => {
@@ -116,6 +123,65 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
     return () => document.removeEventListener("keydown", handleEscKey);
   }, [isFullscreen, onFullscreenToggle]);
 
+  useEffect(() => {
+    if (!activeSlide) return;
+
+    const timer = window.setTimeout(async () => {
+      const container = slideContainerRef.current;
+      if (!container) return;
+
+      const slideRoot = container.querySelector<HTMLElement>("[data-slide-root]");
+      if (!slideRoot) return;
+
+      const existingBlocks =
+        (activeSlide as any)?.properties?.layoutValidation?.blocks || {};
+      const result = await validateAndAutoFixSlideElement(
+        slideRoot,
+        existingBlocks,
+        {
+          maxIterations: 2,
+          minScale: 0.72,
+          scaleStep: 0.92,
+          slideIndex: activeSlide.index ?? currentSlide,
+        }
+      );
+
+      const isCleanResult =
+        result.status === "ok" &&
+        Object.keys(result.blocks).length === 0 &&
+        result.unresolvedIssues.length === 0;
+      if (isCleanResult && !(activeSlide as any)?.properties?.layoutValidation) {
+        return;
+      }
+
+      const nextSignature = JSON.stringify({
+        status: result.status,
+        blocks: result.blocks,
+        issues: result.unresolvedIssues,
+      });
+      if (validationSignatureRef.current === nextSignature) return;
+      validationSignatureRef.current = nextSignature;
+
+      dispatch(
+        updateSlideLayoutValidation({
+          slideIndex: activeSlide.index ?? currentSlide,
+          status: result.status,
+          blocks: result.blocks,
+          issues: result.unresolvedIssues,
+          appliedFixes: result.appliedFixes,
+        })
+      );
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    activeSlide?.content,
+    (activeSlide as any)?.properties?.layoutValidation?.blocks,
+    activeSlide?.index,
+    currentSlide,
+    dispatch,
+  ]);
+
   return (
     <div
       className="fixed inset-0 bg-black flex flex-col"
@@ -189,6 +255,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
       {/* Current Slide */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div
+          ref={slideContainerRef}
           className={`w-full max-w-[1280px] scale-110 aspect-video slide-theme slide-container border rounded-sm font-inter shadow-lg bg-white`}
         >
           {slides[currentSlide] &&

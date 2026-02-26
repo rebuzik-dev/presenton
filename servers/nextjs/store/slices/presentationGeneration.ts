@@ -25,6 +25,17 @@ interface PresentationGenerationState {
   isLayoutLoading: boolean;
 }
 
+interface LayoutValidationIssue {
+  type: "overflow" | "out_of_bounds";
+  path: string;
+  message: string;
+  slideIndex: number;
+}
+
+interface LayoutValidationBlock {
+  fontScale?: number;
+}
+
 const initialState: PresentationGenerationState = {
   presentation_id: null,
   outlines: [],
@@ -301,6 +312,38 @@ const presentationGenerationSlice = createSlice({
 
       }
     },
+    updateSlideLayoutValidation: (
+      state,
+      action: PayloadAction<{
+        slideIndex: number;
+        status: "ok" | "fixed" | "failed";
+        blocks: Record<string, LayoutValidationBlock>;
+        issues?: LayoutValidationIssue[];
+        appliedFixes?: Array<{
+          path: string;
+          previousScale: number;
+          nextScale: number;
+        }>;
+      }>
+    ) => {
+      if (
+        state.presentationData &&
+        state.presentationData.slides &&
+        state.presentationData.slides[action.payload.slideIndex]
+      ) {
+        const slide = state.presentationData.slides[action.payload.slideIndex];
+        slide.properties = slide.properties || {};
+        slide.properties.layoutValidation = {
+          ...(slide.properties.layoutValidation || {}),
+          status: action.payload.status,
+          blocks: action.payload.blocks,
+          issues: action.payload.issues || [],
+          appliedFixes: action.payload.appliedFixes || [],
+          lastValidatedAt: new Date().toISOString(),
+          version: 1,
+        };
+      }
+    },
 
     // Update slide icon at specific data path
     updateSlideIcon: (
@@ -399,6 +442,7 @@ export const {
   updateSlideContent,
   updateSlideImage,
   updateImageProperties,
+  updateSlideLayoutValidation,
   updateSlideIcon,
   addNewSlide,
 } = presentationGenerationSlice.actions;

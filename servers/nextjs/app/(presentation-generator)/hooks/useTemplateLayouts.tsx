@@ -75,6 +75,9 @@ export const useTemplateLayouts = () => {
           key={slide.id}
           slideData={slide.content}
           slideIndex={slide.index}
+          layoutValidationBlocks={
+            slide?.properties?.layoutValidation?.blocks || {}
+          }
           isEditable={isEditMode}
           onContentChange={(
             content: string,
@@ -100,6 +103,16 @@ export const useTemplateLayouts = () => {
         ? withTextReplacer
         : slideContent;
 
+      const contentWithLayoutRoot = (
+        <div
+          data-slide-root="true"
+          data-slide-index={slide.index}
+          className="layout-validation-slide-root"
+        >
+          {renderedContent}
+        </div>
+      );
+
       if (isEditMode) {
         return (
           <EditableLayoutWrapper
@@ -107,12 +120,12 @@ export const useTemplateLayouts = () => {
             slideData={slide.content}
             properties={slide.properties}
           >
-            {renderedContent}
+            {contentWithLayoutRoot}
           </EditableLayoutWrapper>
         );
       }
 
-      return renderedContent;
+      return contentWithLayoutRoot;
     };
   }, [getTemplateLayout, dispatch]);
 

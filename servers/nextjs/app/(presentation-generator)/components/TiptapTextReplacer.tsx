@@ -14,6 +14,7 @@ interface TiptapTextReplacerProps {
   children: ReactNode;
   slideData?: any;
   slideIndex?: number;
+  layoutValidationBlocks?: Record<string, { fontScale?: number }>;
   onContentChange?: (
     content: string,
     path: string,
@@ -26,6 +27,7 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
   children,
   slideData,
   slideIndex,
+  layoutValidationBlocks = {},
   onContentChange = () => { },
   isEditable = true,
 }) => {
@@ -36,13 +38,43 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
   );
   // Track created React roots to update content when slideData changes
   const rootsRef = useRef<
-    Map<HTMLElement, { root: any; dataPath: string; fallbackText: string }>
+    Map<
+      HTMLElement,
+      {
+        root: any;
+        dataPath: string;
+        fallbackText: string;
+        baseFontSize: number | null;
+      }
+    >
   >(new Map());
+
+  const applyLayoutValidationBlock = (
+    container: HTMLElement,
+    dataPath: string,
+    baseFontSize: number | null
+  ) => {
+    if (!dataPath) return;
+    const block = layoutValidationBlocks[dataPath];
+    const scale = block?.fontScale;
+
+    if (!scale || scale >= 1 || !baseFontSize || !Number.isFinite(baseFontSize)) {
+      if (container.style.fontSize) {
+        container.style.removeProperty("font-size");
+      }
+      return;
+    }
+
+    const scaledSize = Math.max(8, baseFontSize * scale);
+    container.style.fontSize = `${scaledSize}px`;
+  };
 
   // Effect to update editable state of existing roots
   useEffect(() => {
     if (!rootsRef.current || rootsRef.current.size === 0) return;
-    rootsRef.current.forEach(({ root, dataPath, fallbackText }) => {
+    rootsRef.current.forEach(
+      ({ root, dataPath, fallbackText, baseFontSize }, containerEl) => {
+        applyLayoutValidationBlock(containerEl, dataPath, baseFontSize);
       const content = dataPath ? getValueByPath(slideData, dataPath) ?? fallbackText : fallbackText;
       root.render(
         <TiptapText
@@ -56,8 +88,9 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
           placeholder="Enter text..."
         />
       );
-    });
-  }, [isEditable, slideData, slideIndex]);
+      }
+    );
+  }, [isEditable, slideData, slideIndex, layoutValidationBlocks]);
 
 
   useEffect(() => {
@@ -104,11 +137,13 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
         const allStyles = htmlElement.getAttribute("style");
 
         const dataPath = findDataPath(slideData, trimmedText);
+        const dataPathValue = dataPath.path || "";
 
         // Create a container for the TiptapText
         const tiptapContainer = document.createElement("div");
         tiptapContainer.style.cssText = allStyles || "";
         tiptapContainer.className = Array.from(allClasses).join(" ");
+        tiptapContainer.setAttribute("data-layout-path", dataPathValue);
 
         // Replace the element
         if (htmlElement.parentNode) {
@@ -117,22 +152,41 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
           htmlElement.innerHTML = "";
         }
         setProcessedElements((prev) => new Set(prev).add(htmlElement));
+        const computedFontSize = Number.parseFloat(
+          window.getComputedStyle(htmlElement).fontSize
+        );
+        const baseFontSize =
+          Number.isFinite(computedFontSize) && computedFontSize > 0
+            ? computedFontSize
+            : null;
+        if (baseFontSize) {
+          tiptapContainer.setAttribute(
+            "data-layout-base-font-size",
+            String(baseFontSize)
+          );
+        }
+        applyLayoutValidationBlock(
+          tiptapContainer,
+          dataPathValue,
+          baseFontSize
+        );
         // Render TiptapText
         const root = ReactDOM.createRoot(tiptapContainer);
-        const initialContent = dataPath.path
-          ? getValueByPath(slideData, dataPath.path) ?? trimmedText
+        const initialContent = dataPathValue
+          ? getValueByPath(slideData, dataPathValue) ?? trimmedText
           : trimmedText;
         rootsRef.current.set(tiptapContainer, {
           root,
-          dataPath: dataPath.path,
+          dataPath: dataPathValue,
           fallbackText: trimmedText,
+          baseFontSize,
         });
         root.render(
           <TiptapText
             content={initialContent}
             onContentChange={(content: string) => {
               if (dataPath && onContentChange) {
-                onContentChange(content, dataPath.path, slideIndex);
+                onContentChange(content, dataPathValue, slideIndex);
               }
             }}
             placeholder="Enter text..."
@@ -151,7 +205,7 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [slideData, slideIndex]); // Dependencies (isEditable intentionally omitted from this effect to avoid re-creation, handled by separate effect)
+  }, [slideData, slideIndex, layoutValidationBlocks]); // Dependencies (isEditable intentionally omitted from this effect to avoid re-creation, handled by separate effect)
 
   // When slideData changes, update existing editors' content using the stored dataPath
   // (Merged into the isEditable effect above for efficiency)

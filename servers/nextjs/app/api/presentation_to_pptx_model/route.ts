@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import sharp from "sharp";
+import { runAndPersistLayoutValidation } from "./layoutValidation";
 
 interface GetAllChildElementsAttributesArgs {
   element: ElementHandle<Element>;
@@ -37,6 +38,12 @@ export async function GET(request: NextRequest) {
     const id = await getPresentationId(request);
     const auth = getRequestAuth(request);
     [browser, page] = await getBrowserAndPage(id, auth);
+    await runAndPersistLayoutValidation({
+      page,
+      presentationId: id,
+      mode: "pptx",
+      maxIterations: 2,
+    });
     const screenshotsDir = getScreenshotsDir();
 
     const { slides, speakerNotes } = await getSlidesAndSpeakerNotes(page);

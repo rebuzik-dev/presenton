@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, PlusIcon, Trash2, WandSparkles, StickyNote } from "lucide-react";
 import {
   Popover,
@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   deletePresentationSlide,
   updateSlide,
+  updateSlideLayoutValidation,
 } from "@/store/slices/presentationGeneration";
 import { useTemplateLayouts } from "../../hooks/useTemplateLayouts";
 import { usePathname } from "next/navigation";
@@ -22,6 +23,7 @@ import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import NewSlide from "../../components/NewSlide";
 import { addToHistory } from "@/store/slices/undoRedoSlice";
 import ScaledSlideWrapper from "../../components/ScaledSlideWrapper";
+import { validateAndAutoFixSlideElement } from "../../utils/layoutValidation";
 
 interface SlideContentProps {
   slide: any;
@@ -40,6 +42,8 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
   // Use the centralized group layouts hook
   const { renderSlideContent, loading } = useTemplateLayouts();
   const pathname = usePathname();
+  const slideWrapperRef = useRef<HTMLDivElement>(null);
+  const layoutValidationSignatureRef = useRef<string>("");
 
   const handleSubmit = async () => {
     const element = document.getElementById(
@@ -134,6 +138,66 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
     }
   }, [slide, isStreaming, loading]);
 
+  useEffect(() => {
+    if (loading || isStreaming) {
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const wrapper = slideWrapperRef.current;
+      if (!wrapper) return;
+
+      const slideRoot = wrapper.querySelector<HTMLElement>("[data-slide-root]");
+      if (!slideRoot) return;
+
+      const existingBlocks = slide?.properties?.layoutValidation?.blocks || {};
+      const result = await validateAndAutoFixSlideElement(slideRoot, existingBlocks, {
+        maxIterations: 2,
+        minScale: 0.72,
+        scaleStep: 0.92,
+        slideIndex: slide.index,
+      });
+
+      const isCleanResult =
+        result.status === "ok" &&
+        Object.keys(result.blocks).length === 0 &&
+        result.unresolvedIssues.length === 0;
+      if (isCleanResult && !slide?.properties?.layoutValidation) {
+        return;
+      }
+
+      const nextSignature = JSON.stringify({
+        status: result.status,
+        blocks: result.blocks,
+        issues: result.unresolvedIssues,
+      });
+
+      if (layoutValidationSignatureRef.current === nextSignature) {
+        return;
+      }
+      layoutValidationSignatureRef.current = nextSignature;
+
+      dispatch(
+        updateSlideLayoutValidation({
+          slideIndex: slide.index,
+          status: result.status,
+          blocks: result.blocks,
+          issues: result.unresolvedIssues,
+          appliedFixes: result.appliedFixes,
+        })
+      );
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    dispatch,
+    loading,
+    isStreaming,
+    slide.index,
+    slide.content,
+    slide?.properties?.layoutValidation?.blocks,
+  ]);
+
   return (
     <>
       <div
@@ -144,6 +208,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
           <Loader2 className="w-8 h-8 absolute right-2 top-2 z-30 text-blue-800 animate-spin" />
         )}
         <div
+          ref={slideWrapperRef}
           data-layout={slide.layout}
           data-group={slide.layout_group}
           className={` w-full  group `}
