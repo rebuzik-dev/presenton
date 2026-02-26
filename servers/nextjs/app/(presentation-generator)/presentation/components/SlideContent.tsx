@@ -24,6 +24,10 @@ import NewSlide from "../../components/NewSlide";
 import { addToHistory } from "@/store/slices/undoRedoSlice";
 import ScaledSlideWrapper from "../../components/ScaledSlideWrapper";
 import { validateAndAutoFixSlideElement } from "../../utils/layoutValidation";
+import {
+  computeContentHash,
+  computeLayoutSignature,
+} from "../../utils/layoutValidationHash";
 
 interface SlideContentProps {
   slide: any;
@@ -150,17 +154,38 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
       const slideRoot = wrapper.querySelector<HTMLElement>("[data-slide-root]");
       if (!slideRoot) return;
 
-      const existingBlocks = slide?.properties?.layoutValidation?.blocks || {};
-      const result = await validateAndAutoFixSlideElement(slideRoot, existingBlocks, {
-        maxIterations: 6,
-        minScale: 0.5,
-        scaleStep: 0.9,
-        slideIndex: slide.index,
-      });
+      const contentHash = computeContentHash(slide.content);
+      const layoutSignature = computeLayoutSignature(
+        slide.layout,
+        slide.layout_group
+      );
+      const existingValidation = slide?.properties?.layoutValidation;
+      const isHashScopedCacheValid =
+        existingValidation?.version === 2 &&
+        existingValidation?.contentHash === contentHash &&
+        existingValidation?.layoutSignature === layoutSignature;
+
+      const existingGroups = isHashScopedCacheValid
+        ? existingValidation?.groups ||
+          existingValidation?.blocks ||
+          {}
+        : {};
+
+      const result = await validateAndAutoFixSlideElement(
+        slideRoot,
+        existingGroups,
+        {
+          maxIterations: 6,
+          minScale: 0.6,
+          scaleStep: 0.92,
+          slideIndex: slide.index,
+          clampOnFail: false,
+        }
+      );
 
       const isCleanResult =
         result.status === "ok" &&
-        Object.keys(result.blocks).length === 0 &&
+        Object.keys(result.groups).length === 0 &&
         result.unresolvedIssues.length === 0;
       if (isCleanResult && !slide?.properties?.layoutValidation) {
         return;
@@ -168,8 +193,10 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
 
       const nextSignature = JSON.stringify({
         status: result.status,
-        blocks: result.blocks,
+        groups: result.groups,
         issues: result.unresolvedIssues,
+        contentHash,
+        layoutSignature,
       });
 
       if (layoutValidationSignatureRef.current === nextSignature) {
@@ -181,9 +208,15 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
         updateSlideLayoutValidation({
           slideIndex: slide.index,
           status: result.status,
+          groups: result.groups,
           blocks: result.blocks,
           issues: result.unresolvedIssues,
           appliedFixes: result.appliedFixes,
+          clampedPaths: result.clampedPaths,
+          density: result.density,
+          contentHash,
+          layoutSignature,
+          version: 2,
         })
       );
     }, 150);
@@ -194,8 +227,11 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
     loading,
     isStreaming,
     slide.index,
+    slide.layout,
+    slide.layout_group,
     slide.content,
     slide?.properties?.layoutValidation?.blocks,
+    slide?.properties?.layoutValidation?.groups,
   ]);
 
   return (

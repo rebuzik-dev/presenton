@@ -7,9 +7,16 @@ import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "tiptap-markdown";
 import Underline from "@tiptap/extension-underline";
+import {
+  DEFAULT_LAYOUT_GROUP,
+  LayoutTextRole,
+  toGroupKey,
+} from "../utils/layoutValidation";
 
 const extensions = [StarterKit, Markdown, Underline];
-const GLOBAL_SCALE_KEY = "__all__";
+const LEGACY_GLOBAL_SCALE_KEY = "__all__";
+const LOCKED_ROLES = new Set<LayoutTextRole>(["title", "subtitle", "locked"]);
+const ADAPTIVE_ROLES = new Set<LayoutTextRole>(["body", "caption"]);
 
 interface TiptapTextReplacerProps {
   children: ReactNode;
@@ -46,6 +53,8 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
         dataPath: string;
         fallbackText: string;
         baseFontSize: number | null;
+        layoutRole: LayoutTextRole;
+        layoutGroup: string | null;
       }
     >
   >(new Map());
@@ -53,14 +62,28 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
   const applyLayoutValidationBlock = (
     container: HTMLElement,
     dataPath: string,
-    baseFontSize: number | null
+    baseFontSize: number | null,
+    layoutRole: LayoutTextRole,
+    layoutGroup: string | null
   ) => {
+    if (!baseFontSize || !Number.isFinite(baseFontSize)) {
+      return;
+    }
+
+    if (LOCKED_ROLES.has(layoutRole)) {
+      container.style.fontSize = `${baseFontSize}px`;
+      return;
+    }
+
+    const groupKey = toGroupKey(layoutGroup || DEFAULT_LAYOUT_GROUP);
     const block =
-      layoutValidationBlocks[GLOBAL_SCALE_KEY] ||
+      layoutValidationBlocks[groupKey] ||
+      layoutValidationBlocks[LEGACY_GLOBAL_SCALE_KEY] ||
       (dataPath ? layoutValidationBlocks[dataPath] : undefined);
     const scale = block?.fontScale;
 
-    if (!scale || scale >= 1 || !baseFontSize || !Number.isFinite(baseFontSize)) {
+    if (!scale || scale >= 1) {
+      container.style.fontSize = `${baseFontSize}px`;
       return;
     }
 
@@ -72,8 +95,17 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
   useEffect(() => {
     if (!rootsRef.current || rootsRef.current.size === 0) return;
     rootsRef.current.forEach(
-      ({ root, dataPath, fallbackText, baseFontSize }, containerEl) => {
-        applyLayoutValidationBlock(containerEl, dataPath, baseFontSize);
+      (
+        { root, dataPath, fallbackText, baseFontSize, layoutRole, layoutGroup },
+        containerEl
+      ) => {
+        applyLayoutValidationBlock(
+          containerEl,
+          dataPath,
+          baseFontSize,
+          layoutRole,
+          layoutGroup
+        );
         const content = dataPath
           ? getValueByPath(slideData, dataPath) ?? fallbackText
           : fallbackText;
@@ -140,12 +172,30 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
         const dataPath = findDataPath(slideData, trimmedText);
         const dataPathValue = dataPath.path || "";
         const layoutPath = dataPathValue || `__dom_${index}`;
+        const layoutRole = resolveLayoutRole(htmlElement, dataPathValue || layoutPath);
+        const layoutGroup = resolveLayoutGroup(htmlElement, layoutRole);
+        const layoutContainer =
+          htmlElement.dataset.layoutContainer ||
+          htmlElement
+            .closest("[data-layout-container]")
+            ?.getAttribute("data-layout-container");
 
         // Create a container for the TiptapText
         const tiptapContainer = document.createElement("div");
         tiptapContainer.style.cssText = allStyles || "";
         tiptapContainer.className = Array.from(allClasses).join(" ");
         tiptapContainer.setAttribute("data-layout-path", layoutPath);
+        tiptapContainer.setAttribute("data-layout-role", layoutRole);
+        tiptapContainer.setAttribute(
+          "data-layout-source-tag",
+          htmlElement.tagName.toLowerCase()
+        );
+        if (layoutGroup) {
+          tiptapContainer.setAttribute("data-layout-group", layoutGroup);
+        }
+        if (layoutContainer) {
+          tiptapContainer.setAttribute("data-layout-container", layoutContainer);
+        }
 
         // Replace the element
         if (htmlElement.parentNode) {
@@ -170,7 +220,9 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
         applyLayoutValidationBlock(
           tiptapContainer,
           dataPathValue,
-          baseFontSize
+          baseFontSize,
+          layoutRole,
+          layoutGroup
         );
         // Render TiptapText
         const root = ReactDOM.createRoot(tiptapContainer);
@@ -182,6 +234,8 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
           dataPath: dataPathValue,
           fallbackText: trimmedText,
           baseFontSize,
+          layoutRole,
+          layoutGroup,
         });
         root.render(
           <TiptapText
@@ -213,6 +267,80 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
   // (Merged into the isEditable effect above for efficiency)
 
   // helper functions
+  const normalizeRoleValue = (rawRole?: string | null): LayoutTextRole | null => {
+    if (!rawRole) return null;
+    const normalized = rawRole.trim().toLowerCase();
+    if (
+      normalized === "title" ||
+      normalized === "subtitle" ||
+      normalized === "body" ||
+      normalized === "caption" ||
+      normalized === "locked"
+    ) {
+      return normalized;
+    }
+    return null;
+  };
+
+  const inferRoleFromPathAndTag = (
+    dataPath: string,
+    sourceTag: string,
+    className: string
+  ): LayoutTextRole => {
+    const normalizedPath = (dataPath || "").toLowerCase();
+    const normalizedTag = (sourceTag || "").toLowerCase();
+    const normalizedClass = (className || "").toLowerCase();
+
+    if (
+      normalizedTag === "h1" ||
+      normalizedTag === "h2" ||
+      /\b(title|heading|headline|hero_title|maintitle|titleprefix)\b/.test(
+        normalizedPath
+      )
+    ) {
+      return "title";
+    }
+
+    if (
+      normalizedTag === "h3" ||
+      /\b(subtitle|subheading|tagline|kicker)\b/.test(normalizedPath)
+    ) {
+      return "subtitle";
+    }
+
+    if (
+      /\b(caption|footnote|label)\b/.test(normalizedPath) ||
+      /\bcaption\b/.test(normalizedClass)
+    ) {
+      return "caption";
+    }
+
+    if (/\b(title|heading)\b/.test(normalizedClass)) {
+      return "title";
+    }
+
+    return "body";
+  };
+
+  const resolveLayoutRole = (
+    element: HTMLElement,
+    dataPath: string
+  ): LayoutTextRole => {
+    const explicitRole = normalizeRoleValue(element.dataset.layoutRole);
+    if (explicitRole) return explicitRole;
+    return inferRoleFromPathAndTag(dataPath, element.tagName, element.className || "");
+  };
+
+  const resolveLayoutGroup = (
+    element: HTMLElement,
+    layoutRole: LayoutTextRole
+  ): string | null => {
+    if (!ADAPTIVE_ROLES.has(layoutRole)) return null;
+    const explicitGroup = element.dataset.layoutGroup?.trim();
+    if (explicitGroup) return explicitGroup;
+    return DEFAULT_LAYOUT_GROUP;
+  };
+
   // Function to check if element is inside an ignored element tree
   const isInIgnoredElementTree = (element: HTMLElement): boolean => {
     // List of element types that should be ignored entirely with all their children

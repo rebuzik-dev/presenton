@@ -76,7 +76,9 @@ export const useTemplateLayouts = () => {
           slideData={slide.content}
           slideIndex={slide.index}
           layoutValidationBlocks={
-            slide?.properties?.layoutValidation?.blocks || {}
+            slide?.properties?.layoutValidation?.groups ||
+            slide?.properties?.layoutValidation?.blocks ||
+            {}
           }
           isEditable={isEditMode}
           onContentChange={(
@@ -107,6 +109,8 @@ export const useTemplateLayouts = () => {
         <div
           data-slide-root="true"
           data-slide-index={slide.index}
+          data-slide-id={slide.id}
+          data-layout-container="slide-root"
           className="layout-validation-slide-root"
         >
           {renderedContent}

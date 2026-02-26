@@ -279,3 +279,72 @@
 ### Remaining (for this feature)
 - Add integration-level API test for `/api/v1/ppt/presentation/generate` with object-based `slides_markdown` payload.
 - Add end-to-end smoke test for `vsellm` reference flow with real provider response variants.
+
+## Update: Layout Validation + Global Auto-Fit (Completed - Feb 26, 2026)
+
+### Completed
+- Добавлена post-render layout validation для web + export:
+  - Веб: рендер слайда в editor/present mode.
+  - Экспорт: `export-as-pdf` и `presentation_to_pptx_model`.
+- Добавлены единые DOM-якоря измерений:
+  - `data-slide-root`
+  - `data-layout-path`
+- Внедрён глобальный auto-fit на слайд (единый scale), чтобы все текстовые блоки уменьшались одинаково:
+  - `slide.properties.layoutValidation.blocks.__all__.fontScale`
+- Интеграция сохранения:
+  - Веб-фиксы сохраняются в Redux и уходят в persist через стандартный update flow.
+- Исправлен headless render mode:
+  - В `/pdf-maker` отключён edit-mode рендер для export-пути, чтобы исключить side effects от edit-wrapper.
+- Добавлены export debug-артефакты:
+  - JSON с issues/fixes/overrides;
+  - screenshot для unresolved кейсов;
+  - путь: `APP_DATA_DIRECTORY/exports/layout_debug/<presentation_id>/`.
+
+### Current Behavior
+- Auto-fix выполняется:
+  - при web-рендере;
+  - перед PDF/PPTX export.
+- Экспорт работает в режиме best-effort:
+  - сначала фиксит layout;
+  - по умолчанию не блокируется остаточными issues (`failOnUnresolved=false`).
+
+### Active Defaults
+- Web:
+  - `maxIterations=6`, `minScale=0.5`, `scaleStep=0.9`
+- Export:
+  - `maxIterations=8`, `minScale=0.45`, `scaleStep=0.9`, `failOnUnresolved=false`
+
+### Remaining
+- Web-режим пока не делает авто-перегенерацию текста на лету при каждом редактировании; LLM reflow используется в export fallback цепочке.
+
+## Update: Layout Validation v2 (Completed - Feb 26, 2026)
+
+### Completed
+- Replaced global slide scaling with role/group-aware auto-fit:
+  - locked roles: `title`, `subtitle`, `locked`;
+  - adaptive roles: `body`, `caption`.
+- Added semantic text attributes in runtime:
+  - `data-layout-role`
+  - `data-layout-group`
+  - `data-slide-id`
+- Implemented hash-scoped web persistence for fixes:
+  - `layoutValidation.contentHash`
+  - `layoutValidation.layoutSignature`
+  - `layoutValidation.version=2`
+- Updated Redux layout validation storage:
+  - stores `groups` (v2), keeps `blocks` as compatibility mirror.
+- Reworked export validator to follow:
+  1. deterministic role/group scaling,
+  2. LLM reflow attempt,
+  3. clamp fallback.
+- Added backend endpoint for text compression without layout mutation:
+  - `POST /api/v1/ppt/slide/layout-reflow`
+- Export routes now pass auth into layout validator to allow protected LLM reflow calls.
+
+### Current State
+- Web rendering preserves hierarchy better (headings are not auto-shrunk).
+- Multi-block body text is scaled consistently by group.
+- Export uses fixed/reflowed content before final PDF/PPTX capture and remains best-effort by default.
+
+### Notes
+- Legacy `layoutValidation.blocks.__all__` data is still normalized and supported for backward compatibility.

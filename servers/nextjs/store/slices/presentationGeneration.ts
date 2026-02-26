@@ -36,6 +36,11 @@ interface LayoutValidationBlock {
   fontScale?: number;
 }
 
+interface LayoutValidationDensity {
+  maxDensity: number;
+  byPath: Record<string, number>;
+}
+
 const initialState: PresentationGenerationState = {
   presentation_id: null,
   outlines: [],
@@ -317,13 +322,19 @@ const presentationGenerationSlice = createSlice({
       action: PayloadAction<{
         slideIndex: number;
         status: "ok" | "fixed" | "failed";
-        blocks: Record<string, LayoutValidationBlock>;
+        groups?: Record<string, LayoutValidationBlock>;
+        blocks?: Record<string, LayoutValidationBlock>;
         issues?: LayoutValidationIssue[];
         appliedFixes?: Array<{
           path: string;
           previousScale: number;
           nextScale: number;
         }>;
+        clampedPaths?: string[];
+        density?: LayoutValidationDensity;
+        contentHash?: string;
+        layoutSignature?: string;
+        version?: number;
       }>
     ) => {
       if (
@@ -332,15 +343,30 @@ const presentationGenerationSlice = createSlice({
         state.presentationData.slides[action.payload.slideIndex]
       ) {
         const slide = state.presentationData.slides[action.payload.slideIndex];
+        const existingLayoutValidation = slide.properties?.layoutValidation || {};
+        const resolvedGroups =
+          action.payload.groups ||
+          action.payload.blocks ||
+          existingLayoutValidation.groups ||
+          existingLayoutValidation.blocks ||
+          {};
         slide.properties = slide.properties || {};
         slide.properties.layoutValidation = {
-          ...(slide.properties.layoutValidation || {}),
+          ...existingLayoutValidation,
           status: action.payload.status,
-          blocks: action.payload.blocks,
+          groups: resolvedGroups,
+          blocks: resolvedGroups,
           issues: action.payload.issues || [],
           appliedFixes: action.payload.appliedFixes || [],
+          clampedPaths: action.payload.clampedPaths || [],
+          density: action.payload.density || existingLayoutValidation.density,
+          contentHash:
+            action.payload.contentHash || existingLayoutValidation.contentHash,
+          layoutSignature:
+            action.payload.layoutSignature ||
+            existingLayoutValidation.layoutSignature,
           lastValidatedAt: new Date().toISOString(),
-          version: 1,
+          version: action.payload.version ?? 2,
         };
       }
     },

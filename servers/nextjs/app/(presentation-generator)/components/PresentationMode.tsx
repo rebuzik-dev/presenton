@@ -13,6 +13,10 @@ import { useTemplateLayouts } from "../hooks/useTemplateLayouts";
 import { useDispatch } from "react-redux";
 import { updateSlideLayoutValidation } from "@/store/slices/presentationGeneration";
 import { validateAndAutoFixSlideElement } from "../utils/layoutValidation";
+import {
+  computeContentHash,
+  computeLayoutSignature,
+} from "../utils/layoutValidationHash";
 
 
 interface PresentationModeProps {
@@ -133,22 +137,35 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
       const slideRoot = container.querySelector<HTMLElement>("[data-slide-root]");
       if (!slideRoot) return;
 
-      const existingBlocks =
-        (activeSlide as any)?.properties?.layoutValidation?.blocks || {};
+      const contentHash = computeContentHash(activeSlide.content);
+      const layoutSignature = computeLayoutSignature(
+        (activeSlide as any).layout,
+        (activeSlide as any).layout_group
+      );
+      const existingValidation = (activeSlide as any)?.properties?.layoutValidation;
+      const isHashScopedCacheValid =
+        existingValidation?.version === 2 &&
+        existingValidation?.contentHash === contentHash &&
+        existingValidation?.layoutSignature === layoutSignature;
+      const existingGroups = isHashScopedCacheValid
+        ? existingValidation?.groups || existingValidation?.blocks || {}
+        : {};
+
       const result = await validateAndAutoFixSlideElement(
         slideRoot,
-        existingBlocks,
+        existingGroups,
         {
           maxIterations: 6,
-          minScale: 0.5,
-          scaleStep: 0.9,
+          minScale: 0.6,
+          scaleStep: 0.92,
           slideIndex: activeSlide.index ?? currentSlide,
+          clampOnFail: false,
         }
       );
 
       const isCleanResult =
         result.status === "ok" &&
-        Object.keys(result.blocks).length === 0 &&
+        Object.keys(result.groups).length === 0 &&
         result.unresolvedIssues.length === 0;
       if (isCleanResult && !(activeSlide as any)?.properties?.layoutValidation) {
         return;
@@ -156,8 +173,10 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
 
       const nextSignature = JSON.stringify({
         status: result.status,
-        blocks: result.blocks,
+        groups: result.groups,
         issues: result.unresolvedIssues,
+        contentHash,
+        layoutSignature,
       });
       if (validationSignatureRef.current === nextSignature) return;
       validationSignatureRef.current = nextSignature;
@@ -166,9 +185,15 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
         updateSlideLayoutValidation({
           slideIndex: activeSlide.index ?? currentSlide,
           status: result.status,
+          groups: result.groups,
           blocks: result.blocks,
           issues: result.unresolvedIssues,
           appliedFixes: result.appliedFixes,
+          clampedPaths: result.clampedPaths,
+          density: result.density,
+          contentHash,
+          layoutSignature,
+          version: 2,
         })
       );
     }, 150);
@@ -176,7 +201,10 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
     return () => window.clearTimeout(timer);
   }, [
     activeSlide?.content,
+    (activeSlide as any)?.layout,
+    (activeSlide as any)?.layout_group,
     (activeSlide as any)?.properties?.layoutValidation?.blocks,
+    (activeSlide as any)?.properties?.layoutValidation?.groups,
     activeSlide?.index,
     currentSlide,
     dispatch,

@@ -155,3 +155,87 @@ Autogeneration (`POST /api/v1/ppt/presentation/generate`) resolves `template` vi
 - Web UI currently **does not** allow entering a custom slug manually.
 - In web flow, slug is auto-generated as `custom-<uuid>`.
 - Manual custom slug creation is possible only by direct API call to `POST /api/v1/ppt/templates` (not from current web UI).
+
+## Layout Validation + Global Auto-Fit (Feb 26, 2026)
+
+### What Was Added
+- Introduced post-render layout validation in both **web rendering** and **headless export** paths.
+- Validation now checks real DOM geometry, not only schema char limits:
+  - text overflow/clipping inside containers;
+  - text out-of-bounds relative to slide root.
+- Added unified slide anchors for measurement:
+  - `data-slide-root` on rendered slide wrapper;
+  - `data-layout-path` on text blocks produced by `TiptapTextReplacer`.
+
+### Auto-Fix Policy (Current)
+- Auto-fix is now **global per slide** (single shared scale), not per single block:
+  - key: `slide.properties.layoutValidation.blocks.__all__.fontScale`.
+- This ensures visual consistency across multiple text blocks on the same slide.
+- Deterministic retry loop:
+  - Web defaults: `maxIterations=6`, `minScale=0.5`, `scaleStep=0.9`.
+  - Export defaults: `maxIterations=8`, `minScale=0.45`, `scaleStep=0.9`.
+
+### Web Runtime Behavior
+- Validation + auto-fix run during slide rendering (editor + present mode).
+- Applied fixes are stored in Redux and persisted through normal presentation save/update flow in `slide.properties.layoutValidation`.
+- Subsequent renders reuse stored `__all__` scale so fixes are stable across refresh/export.
+
+### Export Runtime Behavior
+- Both export routes run layout validation before final output:
+  - `POST /api/export-as-pdf`
+  - `GET /api/presentation_to_pptx_model`
+- `pdf-maker` now renders slides in non-edit mode (`renderSlideContent(..., false)`) to avoid edit-wrapper side effects in headless geometry.
+- Export uses **best-effort** policy:
+  - applies auto-fix before export;
+  - does not hard-fail by default if residual issues remain.
+
+### Debug Artifacts
+- Export validation writes diagnostics to:
+  - `APP_DATA_DIRECTORY/exports/layout_debug/<presentation_id>/`
+- Artifacts include:
+  - `*_layout_issues_*.json` (issues, applied fixes, overrides);
+  - unresolved screenshot `*_layout_unresolved_*.png` when issues remain.
+
+### Current Limitation
+- LLM reflow is currently used in export fallback flow; web runtime still prefers deterministic scaling without automatic content rewrite during editing.
+- If unresolved issues remain after reflow + clamp, export is still best-effort by default (`failOnUnresolved=false`).
+
+## Layout Validation v2: Role/Group + Hash Cache + Reflow (Feb 26, 2026)
+
+### Key Changes
+- Replaced slide-wide `__all__` scaling with role/group-aware scaling:
+  - `title/subtitle/locked` are protected (not scaled);
+  - only `body/caption` are adaptive.
+- Added semantic attributes in runtime DOM:
+  - `data-layout-role`
+  - `data-layout-group`
+  - `data-slide-id`
+- Added hash-scoped persistence for web fixes:
+  - `layoutValidation.contentHash`
+  - `layoutValidation.layoutSignature`
+  - cached groups are reused only when hash/signature match.
+
+### Web Runtime (Editor/Present)
+- `TiptapTextReplacer` now infers role/group for each text block and applies scaling only to adaptive roles.
+- `SlideContent` and `PresentationMode` now validate using hash-aware cached groups and store:
+  - `groups` (v2),
+  - `density`,
+  - `clampedPaths`,
+  - `version=2`.
+- Legacy `blocks.__all__` and path-based scales are still read and normalized for backward compatibility.
+
+### Export Runtime (PDF/PPTX)
+- Export validator now uses the same role/group strategy per slide.
+- Added fallback chain for unresolved slides:
+  1. deterministic group scaling,
+  2. backend LLM text reflow (`POST /api/v1/ppt/slide/layout-reflow`),
+  3. clamp fallback for remaining adaptive blocks.
+- Auth context is propagated into layout validation export step to allow protected reflow calls.
+
+### New Backend API
+- Added endpoint:
+  - `POST /api/v1/ppt/slide/layout-reflow`
+- Purpose:
+  - compress specific text fields by path for a given `slide_id`,
+  - keep slide/layout unchanged,
+  - return path->text updates for headless export fix cycle.

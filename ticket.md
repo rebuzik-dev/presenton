@@ -246,3 +246,98 @@ Implemented JWT authentication (login/password) + API Keys, and enforced RBAC ac
   - `servers/fastapi/tests/test_generate_slide_content_helpers.py`
   - `servers/fastapi/tests/test_process_slides_references.py`
 - Таргетный прогон: `4 passed`.
+
+# Update: Layout Validation + Global Auto-Fit (Feb 26, 2026)
+
+## Done
+- Добавлена post-render layout validation на уровне реальной DOM-геометрии для:
+  - web-рендера (редактор/просмотр);
+  - headless export (PDF/PPTX).
+- Добавлены якоря для измерений:
+  - `data-slide-root` (корень слайда);
+  - `data-layout-path` (текстовые блоки после `TiptapTextReplacer`).
+- Реализован auto-fix с глобальным масштабом текста на слайд:
+  - единый ключ: `slide.properties.layoutValidation.blocks.__all__.fontScale`;
+  - масштаб уменьшается одновременно для всех текстовых блоков слайда.
+- Сохранение фиксов:
+  - фикс пишется в Redux и затем сохраняется через обычный update flow презентации;
+  - при повторном рендере/экспорте используется уже сохранённый scale.
+- Экспортные роуты теперь валидируют и auto-fix'ят layout перед генерацией:
+  - `servers/nextjs/app/api/export-as-pdf/route.ts`
+  - `servers/nextjs/app/api/presentation_to_pptx_model/route.ts`
+- Для headless export отключён edit-mode рендер в `pdf-maker`:
+  - `renderSlideContent(slide, false)` вместо edit-варианта.
+
+## Behavior Now
+- Web:
+  - при рендере слайда выполняется `measure -> auto-fix -> re-measure`;
+  - результат фиксируется в `slide.properties.layoutValidation`.
+- Export:
+  - перед export выполняется усиленный auto-fix;
+  - текущая политика: **best-effort export** (не блокировать файл по остаточным issues по умолчанию);
+  - debug-артефакты всегда пишутся в:
+    - `APP_DATA_DIRECTORY/exports/layout_debug/<presentation_id>/`.
+
+## Tuned Parameters
+- Web defaults:
+  - `maxIterations=6`
+  - `minScale=0.5`
+  - `scaleStep=0.9`
+- Export defaults:
+  - `maxIterations=8`
+  - `minScale=0.45`
+  - `scaleStep=0.9`
+  - `failOnUnresolved=false`
+
+## Current Limitation
+- LLM reflow включён в export fallback chain; в web-редакторе по умолчанию остаётся deterministic auto-fit без авто-перезаписи текста при каждом рендере.
+
+# Update: Layout Validation v2 (Role/Group + Hash Cache + LLM Reflow) (Feb 26, 2026)
+
+## Done
+- Убран глобальный `__all__`-подход как основная стратегия.
+- Добавлена role-aware логика:
+  - `title/subtitle/locked` не масштабируются;
+  - масштабируются только `body/caption`.
+- Добавлен group-aware масштаб:
+  - масштаб единый внутри `data-layout-group`, чтобы несколько body-блоков ужимались одинаково.
+- В `TiptapTextReplacer` добавлены атрибуты:
+  - `data-layout-role`, `data-layout-group`, `data-layout-source-tag`.
+- Добавлен hash-scoped кэш для web:
+  - `contentHash` + `layoutSignature`;
+  - старые фиксы применяются только при совпадении хэшей.
+- Redux/persist модель layoutValidation переведена на `version=2`:
+  - `groups` + совместимость с legacy `blocks`.
+- Export validator переписан на role/group механику и fallback-цепочку:
+  1. deterministic scaling,
+  2. LLM reflow,
+  3. clamp fallback.
+- Добавлен backend endpoint:
+  - `POST /api/v1/ppt/slide/layout-reflow`
+  - возвращает сжатые тексты для указанных `paths`, не меняя layout/slide id.
+- В export routes добавлен проброс auth в layout validation:
+  - нужно для защищённого вызова `layout-reflow`.
+
+## Behavior Now
+- Web:
+  - автофиксы запускаются при рендере;
+  - не затрагивают заголовочную иерархию;
+  - кэшируются по content/layout hash.
+- Export:
+  - сначала берёт/применяет role/group autofix;
+  - если не хватило — вызывает LLM reflow по проблемным путям;
+  - если остаётся overflow — включает clamp fallback;
+  - best-effort экспорт остаётся включённым.
+
+## Updated Defaults
+- Web:
+  - `maxIterations=6`
+  - `minScale=0.6`
+  - `scaleStep=0.92`
+- Export:
+  - `maxIterations=8`
+  - `minScale=0.55`
+  - `scaleStep=0.92`
+  - `enableLlmReflow=true`
+  - `clampOnFail=true`
+  - `failOnUnresolved=false`

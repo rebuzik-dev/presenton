@@ -138,9 +138,13 @@ export async function POST(req: NextRequest) {
       page,
       presentationId: String(id),
       mode: "pdf",
+      authToken: token,
+      apiKey,
       maxIterations: 8,
-      minScale: 0.45,
-      scaleStep: 0.9,
+      minScale: 0.55,
+      scaleStep: 0.92,
+      clampOnFail: true,
+      enableLlmReflow: true,
       failOnUnresolved: false,
     });
 
