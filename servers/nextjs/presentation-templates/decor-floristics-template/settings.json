@@ -1,1 +1,15 @@
-{"description":"Decor and floristics layouts for Skolkovo event presentation","ordered":true,"default":false,"layoutOrder":["DecorCoverTitleSlideLayout.tsx","DecorConceptMissionKeyIdeasSlideLayout.tsx","DecorColorPaletteSlideLayout.tsx","DecorTypographySlideLayout.tsx","DecorElementsOverviewSlideLayout.tsx","DecorElementsAccentSlideLayout.tsx","StageDesignProposalsSlideLayout.tsx","PhotozoneDesignProposalsSlideLayout.tsx"]}
+{
+    "description": "Decor and floristics layouts for Skolkovo event presentation",
+    "ordered": true,
+    "default": false,
+    "layoutOrder": [
+        "DecorCoverTitleSlideLayout.tsx",
+        "DecorConceptMissionKeyIdeasSlideLayout.tsx",
+        "DecorColorPaletteSlideLayout.tsx",
+        "DecorTypographySlideLayout.tsx",
+        "DecorElementsOverviewSlideLayout.tsx",
+        "DecorElementsAccentSlideLayout.tsx",
+        "StageDesignProposalsSlideLayout.tsx",
+        "PhotozoneDesignProposalsSlideLayout.tsx"
+    ]
+}
