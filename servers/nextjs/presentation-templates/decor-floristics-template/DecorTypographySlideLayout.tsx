@@ -54,9 +54,9 @@ const dynamicSlideLayout: React.FC<TypographySpecProps> = ({ data: slideData }) 
       style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}
     >
       <div className="h-full px-[56px] pt-[44px] pb-[44px]">
-        <div className="h-full grid grid-cols-[0.64fr_0.36fr] gap-[34px]">
+        <div className="h-full grid grid-cols-[minmax(0,0.64fr)_minmax(0,0.36fr)] gap-[34px]">
           {/* LEFT */}
-          <div className="flex flex-col">
+          <div className="min-w-0 flex flex-col">
             <div
               className="uppercase font-[900] text-[44px] leading-[52px]"
               style={{ color: titleColor, fontFamily: titleFont }}
@@ -176,14 +176,14 @@ const dynamicSlideLayout: React.FC<TypographySpecProps> = ({ data: slideData }) 
           </div>
 
           {/* RIGHT: “poster on stand” look */}
-          <div className="flex items-start justify-end pt-[6px]">
-            <div className="relative">
+          <div className="min-w-0 flex items-start justify-end pt-[6px]">
+            <div className="relative w-full max-w-[450px]">
               {/* белая рамка + тень */}
-              <div className="bg-white p-[10px] shadow-[0_18px_30px_rgba(0,0,0,0.18)]">
+              <div className="relative w-full bg-white p-[10px] shadow-[0_18px_30px_rgba(0,0,0,0.18)]">
                 <img
                   src={rightImg}
                   alt={slideData?.rightImage?.__image_prompt__ || "Poster photo"}
-                  className="w-[430px] h-[540px] object-cover"
+                  className="block w-full h-auto aspect-[43/54] object-cover"
                 />
                 <div className="pointer-events-none absolute left-[10px] top-[10px] right-[10px] bottom-[10px] border border-white/70" />
               </div>
