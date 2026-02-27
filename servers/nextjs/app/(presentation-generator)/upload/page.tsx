@@ -5,11 +5,11 @@ import Header from "@/app/(presentation-generator)/dashboard/components/Header";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Presenton | Open Source AI presentation generator",
+  title: "Presenton | Модуль генерации презентаций",
   description:
     "Модуль генерации презентаций в экосистеме Креатив-конфигуратор. Интеллектуальная платформа для создания презентаций по брифу: кастомные шаблоны, автоматическая сборка структуры, поддержка разных ИИ-движков и экспорт в PDF/PPTX.",
   alternates: {
-    canonical: "https://presenton.ai/create",
+    canonical: "https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai/create",
   },
   keywords: [
     "presentation generator",
@@ -24,20 +24,29 @@ export const metadata: Metadata = {
     "business presentations",
   ],
   openGraph: {
-    title: "Create Data Presentation | PresentOn",
+    title: "Presenton | Модуль генерации презентаций",
     description:
       "Модуль генерации презентаций в экосистеме Креатив-конфигуратор. Интеллектуальная платформа для создания презентаций по брифу: кастомные шаблоны, автоматическая сборка структуры, поддержка разных ИИ-движков и экспорт в PDF/PPTX.",
     type: "website",
-    url: "https://presenton.ai/create",
-    siteName: "PresentOn",
+    url: "https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai/create",
+    siteName: "Presenton",
+    images: [
+      {
+        url: "https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai/Logo.png",
+        width: 512,
+        height: 512,
+        alt: "Presenton Logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Create Data Presentation | PresentOn",
+    title: "Presenton | Модуль генерации презентаций",
     description:
       "Модуль генерации презентаций в экосистеме Креатив-конфигуратор. Интеллектуальная платформа для создания презентаций по брифу: кастомные шаблоны, автоматическая сборка структуры, поддержка разных ИИ-движков и экспорт в PDF/PPTX.",
     site: "@presenton_ai",
     creator: "@presenton_ai",
+    images: ["https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai/Logo.png"],
   },
 };
 

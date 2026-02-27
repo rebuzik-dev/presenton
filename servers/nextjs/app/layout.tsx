@@ -30,8 +30,8 @@ const roboto = Roboto({
 
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://presenton.ai"),
-  title: "Presenton - Open Source AI presentation generator",
+  metadataBase: new URL("https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai"),
+  title: "Presenton - Модуль генерации презентаций",
   description:
     "Модуль генерации презентаций в экосистеме Креатив-конфигуратор. Интеллектуальная платформа для создания презентаций по брифу: кастомные шаблоны, автоматическая сборка структуры, поддержка разных ИИ-движков и экспорт в PDF/PPTX.",
   keywords: [
@@ -45,16 +45,16 @@ export const metadata: Metadata = {
     "professional slides",
   ],
   openGraph: {
-    title: "Presenton - Open Source AI presentation generator",
+    title: "Presenton - Модуль генерации презентаций",
     description:
       "Модуль генерации презентаций в экосистеме Креатив-конфигуратор. Интеллектуальная платформа для создания презентаций по брифу: кастомные шаблоны, автоматическая сборка структуры, поддержка разных ИИ-движков и экспорт в PDF/PPTX.",
-    url: "https://presenton.ai",
+    url: "https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai",
     siteName: "Presenton",
     images: [
       {
-        url: "https://presenton.ai/presenton-feature-graphics.png",
-        width: 1200,
-        height: 630,
+        url: "https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai/Logo.png",
+        width: 512,
+        height: 512,
         alt: "Presenton Logo",
       },
     ],
@@ -62,14 +62,14 @@ export const metadata: Metadata = {
     locale: "en_US",
   },
   alternates: {
-    canonical: "https://presenton.ai",
+    canonical: "https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Presenton - Open Source AI presentation generator",
+    title: "Presenton - Модуль генерации презентаций",
     description:
       "Модуль генерации презентаций в экосистеме Креатив-конфигуратор. Интеллектуальная платформа для создания презентаций по брифу: кастомные шаблоны, автоматическая сборка структуры, поддержка разных ИИ-движков и экспорт в PDF/PPTX.",
-    images: ["https://presenton.ai/presenton-feature-graphics.png"],
+    images: ["https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai/Logo.png"],
   },
 };
 
