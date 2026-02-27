@@ -1,6 +1,6 @@
 # API Guide: Вызов Ручек (Templates + Generate)
 
-Дата обновления: 18 февраля 2026
+Дата обновления: 27 февраля 2026
 
 Этот документ фиксирует актуальный способ работы с кастомными шаблонами и автогенерацией через API.
 
@@ -97,8 +97,7 @@ curl -X POST "http://localhost:8000/api/v1/ppt/presentation/generate" \
     "content": "Сделай презентацию по стратегии продаж на 2026",
     "n_slides": 8,
     "language": "Russian",
-    "template": "sales-deck-v2",
-    "export_as": "pptx"
+    "template": "sales-deck-v2"
   }'
 ```
 
@@ -108,7 +107,75 @@ curl "http://localhost:8000/api/v1/ppt/presentation/status/<presentation_id>" \
   -H "Authorization: Bearer <JWT>"
 ```
 
-### 3.3 Передача своей структуры слайдов + image guidance
+Важные статусы:
+- `pending` — задача создана;
+- `processing` — генерация в процессе;
+- `completed` — генерация завершена;
+- `error` — ошибка (подробности в `error`).
+
+### 3.3 Полный Flow: Generate -> Status -> Export -> Download
+
+`POST /api/v1/ppt/presentation/generate` запускает background-задачу и возвращает `presentation_id`.
+Файл `pdf/pptx` нужно запрашивать отдельным вызовом `POST /api/v1/ppt/presentation/export` после `status=completed`.
+
+Пример типичного ответа статуса:
+```json
+{
+  "id": "c5c5f30a-8f95-4cc3-8dce-7f3f2bc90c4f",
+  "status": "completed",
+  "message": "Presentation generation completed",
+  "presentation_id": "c5c5f30a-8f95-4cc3-8dce-7f3f2bc90c4f",
+  "error": null,
+  "data": {
+    "presentation_id": "c5c5f30a-8f95-4cc3-8dce-7f3f2bc90c4f",
+    "path": null,
+    "edit_path": "/presentation?id=c5c5f30a-8f95-4cc3-8dce-7f3f2bc90c4f"
+  }
+}
+```
+
+Экспорт конкретной презентации в PDF:
+```bash
+curl -X POST "http://localhost:8000/api/v1/ppt/presentation/export" \
+  -H "Authorization: Bearer <JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "<presentation_id>",
+    "export_as": "pdf"
+  }'
+```
+
+Экспорт конкретной презентации в PPTX:
+```bash
+curl -X POST "http://localhost:8000/api/v1/ppt/presentation/export" \
+  -H "Authorization: Bearer <JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "<presentation_id>",
+    "export_as": "pptx"
+  }'
+```
+
+Пример ответа export:
+```json
+{
+  "presentation_id": "c5c5f30a-8f95-4cc3-8dce-7f3f2bc90c4f",
+  "path": "/app_data/exports/Sales Deck v2.pdf",
+  "edit_path": "/presentation?id=c5c5f30a-8f95-4cc3-8dce-7f3f2bc90c4f"
+}
+```
+
+Скачивание файла (если `path` начинается с `/app_data/...`):
+```bash
+curl -L "http://localhost:8000/app_data/exports/Sales%20Deck%20v2.pdf" -o "Sales Deck v2.pdf"
+curl -L "http://localhost:8000/app_data/exports/Sales%20Deck%20v2.pptx" -o "Sales Deck v2.pptx"
+```
+
+Примечание:
+- В текущем flow `export_as` в `POST /api/v1/ppt/presentation/generate` не возвращает готовый файл автоматически.
+- Для получения бинарника всегда выполняйте отдельный `POST /api/v1/ppt/presentation/export` после `status=completed`.
+
+### 3.4 Передача своей структуры слайдов + image guidance
 `/presentation/generate` поддерживает `slides_markdown` в двух форматах:
 - legacy: список строк;
 - новый: список объектов с полями `content`, `image_prompt`, `reference_image_source`, `style`.
@@ -164,7 +231,7 @@ curl -X POST "http://localhost:8000/api/v1/ppt/presentation/generate" \
 - Предпочитайте `http(s)` URL.
 - Base64 передавайте только в Data URL формате: `data:image/png;base64,...`.
 
-### 3.4 Получить summary по изображениям для шаблона (для внешнего сервиса)
+### 3.5 Получить summary по изображениям для шаблона (для внешнего сервиса)
 ```bash
 curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
   -H "Authorization: Bearer <JWT>"
@@ -197,7 +264,7 @@ curl "http://localhost:8000/api/v1/ppt/templates/general/image-summary" \
 - иконки (`__icon_query__`) игнорируются;
 - для массивов используется `maxItems` (или `minItems`, если `maxItems` нет).
 
-### 3.5 Получить style-summary шаблона (block IDs + style tokens)
+### 3.6 Получить style-summary шаблона (block IDs + style tokens)
 ```bash
 curl "http://localhost:8000/api/v1/ppt/templates/catering/style-summary" \
   -H "Authorization: Bearer <JWT>"
@@ -210,7 +277,7 @@ curl "http://localhost:8000/api/v1/ppt/templates/catering/style-summary" \
 
 Это удобно для внешнего конструктора payload `slides_markdown[].style`.
 
-### 3.6 Получить schema-summary шаблона (контентные поля и ограничения)
+### 3.7 Получить schema-summary шаблона (контентные поля и ограничения)
 ```bash
 curl "http://localhost:8000/api/v1/ppt/templates/catering/schema-summary" \
   -H "Authorization: Bearer <JWT>"

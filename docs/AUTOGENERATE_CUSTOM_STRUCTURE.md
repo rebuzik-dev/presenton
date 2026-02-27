@@ -1,6 +1,6 @@
 # Autogeneration: Custom Structure + Smart Image Guidance
 
-Дата обновления: 18 февраля 2026
+Дата обновления: 27 февраля 2026
 
 Документ описывает новый контракт `POST /api/v1/ppt/presentation/generate` для передачи пользовательской структуры слайдов, image-guidance и image references.
 
@@ -135,6 +135,31 @@
   "poll_url": "/api/v1/ppt/presentation/status/c5c5f30a-8f95-4cc3-8dce-7f3f2bc90c4f"
 }
 ```
+
+## 8.1 Как получить PDF/PPTX для конкретной презентации
+
+1. Опрашивайте `poll_url` до `status=completed`:
+   - `GET /api/v1/ppt/presentation/status/{presentation_id}`
+2. После `completed` вызовите экспорт:
+   - `POST /api/v1/ppt/presentation/export` с телом:
+```json
+{
+  "id": "<presentation_id>",
+  "export_as": "pdf"
+}
+```
+или
+```json
+{
+  "id": "<presentation_id>",
+  "export_as": "pptx"
+}
+```
+3. Возьмите `path` из ответа export и скачайте файл по этому пути.
+
+Важно:
+- `POST /api/v1/ppt/presentation/generate` запускает background-генерацию и не отдает бинарник файла сразу.
+- Для получения файла нужен отдельный вызов `POST /api/v1/ppt/presentation/export`.
 
 ## 9. Рекомендации API-клиенту
 
