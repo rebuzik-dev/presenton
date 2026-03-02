@@ -284,7 +284,9 @@ export const LayoutProvider: React.FC<{
       setError(null);
       dispatch(setLayoutLoading(true));
 
-      const templateResponse = await fetch("/api/templates");
+      const templateResponse = await fetch("/api/templates", {
+        cache: "no-store",
+      });
 
       if (!templateResponse.ok) {
         throw new Error(

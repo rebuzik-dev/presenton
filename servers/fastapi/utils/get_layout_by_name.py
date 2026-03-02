@@ -50,7 +50,9 @@ async def get_layout_by_name(
     if template:
         # System templates: fetch layout from Next.js (it has the TSX components)
         if template.is_system:
-            resolved_ordered = ordered if ordered is not None else template.ordered
+            # For system templates, trust Next.js settings.json as the source of truth.
+            # Only apply explicit request override when `ordered` is provided.
+            resolved_ordered = ordered if ordered is not None else None
             return await _fetch_layout_from_nextjs(
                 layout_name,
                 resolved_ordered,

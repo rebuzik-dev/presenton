@@ -3,6 +3,9 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { TemplateSetting } from '@/app/(presentation-generator)/template-preview/types'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface ExtendedTemplateSetting extends TemplateSetting {
     layoutOrder?: string[]
 }
@@ -74,7 +77,9 @@ export async function GET() {
                 const settingsPath = path.join(templatePath, 'settings.json')
                 try {
                     const settingsContent = await fs.readFile(settingsPath, 'utf-8')
-                    settings = JSON.parse(settingsContent) as ExtendedTemplateSetting
+                    // Support UTF-8 BOM in settings.json files.
+                    const normalizedSettingsContent = settingsContent.replace(/^\uFEFF/, '')
+                    settings = JSON.parse(normalizedSettingsContent) as ExtendedTemplateSetting
                 } catch (settingsError) {
                     
                     console.warn(`No settings.json found for template ${templateName} or invalid JSON`)
