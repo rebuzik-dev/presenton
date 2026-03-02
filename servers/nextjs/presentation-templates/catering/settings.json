@@ -1,5 +1,14 @@
-﻿{
+{
   "description": "Custom catering layouts for event and branding presentations",
-  "ordered": false,
-  "default": false
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "CoverKickerTitleSlideLayout.tsx",
+    "HeaderQuoteTwoColumnsSlideLayout.tsx",
+    "HeaderColorCardsImageSlideLayout.tsx",
+    "HeaderImageFactsListSlideLayout.tsx",
+    "HeaderTextBulletsImageSlideLayout.tsx",
+    "HeaderThreeImageCardsSlideLayout.tsx",
+    "HeaderMoodboardCollageSlideLayout.tsx"
+  ]
 }
