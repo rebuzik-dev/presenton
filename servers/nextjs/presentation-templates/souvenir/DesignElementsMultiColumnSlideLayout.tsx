@@ -1,236 +1,157 @@
-﻿import React from 'react'
-import * as z from 'zod'
-import {
-  resolveColor,
-  resolveFontFamily,
-  resolveRootStyle,
-} from '../_shared/style'
+﻿import React from "react";
+import * as z from "zod";
+import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
-  }),
-  __image_prompt__: z
-    .string()
-    .min(3)
-    .max(180)
-    .default("Design element photo")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
-})
+  __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"),
+  __image_prompt__: z.string().min(3).max(180).default("Design element photo"),
+});
 
-const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
-})
-
-const layoutId = "design-elements-multi-column-slide"
-const layoutName = "Design Elements Multi Column Slide"
-const layoutDescription = "A slide with a header, swatches, small icons, two images, and text blocks."
-
-const SwatchSchema = z.object({
-  hex: z.string().min(4).max(9).default("#C2BAC2").meta({ description: "Hex code. Max 1 word" }),
-})
+const layoutId = "design-elements-multi-column-slide";
+const layoutName = "Design Elements Multi Column Slide";
+const layoutDescription =
+  "Simplified: left collage (3 images: small+big on top, wide bottom) + right two text blocks.";
 
 const Schema = z.object({
-  title: z.string().min(3).max(40).default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА").meta({ description: "Header. Max 3 words" }),
-  leftSwatches: z
-    .array(SwatchSchema)
-    .min(3)
-    .max(3)
-    .default([{ hex: "#C2BAC2" }, { hex: "#DEDDDD" }, { hex: "#81919E" }])
-    .meta({ description: "Left swatches. Max 3 items" }),
-  leftImage: ImageSchema.default({
+  title: z.string().min(3).max(60).default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"),
+
+  // ✅ 3 изображения слева
+  imageTopLeft: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Small design photo",
-  }).meta({ description: "Left small image. Max 30 words" }),
-  topRightImage: ImageSchema.default({
+    __image_prompt__: "Close-up decor detail, candles and soft bokeh, premium editorial photo",
+  }),
+
+  imageTopRight: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Top right image",
-  }).meta({ description: "Top right image. Max 30 words" }),
-  mainImage: ImageSchema.default({
+    __image_prompt__: "Abstract arc texture / backdrop fragment, muted tones, paper-like texture",
+  }),
+
+  imageBottom: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Main image",
-  }).meta({ description: "Main image. Max 30 words" }),
-  cornerSwatch: SwatchSchema.default({ hex: "#1A1C23" }).meta({ description: "Corner swatch. Max 1 item" }),
+    __image_prompt__: "Main decor scene with flowers and candles, soft light, elegant table setup",
+  }),
+
+  // ✅ текст справа оставляем как сейчас (2 блока)
   topText: z
     .string()
     .min(20)
-    .max(180)
+    .max(260)
     .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Top text block. Max 24 words" }),
+    .meta({ description: "Top text block" }),
+
   bottomText: z
     .string()
     .min(20)
-    .max(180)
+    .max(260)
     .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Bottom text block. Max 24 words" }),
-  icons: z
-    .array(IconSchema)
-    .min(4)
-    .max(6)
-    .default([
-      { __icon_url__: "", __icon_prompt__: "calendar icon" },
-      { __icon_url__: "", __icon_prompt__: "chat icon" },
-      { __icon_url__: "", __icon_prompt__: "location icon" },
-      { __icon_url__: "", __icon_prompt__: "pin icon" },
-    ])
-    .meta({ description: "Small generic icons. Max 6 items" }),
-})
+    .meta({ description: "Bottom text block" }),
+});
 
-type DesignElementsMultiColumnSlideData = z.infer<typeof Schema>
+type Data = z.infer<typeof Schema>;
 
-interface DesignElementsMultiColumnSlideLayoutProps {
-  data?: Partial<DesignElementsMultiColumnSlideData>
+interface Props {
+  data?: Partial<Data>;
 }
 
-const dynamicSlideLayout: React.FC<DesignElementsMultiColumnSlideLayoutProps> = ({ data: slideData }) => {
-  const swatches = slideData?.leftSwatches || []
-  const icons = slideData?.icons || []
-  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
-  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
-  const bodyColor = resolveColor(slideData, "body", "color", titleColor, "text_primary")
-  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
-  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
-  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
-  const accentColor = resolveColor(slideData, "accent_shape", "background", "#8A98A2", "accent")
-  const panelColor = resolveColor(slideData, "panel", "background", "#9AA6AE", "surface")
-  const panelBorderColor = resolveColor(slideData, "panel", "border", "#9AA6AE", "accent")
-  const cornerColor = resolveColor(slideData, "corner_block", "background", "#1A1C23", "accent")
+const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body");
 
-  const Swatch: React.FC<{ hex: string; size?: string }> = ({ hex, size }) => (
-    <div className={size || "w-[118px] h-[50px] rounded-[10px]"} style={{ backgroundColor: hex }}></div>
-  )
+  // ⚠️ чтобы не уезжать в серифный display
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "heading");
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body");
 
-  const GenericIcon: React.FC<{ label: string }> = ({ label }) => (
-    <div className="w-[34px] h-[34px] rounded-full border border-[#3f3f3f]/35 flex items-center justify-center text-[var(--style-text-primary)]/75 bg-white/70" style={{ borderColor: panelBorderColor, color: bodyColor, fontFamily: bodyFont }}>
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        {label.toLowerCase().includes("calendar") && (
-          <>
-            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
-            <line x1="16" y1="3" x2="16" y2="7"></line>
-            <line x1="8" y1="3" x2="8" y2="7"></line>
-            <line x1="3" y1="11" x2="21" y2="11"></line>
-          </>
-        )}
-        {label.toLowerCase().includes("chat") && (
-          <>
-            <path d="M4 5h16v10H8l-4 4V5z"></path>
-          </>
-        )}
-        {(label.toLowerCase().includes("location") || label.toLowerCase().includes("pin")) && (
-          <>
-            <path d="M12 21s-6-5.4-6-10a6 6 0 0 1 12 0c0 4.6-6 10-6 10z"></path>
-            <circle cx="12" cy="11" r="2.5"></circle>
-          </>
-        )}
-        {!label.toLowerCase().includes("calendar") &&
-          !label.toLowerCase().includes("chat") &&
-          !label.toLowerCase().includes("location") &&
-          !label.toLowerCase().includes("pin") && (
-            <>
-              <circle cx="12" cy="12" r="8"></circle>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
-            </>
-          )}
-      </svg>
-      <span className="sr-only">{label}</span>
-    </div>
-  )
+  const titleColor = resolveColor(slideData, "title", "color", "#2F2F2F", "text_primary");
+  const bodyColor = resolveColor(slideData, "body", "color", "#2F2F2F", "text_primary");
+
+  const paperBg = resolveColor(slideData, "paper", "background", "#ffffffff", "surface");
+  const paperBorder = resolveColor(slideData, "paper", "borderColor", "#E2DED7", "surface");
+
+  const imgTL = slideData?.imageTopLeft?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg";
+  const imgTR = slideData?.imageTopRight?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg";
+  const imgB = slideData?.imageBottom?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg";
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-[#F3F3F1] z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#F3F3F1", "var(--template-font, Inter)")}>
+    <div
+      className="relative w-full max-w-[1280px] aspect-video mx-auto overflow-hidden"
+      style={resolveRootStyle(slideData, paperBg, "var(--template-font, Inter)")}
+    >
+      {/* мягкая бумажная фактура (можно убрать, если не нужна) */}
       <div
-        className="absolute inset-0 opacity-70"
+        className="absolute inset-0 opacity-60"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 15% 20%, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0) 45%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 52%), repeating-linear-gradient(0deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 1px, transparent 1px, transparent 4px)",
+            "linear-gradient(0deg, rgba(255,255,255,0.55), rgba(255,255,255,0.55)), radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px)",
+          backgroundSize: "auto, 10px 10px",
         }}
       />
-      <div className="relative h-full px-[64px] pt-9 pb-12">
-        <div className="text-[42px] leading-[48px] font-[800] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
+
+      <div className="relative h-full px-[64px] pt-[44px] pb-[44px]">
+        <div
+          className="uppercase font-[900] text-[44px] leading-[52px]"
+          style={{ color: titleColor, fontFamily: titleFont }}
+        >
           {slideData?.title || "ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"}
         </div>
 
-        <div className="mt-5 grid grid-cols-[230px_180px_1fr] gap-8 h-[490px]">
-          <div className="flex flex-col justify-between">
-            <div className="space-y-4">
-              {swatches.slice(0, 3).map((s, idx) => (
-                <Swatch key={idx} hex={s.hex} />
-              ))}
-            </div>
-
-            <div className="w-[220px] h-[150px] overflow-hidden rounded-[10px] bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
-              <img
-                src={slideData?.leftImage?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
-                alt={slideData?.leftImage?.__image_prompt__ || "left image"}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="flex items-end gap-3 pt-2">
-              <div className="w-5 h-[54px] rounded-[10px]" style={{ backgroundColor: accentColor, opacity: 0.65 }}></div>
-              <div className="w-5 h-[76px] rounded-[10px]" style={{ backgroundColor: accentColor, opacity: 0.78 }}></div>
-              <div className="w-5 h-[42px] rounded-[10px]" style={{ backgroundColor: accentColor, opacity: 0.52 }}></div>
-              <div className="w-5 h-[63px] rounded-[10px]" style={{ backgroundColor: accentColor, opacity: 0.68 }}></div>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-between py-1">
-            <div className="h-[132px] rounded-[18px] bg-[#9AA6AE]/25 border border-[#9AA6AE]/35 relative overflow-hidden" style={{ backgroundColor: panelColor, borderColor: panelBorderColor }}>
-              <div className="absolute -left-10 top-[18px] w-[200px] h-[200px] rounded-full border-[20px] border-[#6D7E89]/50" style={{ borderColor: accentColor, opacity: 0.5 }}></div>
-              <div className="absolute left-6 top-5 text-[14px] leading-[18px] text-[var(--style-text-primary)]/65" style={{ color: bodyColor, fontFamily: bodyFont }}>arc block</div>
-            </div>
-
-            <div className="h-[132px] rounded-[16px] bg-white/70 border border-[#9AA6AE]/30 p-4" style={{ borderColor: panelBorderColor }}>
-              <div className="grid grid-cols-8 gap-2">
-                {Array.from({ length: 48 }).map((_, i) => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accentColor, opacity: 0.7 }}></div>
-                ))}
+        <div className="mt-[26px] grid grid-cols-[0.72fr_0.28fr] gap-[34px] h-[520px]">
+          {/* LEFT: 3 images collage inside a rectangular block */}
+          <div
+            className="h-full border overflow-hidden bg-white/40"
+            style={{ borderColor: paperBorder }}
+          >
+            <div className="h-full grid grid-rows-[0.42fr_0.58fr] gap-[18px] p-[18px]">
+              {/* top row: small left + big right */}
+              <div className="grid grid-cols-[0.36fr_0.64fr] gap-[18px] min-h-0">
+                <div className="w-full h-full overflow-hidden bg-black/5" style={{ borderColor: paperBorder }}>
+                  <img
+                    src={imgTL}
+                    alt={slideData?.imageTopLeft?.__image_prompt__ || "Top left"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-full h-full overflow-hidden bg-black/5">
+                  <img
+                    src={imgTR}
+                    alt={slideData?.imageTopRight?.__image_prompt__ || "Top right"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="h-[132px] rounded-[16px] bg-white/80 border border-[#9AA6AE]/35 p-4" style={{ borderColor: panelBorderColor }}>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {icons.slice(0, 4).map((ic, idx) => (
-                <GenericIcon key={idx} label={ic.__icon_prompt__} />
-              ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-[1.2fr_0.8fr] gap-7">
-            <div className="relative h-full overflow-hidden rounded-[10px] bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
+              {/* bottom row: one wide image */}
+              <div className="w-full h-full overflow-hidden bg-black/5 min-h-0">
                 <img
-                  src={slideData?.mainImage?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
-                  alt={slideData?.mainImage?.__image_prompt__ || "main image"}
+                  src={imgB}
+                  alt={slideData?.imageBottom?.__image_prompt__ || "Bottom"}
                   className="w-full h-full object-cover"
                 />
-              <div className="absolute bottom-0 right-0 w-[86px] h-[86px] bg-[#1A1C23] rounded-tl-[28px]" style={{ backgroundColor: cornerColor }}></div>
-              <div className="absolute bottom-4 right-4">
-                <Swatch hex={slideData?.cornerSwatch?.hex || "#1A1C23"} size="w-[50px] h-[50px] rounded-[12px]" />
               </div>
             </div>
+          </div>
 
-            <div className="flex flex-col justify-start gap-7 pt-1">
-              <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70" style={{ color: bodyColor, fontFamily: bodyFont }}>
-                {slideData?.topText ||
-                  "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
-              </div>
-              <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70" style={{ color: bodyColor, fontFamily: bodyFont }}>
-                {slideData?.bottomText ||
-                  "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
-              </div>
+          {/* RIGHT: keep text blocks similar to current */}
+          <div className="flex flex-col justify-start gap-7 pt-1">
+            <div
+              className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70"
+              style={{ color: bodyColor, fontFamily: bodyFont }}
+            >
+              {slideData?.topText ||
+                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+            </div>
+
+            <div
+              className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70"
+              style={{ color: bodyColor, fontFamily: bodyFont }}
+            >
+              {slideData?.bottomText ||
+                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export { Schema, layoutId, layoutName, layoutDescription }
-export default dynamicSlideLayout
-
-
-
+export { Schema, layoutId, layoutName, layoutDescription };
+export default dynamicSlideLayout;

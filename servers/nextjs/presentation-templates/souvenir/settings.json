@@ -1,5 +1,18 @@
 ﻿{
   "description": "Souvenir presentation layouts",
-  "ordered": false,
-  "default": false
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "CoverBackgroundKickerTitleSlideLayout.tsx",
+    "HeaderQuoteTwoColumnsLinesSlideLayout.tsx",
+    "PaletteGridImageSlideLayout.tsx",
+    "TypographyTwoColumnsImageSlideLayout.tsx",
+    "MoodboardCollage4SlideLayout.tsx",
+    "HeaderParagraphPatternImageSlideLayout.tsx",
+    "DesignElementsMultiColumnSlideLayout.tsx",
+    "DesignElementsTextImageSwatchesSlideLayout.tsx",
+    "ProposalsTwoImagesSlideLayout.tsx",
+    "ProposalsThreeImagesSlideLayout.tsx",
+    "ProposalsCollageLeftRightStackSlideLayout.tsx"
+  ]
 }

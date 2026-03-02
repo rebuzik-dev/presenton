@@ -1,127 +1,142 @@
-﻿import React from 'react'
-import * as z from 'zod'
-import {
-  resolveColor,
-  resolveFontFamily,
-  resolveRootStyle,
-} from '../_shared/style'
+﻿import React from "react";
+import * as z from "zod";
+import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
-  }),
-  __image_prompt__: z
+  __image_url__: z
     .string()
-    .min(3)
-    .max(180)
-    .default("Design element image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
-})
+    .url()
+    .default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"),
+  __image_prompt__: z.string().min(3).max(220).default("Design element image"),
+});
 
-const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
-})
-
-const layoutId = "design-elements-text-image-swatches-slide"
-const layoutName = "Design Elements Text Image Swatches Slide"
-const layoutDescription = "A slide with a header, text blocks on the left, a large image on the right, and swatches below."
-
-const SwatchSchema = z.object({
-  hex: z.string().min(4).max(9).default("#DEDDDD").meta({ description: "Hex code. Max 1 word" }),
-})
+const layoutId = "design-elements-text-image-swatches-slide";
+const layoutName = "Design Elements Text + Stacked Images Slide";
+const layoutDescription = "Left 2 text blocks + right 2 stacked images (no overflow).";
 
 const Schema = z.object({
-  title: z.string().min(3).max(40).default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА").meta({ description: "Header. Max 3 words" }),
+  title: z.string().min(3).max(60).default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"),
+
   topText: z
     .string()
-    .min(20)
-    .max(170)
+    .min(10)
+    .max(260)
     .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Top text block. Max 22 words" }),
+    .meta({ description: "Top text block" }),
+
   bottomText: z
     .string()
-    .min(20)
-    .max(170)
+    .min(10)
+    .max(260)
     .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Bottom text block. Max 22 words" }),
-  image: ImageSchema.default({
+    .meta({ description: "Bottom text block" }),
+
+  topImage: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Large design photo",
-  }).meta({ description: "Main image. Max 30 words" }),
-  swatches: z
-    .array(SwatchSchema)
-    .min(3)
-    .max(3)
-    .default([{ hex: "#DEDDDD" }, { hex: "#C2BAC2" }, { hex: "#81919E" }])
-    .meta({ description: "Bottom swatches. Max 3 items" }),
-})
+    __image_prompt__: "Close-up decor detail (candles, texture, floristics), premium editorial photo",
+  }),
 
-type DesignElementsTextImageSwatchesSlideData = z.infer<typeof Schema>
+  bottomImage: ImageSchema.default({
+    __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
+    __image_prompt__: "Wide main decor scene (overall composition), premium editorial photo",
+  }),
+});
 
-interface DesignElementsTextImageSwatchesSlideLayoutProps {
-  data?: Partial<DesignElementsTextImageSwatchesSlideData>
+type Data = z.infer<typeof Schema>;
+
+interface Props {
+  data?: Partial<Data>;
 }
 
-const dynamicSlideLayout: React.FC<DesignElementsTextImageSwatchesSlideLayoutProps> = ({ data: slideData }) => {
-  const swatches = slideData?.swatches || []
-  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
-  const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
-  const bodyColor = resolveColor(slideData, "body", "color", titleColor, "text_primary")
-  const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
-  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body")
-  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#E6E6E6", "surface")
-  const barColor = resolveColor(slideData, "accent_bar", "background", "#81919E", "accent")
+const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
+  const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body");
+
+  // чтобы не уезжать в серифный display
+  const titleFont = resolveFontFamily(slideData, "title", rootFont, "heading");
+  const bodyFont = resolveFontFamily(slideData, "body", rootFont, "body");
+
+  const titleColor = resolveColor(slideData, "title", "color", "#2F2F2F", "text_primary");
+  const bodyColor = resolveColor(slideData, "body", "color", "#2F2F2F", "text_primary");
+  const surfaceColor = resolveColor(slideData, "image_placeholder", "background", "#F3F1EE", "surface");
+  const dividerColor = resolveColor(slideData, "divider", "background", "rgba(47,47,47,0.18)", "surface");
+
+  const topImg =
+    slideData?.topImage?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg";
+  const bottomImg =
+    slideData?.bottomImage?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg";
 
   return (
-    <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
-      <div className="h-full px-16 pt-10 pb-12">
-        <div className="text-[48px] leading-[54px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
+    <div
+      className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white z-20 mx-auto overflow-hidden"
+      style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}
+    >
+      {/* ВАЖНО: делаем общий контейнер flex-col, чтобы тело точно влезало */}
+      <div className="h-full px-16 pt-10 pb-12 flex flex-col min-h-0">
+        {/* Title */}
+        <div
+          className="text-[48px] leading-[54px] font-[900] uppercase"
+          style={{ color: titleColor, fontFamily: titleFont }}
+        >
           {slideData?.title || "ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"}
         </div>
 
-        <div className="mt-6 grid grid-cols-[0.85fr_1.15fr] gap-10 h-[490px]">
-          <div className="flex flex-col justify-between py-2">
-            <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70" style={{ color: bodyColor, fontFamily: bodyFont }}>
-              {slideData?.topText ||
-                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+        {/* Body занимает оставшуюся высоту и НЕ даёт детям распирать контейнер */}
+        <div className="mt-6 flex-1 min-h-0 grid grid-cols-[0.85fr_1.15fr] gap-10">
+          {/* LEFT: 2 явно отделённых блока */}
+          <div className="flex flex-col justify-start gap-10 min-h-0 pt-2">
+            <div>
+              <div
+                className="text-[16px] leading-[22px] font-[500]"
+                style={{ color: bodyColor, fontFamily: bodyFont }}
+              >
+                {slideData?.topText}
+              </div>
+
+              {/* тонкий разделитель (можно убрать, если не нужен) */}
+              <div className="mt-6 h-px w-[140px]" style={{ backgroundColor: dividerColor }} />
             </div>
 
-            <div className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70" style={{ color: bodyColor, fontFamily: bodyFont }}>
-              {slideData?.bottomText ||
-                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+            <div>
+              <div
+                className="text-[16px] leading-[22px] font-[500]"
+                style={{ color: bodyColor, fontFamily: bodyFont }}
+              >
+                {slideData?.bottomText}
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-6">
-            <div className="flex-1 overflow-hidden rounded-[10px] bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
+          {/* RIGHT: 2 изображения строго внутри высоты */}
+          <div className="flex flex-col gap-6 min-h-0">
+            {/* Верхнее: фиксированная доля высоты, чтобы гарантированно влезало */}
+            <div
+              className="overflow-hidden rounded-[10px] bg-[var(--style-surface)]"
+              style={{ backgroundColor: surfaceColor, flex: "0 0 38%" }}
+            >
               <img
-                src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
-                alt={slideData?.image?.__image_prompt__ || "image"}
+                src={topImg}
+                alt={slideData?.topImage?.__image_prompt__ || "top image"}
                 className="w-full h-full object-cover"
               />
             </div>
 
-            <div className="flex items-end justify-start gap-6 h-[92px]">
-              {swatches.slice(0, 3).map((s, idx) => (
-                <div key={idx} className="w-[132px] h-[60px] rounded-[12px]" style={{ backgroundColor: s.hex }}></div>
-              ))}
-
-              <div className="ml-auto flex items-end gap-4">
-                <div className="w-[16px] h-[90px] rounded-[12px]" style={{ backgroundColor: barColor, opacity: 0.6 }}></div>
-                <div className="w-[16px] h-[90px] rounded-[12px]" style={{ backgroundColor: barColor, opacity: 0.45 }}></div>
-                <div className="w-[16px] h-[90px] rounded-[12px]" style={{ backgroundColor: barColor, opacity: 0.3 }}></div>
-              </div>
+            {/* Нижнее: занимает остаток */}
+            <div
+              className="overflow-hidden rounded-[10px] bg-[var(--style-surface)] min-h-0"
+              style={{ backgroundColor: surfaceColor, flex: "1 1 0%" }}
+            >
+              <img
+                src={bottomImg}
+                alt={slideData?.bottomImage?.__image_prompt__ || "bottom image"}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export { Schema, layoutId, layoutName, layoutDescription }
-export default dynamicSlideLayout
-
-
-
+export { Schema, layoutId, layoutName, layoutDescription };
+export default dynamicSlideLayout;
