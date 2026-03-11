@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 import os
+import base64
 from unittest.mock import Mock, patch, AsyncMock
 import httpx
 from fastapi.testclient import TestClient
@@ -238,6 +239,84 @@ class TestImageGenerationService:
                         "sk-test",
                         "http://localhost:1234"
                     )
+
+        asyncio.run(run_test())
+
+    def test_generate_image_openai_retries_after_empty_payload(self, mock_images_directory):
+        async def run_test():
+            service = ImageGenerationService(mock_images_directory)
+            image_bytes = b"fake-png-binary"
+            image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+            empty_response = Mock()
+            empty_response.model_dump = Mock(return_value={"created": 1, "data": []})
+            empty_response.model_extra = {}
+
+            success_response = Mock()
+            success_response.model_dump = Mock(
+                return_value={"created": 2, "data": [{"b64_json": image_b64}]}
+            )
+            success_response.model_extra = {}
+
+            mock_client = Mock()
+            mock_client.images.generate = AsyncMock(
+                side_effect=[empty_response, success_response]
+            )
+
+            with patch("services.image_generation_service.AsyncOpenAI", return_value=mock_client):
+                image_path = await service.generate_image_openai(
+                    "test prompt",
+                    mock_images_directory,
+                    "google/gemini-2.5-flash-image",
+                    "standard",
+                    "sk-test",
+                    "https://api.vsellm.ru/v1",
+                )
+
+            assert os.path.exists(image_path)
+            with open(image_path, "rb") as f:
+                assert f.read() == image_bytes
+            assert mock_client.images.generate.await_count == 2
+
+        asyncio.run(run_test())
+
+    def test_generate_image_openai_supports_data_url_payload(self, mock_images_directory):
+        async def run_test():
+            service = ImageGenerationService(mock_images_directory)
+            image_bytes = b"fake-png-binary"
+            image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+            response = Mock()
+            response.model_dump = Mock(
+                return_value={
+                    "created": 1,
+                    "data": [
+                        {
+                            "image_url": {
+                                "url": f"data:image/png;base64,{image_b64}",
+                            }
+                        }
+                    ],
+                }
+            )
+            response.model_extra = {}
+
+            mock_client = Mock()
+            mock_client.images.generate = AsyncMock(return_value=response)
+
+            with patch("services.image_generation_service.AsyncOpenAI", return_value=mock_client):
+                image_path = await service.generate_image_openai(
+                    "test prompt",
+                    mock_images_directory,
+                    "test-model",
+                    "standard",
+                    "sk-test",
+                    "https://api.vsellm.ru/v1",
+                )
+
+            assert os.path.exists(image_path)
+            with open(image_path, "rb") as f:
+                assert f.read() == image_bytes
 
         asyncio.run(run_test())
     
