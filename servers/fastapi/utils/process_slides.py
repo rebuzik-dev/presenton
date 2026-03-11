@@ -1,5 +1,4 @@
 import asyncio
-from copy import deepcopy
 from typing import List
 from models.image_prompt import ImagePrompt
 from models.sql.image_asset import ImageAsset
@@ -14,6 +13,20 @@ from utils.dict_utils import get_dict_at_path, get_dict_paths_with_key, set_dict
 from utils.custom_logger import setup_logger
 
 logger = setup_logger(__name__)
+
+
+def _to_plain_data(value: object) -> object:
+    """Convert dirtyjson attributed containers to plain Python dict/list."""
+    if isinstance(value, dict):
+        return {key: _to_plain_data(item) for key, item in value.items()}
+
+    if isinstance(value, list):
+        return [_to_plain_data(item) for item in value]
+
+    if isinstance(value, tuple):
+        return [_to_plain_data(item) for item in value]
+
+    return value
 
 
 def _extract_reference_images(reference_image_source: object) -> list[str]:
@@ -45,7 +58,9 @@ async def process_slide_and_fetch_assets(
 ) -> List[ImageAsset]:
 
     async_tasks = []
-    updated_content = deepcopy(slide.content)
+    updated_content = _to_plain_data(slide.content)
+    if not isinstance(updated_content, dict):
+        raise TypeError(f"Slide content must be a dict, got {type(updated_content).__name__}")
 
     image_paths = get_dict_paths_with_key(updated_content, "__image_prompt__")
     icon_paths = get_dict_paths_with_key(updated_content, "__icon_query__")
@@ -250,7 +265,9 @@ async def process_old_and_new_slides_and_fetch_assets(
 
 
 def process_slide_add_placeholder_assets(slide: SlideModel):
-    updated_content = deepcopy(slide.content)
+    updated_content = _to_plain_data(slide.content)
+    if not isinstance(updated_content, dict):
+        raise TypeError(f"Slide content must be a dict, got {type(updated_content).__name__}")
 
     image_paths = get_dict_paths_with_key(updated_content, "__image_prompt__")
     icon_paths = get_dict_paths_with_key(updated_content, "__icon_query__")
