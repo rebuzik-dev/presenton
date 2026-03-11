@@ -3,10 +3,12 @@ import base64
 import json
 import mimetypes
 import os
+from io import BytesIO
 import aiohttp
 from fastapi import HTTPException
 from google import genai
 from openai import NOT_GIVEN, AsyncOpenAI
+from PIL import Image
 from models.image_prompt import ImagePrompt
 from models.sql.image_asset import ImageAsset
 from utils.get_env import (
@@ -139,9 +141,6 @@ class ImageGenerationService:
             return "/static/images/placeholder.jpg"
 
     async def _download_image_from_url(self, image_url: str, output_directory: str) -> str:
-        os.makedirs(output_directory, exist_ok=True)
-        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.png")
-
         async with aiohttp.ClientSession(trust_env=True) as session:
             response = await session.get(
                 image_url,
@@ -153,10 +152,60 @@ class ImageGenerationService:
                     f"Failed to download generated image. Status={response.status}, Body={body[:300]}"
                 )
             image_bytes = await response.read()
+            content_type = (response.headers.get("Content-Type") or "").split(";")[0]
 
+        extension_hint = (mimetypes.guess_extension(content_type) or "").lstrip(".")
+        return self._save_image_bytes(
+            image_bytes,
+            output_directory,
+            extension_hint or None,
+        )
+
+    def _detect_image_extension(
+        self,
+        image_bytes: bytes,
+        extension_hint: str | None = None,
+    ) -> str:
+        normalized_hint = (extension_hint or "").lower().lstrip(".")
+        if normalized_hint == "jpeg":
+            normalized_hint = "jpg"
+
+        try:
+            with Image.open(BytesIO(image_bytes)) as image:
+                detected_format = (image.format or "").lower()
+        except Exception as error:
+            raise ValueError(f"Decoded provider payload is not a valid image: {error}")
+
+        format_to_extension = {
+            "jpeg": "jpg",
+            "jpg": "jpg",
+            "png": "png",
+            "webp": "webp",
+            "gif": "gif",
+            "bmp": "bmp",
+            "tiff": "tiff",
+        }
+        detected_extension = format_to_extension.get(detected_format, normalized_hint or "png")
+
+        if normalized_hint and normalized_hint != detected_extension:
+            print(
+                f"WARNING: Image extension hint '{normalized_hint}' does not match detected format "
+                f"'{detected_extension}'. Using detected format."
+            )
+
+        return detected_extension
+
+    def _save_image_bytes(
+        self,
+        image_bytes: bytes,
+        output_directory: str,
+        extension_hint: str | None = None,
+    ) -> str:
+        os.makedirs(output_directory, exist_ok=True)
+        extension = self._detect_image_extension(image_bytes, extension_hint)
+        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.{extension}")
         with open(image_path, "wb") as f:
             f.write(image_bytes)
-
         return image_path
 
     def _save_base64_image(
@@ -165,11 +214,8 @@ class ImageGenerationService:
         output_directory: str,
         extension: str = "png",
     ) -> str:
-        os.makedirs(output_directory, exist_ok=True)
-        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.{extension}")
-        with open(image_path, "wb") as f:
-            f.write(base64.b64decode(image_b64))
-        return image_path
+        image_bytes = base64.b64decode(image_b64)
+        return self._save_image_bytes(image_bytes, output_directory, extension)
 
     def _parse_data_url(self, data_url: str) -> tuple[str, str]:
         if not data_url.startswith("data:image/"):
