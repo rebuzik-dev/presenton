@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 from typing import Any, List
 
@@ -306,6 +307,122 @@ def remove_titles_from_schema(schema: dict) -> dict[str, Any]:
         return node
 
     return _strip_titles(deepcopy(schema))
+
+
+def _is_open_ended_object_schema(json_schema: dict[str, Any]) -> bool:
+    return (
+        json_schema.get("type") == "object"
+        and json_schema.get("additionalProperties") is True
+        and not json_schema.get("properties")
+    )
+
+
+def stringify_open_ended_object_schemas(
+    schema: dict[str, Any],
+) -> tuple[dict[str, Any], List[tuple[str, ...]]]:
+    transformed_paths: set[tuple[str, ...]] = set()
+
+    def _transform(node: Any, data_path: tuple[str, ...]) -> Any:
+        if isinstance(node, dict):
+            rebuilt = deepcopy(node)
+
+            if _is_open_ended_object_schema(rebuilt):
+                transformed_paths.add(data_path)
+                description_parts: List[str] = []
+                if isinstance(rebuilt.get("description"), str) and rebuilt["description"]:
+                    description_parts.append(rebuilt["description"])
+                description_parts.append(
+                    "Return a compact JSON object encoded as a JSON string."
+                )
+
+                string_schema: dict[str, Any] = {
+                    "type": "string",
+                    "description": " ".join(description_parts),
+                }
+                if "title" in rebuilt:
+                    string_schema["title"] = rebuilt["title"]
+                return string_schema
+
+            for key, value in rebuilt.items():
+                if key in ("$defs", "definitions") and isinstance(value, dict):
+                    rebuilt[key] = {
+                        entry_key: _transform(entry_value, data_path)
+                        for entry_key, entry_value in value.items()
+                    }
+                elif key == "properties" and isinstance(value, dict):
+                    rebuilt[key] = {
+                        prop_key: _transform(prop_value, (*data_path, prop_key))
+                        for prop_key, prop_value in value.items()
+                    }
+                elif key == "items" and isinstance(value, dict):
+                    rebuilt[key] = _transform(value, (*data_path, "*"))
+                elif key in ("contains", "additionalProperties", "not") and isinstance(
+                    value, dict
+                ):
+                    rebuilt[key] = _transform(value, data_path)
+                elif key in ("allOf", "anyOf", "oneOf", "prefixItems") and isinstance(
+                    value, list
+                ):
+                    next_path = (*data_path, "*") if key == "prefixItems" else data_path
+                    rebuilt[key] = [_transform(each, next_path) for each in value]
+
+            return rebuilt
+
+        if isinstance(node, list):
+            return [_transform(each, data_path) for each in node]
+
+        return node
+
+    normalized = _transform(schema, ())
+    return normalized, sorted(transformed_paths)
+
+
+def normalize_openai_compatible_json_schema(
+    schema: dict[str, Any],
+    *,
+    strict: bool = False,
+) -> tuple[dict[str, Any], List[tuple[str, ...]]]:
+    normalized = deepcopy(schema)
+    if strict:
+        normalized = ensure_strict_json_schema(normalized, path=(), root=normalized)
+    return stringify_open_ended_object_schemas(normalized)
+
+
+def decode_json_string_object_fields(
+    data: dict[str, Any],
+    field_paths: List[tuple[str, ...]],
+) -> dict[str, Any]:
+    normalized = deepcopy(data)
+
+    def _decode(node: Any, path: tuple[str, ...]) -> Any:
+        if not path:
+            if not isinstance(node, str):
+                return node
+
+            try:
+                parsed = json.loads(node)
+            except Exception:
+                return node
+
+            return dict(parsed) if isinstance(parsed, dict) else node
+
+        segment = path[0]
+        rest = path[1:]
+
+        if segment == "*":
+            if isinstance(node, list):
+                return [_decode(item, rest) for item in node]
+            return node
+
+        if isinstance(node, dict) and segment in node:
+            node = deepcopy(node)
+            node[segment] = _decode(node[segment], rest)
+        return node
+
+    for field_path in sorted(set(field_paths), key=len):
+        normalized = _decode(normalized, field_path)
+
+    return normalized
 
 
 # ? Not used
