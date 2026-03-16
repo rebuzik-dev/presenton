@@ -22,6 +22,7 @@ import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { getHeader } from "../../services/api/header";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import LayoutMetadataPreview from "../components/LayoutMetadataPreview";
 
 type FontOption = { family: string; cssUrl?: string };
@@ -56,6 +57,7 @@ const GroupLayoutPreview = () => {
   const [previewFontUrl, setPreviewFontUrl] = useState("");
   const [fontPickerOpen, setFontPickerOpen] = useState(false);
   const [fontSearch, setFontSearch] = useState("");
+  const [aiDescriptionsEnabled, setAiDescriptionsEnabled] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(220);
 
@@ -474,6 +476,16 @@ const GroupLayoutPreview = () => {
               Apply
             </Button>
           </div>
+          <div className="mt-3 flex items-center justify-end gap-3">
+            <Label htmlFor="ai-descriptions-toggle" className="text-sm text-gray-700">
+              Show AI block descriptions
+            </Label>
+            <Switch
+              id="ai-descriptions-toggle"
+              checked={aiDescriptionsEnabled}
+              onCheckedChange={setAiDescriptionsEnabled}
+            />
+          </div>
 
         </div>
       </header>
@@ -542,6 +554,7 @@ const GroupLayoutPreview = () => {
                     sampleData={sampleData}
                     schema={schema}
                     previewFontFamily={previewFontFamily}
+                    aiDescriptionsEnabled={aiDescriptionsEnabled}
                   />
                 </div>
               </Card>

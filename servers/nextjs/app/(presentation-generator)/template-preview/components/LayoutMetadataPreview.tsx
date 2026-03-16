@@ -49,6 +49,7 @@ interface LayoutMetadataPreviewProps {
   sampleData: any;
   schema: any;
   previewFontFamily: string;
+  aiDescriptionsEnabled: boolean;
 }
 
 const TEXT_SELECTOR = "h1,h2,h3,h4,h5,h6,p,li,blockquote,div,span";
@@ -348,6 +349,7 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
   sampleData,
   schema,
   previewFontFamily,
+  aiDescriptionsEnabled,
 }) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const slideRootRef = useRef<HTMLDivElement | null>(null);
@@ -386,6 +388,12 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
   );
 
   const recomputeOverlays = useCallback(() => {
+    if (!aiDescriptionsEnabled) {
+      setOverlays([]);
+      setActiveOverlayId(null);
+      return;
+    }
+
     const wrapper = wrapperRef.current;
     const slideRoot = slideRootRef.current;
     if (!wrapper || !slideRoot) return;
@@ -530,16 +538,24 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         ? previousId
         : nextOverlays[0]?.id || null;
     });
-  }, [imagePromptByValue, imagePromptEntries, textMetaEntries]);
+  }, [aiDescriptionsEnabled, imagePromptByValue, imagePromptEntries, textMetaEntries]);
 
   useEffect(() => {
+    if (!aiDescriptionsEnabled) {
+      setOverlays([]);
+      setActiveOverlayId(null);
+      return;
+    }
+
     const frameId = window.requestAnimationFrame(() => {
       recomputeOverlays();
     });
     return () => window.cancelAnimationFrame(frameId);
-  }, [recomputeOverlays, previewFontFamily, sampleData, schema]);
+  }, [aiDescriptionsEnabled, recomputeOverlays, previewFontFamily, sampleData, schema]);
 
   useEffect(() => {
+    if (!aiDescriptionsEnabled) return;
+
     const wrapper = wrapperRef.current;
     const slideRoot = slideRootRef.current;
     if (!wrapper || !slideRoot) return;
@@ -563,7 +579,7 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
       });
       window.removeEventListener("resize", recomputeOverlays);
     };
-  }, [recomputeOverlays, sampleData]);
+  }, [aiDescriptionsEnabled, recomputeOverlays, sampleData]);
 
   const activeOverlay = useMemo(
     () => overlays.find((item) => item.id === activeOverlayId) || null,
@@ -584,7 +600,7 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         <LayoutComponent data={sampleData} />
       </div>
 
-      {slidePrompt && (
+      {aiDescriptionsEnabled && slidePrompt && (
         <div className="absolute left-3 top-3 z-40 max-w-[70%] rounded-md border border-blue-200 bg-white/95 p-2 shadow-sm backdrop-blur-sm">
           <p className="text-[11px] font-semibold text-blue-700">Slide-level prompt</p>
           <p className="mt-1 text-xs text-gray-700 whitespace-pre-wrap break-words select-text">
@@ -593,36 +609,38 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         </div>
       )}
 
-      <div className="pointer-events-none absolute inset-0 z-30">
-        {overlays.map((item) => {
-          const isActive = item.id === activeOverlayId;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={cn(
-                "pointer-events-auto absolute rounded-sm transition-colors",
-                item.type === "image"
-                  ? "border-2 border-amber-500/70 bg-amber-400/10 hover:bg-amber-400/20"
-                  : "border border-sky-500/70 bg-sky-400/5 hover:bg-sky-400/15",
-                isActive && "ring-2 ring-blue-500/70"
-              )}
-              style={{
-                left: item.left,
-                top: item.top,
-                width: item.width,
-                height: item.height,
-              }}
-              onMouseEnter={() => setActiveOverlayId(item.id)}
-              onClick={() => setActiveOverlayId(item.id)}
-            >
-              <span className="sr-only">{item.title}</span>
-            </button>
-          );
-        })}
-      </div>
+      {aiDescriptionsEnabled && (
+        <div className="pointer-events-none absolute inset-0 z-30">
+          {overlays.map((item) => {
+            const isActive = item.id === activeOverlayId;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={cn(
+                  "pointer-events-auto absolute rounded-sm transition-colors",
+                  item.type === "image"
+                    ? "border-2 border-amber-500/70 bg-amber-400/10 hover:bg-amber-400/20"
+                    : "border border-sky-500/70 bg-sky-400/5 hover:bg-sky-400/15",
+                  isActive && "ring-2 ring-blue-500/70"
+                )}
+                style={{
+                  left: item.left,
+                  top: item.top,
+                  width: item.width,
+                  height: item.height,
+                }}
+                onMouseEnter={() => setActiveOverlayId(item.id)}
+                onClick={() => setActiveOverlayId(item.id)}
+              >
+                <span className="sr-only">{item.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      {activeOverlay && (
+      {aiDescriptionsEnabled && activeOverlay && (
         <div className="absolute bottom-3 left-3 right-3 z-40 rounded-md border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-semibold text-gray-900">{activeOverlay.title}</p>
