@@ -507,6 +507,8 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         );
       }
 
+      const textDescription = matchedMeta?.meta?.description?.trim();
+
       nextOverlays.push({
         id: `text-${nextId++}`,
         type: "text",
@@ -514,8 +516,8 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         top: rect.top - wrapperRect.top,
         width: rect.width,
         height: rect.height,
-        title: matchedMeta?.meta?.description || "Rendered text block",
-        content: text,
+        title: textDescription ? "AI text description" : "Rendered text block",
+        content: textDescription || text,
         path: matchedMeta?.path,
         constraints: formatMetaMinMax(matchedMeta?.meta),
       });
