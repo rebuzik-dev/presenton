@@ -12,8 +12,8 @@ from models.llm_message import (
 from models.llm_tool_call import AnthropicToolCall, GoogleToolCall, OpenAIToolCall
 from models.llm_tools import LLMDynamicTool, LLMTool, SearchWebTool
 from utils.schema_utils import (
-    ensure_strict_json_schema,
     flatten_json_schema,
+    normalize_openai_compatible_json_schema,
     remove_titles_from_schema,
 )
 
@@ -79,7 +79,10 @@ class LLMToolCallsHandler:
             parameters = tool.model_json_schema()
 
         if strict:
-            parameters = ensure_strict_json_schema(parameters, path=(), root=parameters)
+            parameters, _ = normalize_openai_compatible_json_schema(
+                parameters,
+                strict=True,
+            )
 
         return {
             "type": "function",

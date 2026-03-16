@@ -3,10 +3,12 @@ import base64
 import json
 import mimetypes
 import os
+from io import BytesIO
 import aiohttp
 from fastapi import HTTPException
 from google import genai
 from openai import NOT_GIVEN, AsyncOpenAI
+from PIL import Image
 from models.image_prompt import ImagePrompt
 from models.sql.image_asset import ImageAsset
 from utils.get_env import (
@@ -139,9 +141,6 @@ class ImageGenerationService:
             return "/static/images/placeholder.jpg"
 
     async def _download_image_from_url(self, image_url: str, output_directory: str) -> str:
-        os.makedirs(output_directory, exist_ok=True)
-        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.png")
-
         async with aiohttp.ClientSession(trust_env=True) as session:
             response = await session.get(
                 image_url,
@@ -153,10 +152,60 @@ class ImageGenerationService:
                     f"Failed to download generated image. Status={response.status}, Body={body[:300]}"
                 )
             image_bytes = await response.read()
+            content_type = (response.headers.get("Content-Type") or "").split(";")[0]
 
+        extension_hint = (mimetypes.guess_extension(content_type) or "").lstrip(".")
+        return self._save_image_bytes(
+            image_bytes,
+            output_directory,
+            extension_hint or None,
+        )
+
+    def _detect_image_extension(
+        self,
+        image_bytes: bytes,
+        extension_hint: str | None = None,
+    ) -> str:
+        normalized_hint = (extension_hint or "").lower().lstrip(".")
+        if normalized_hint == "jpeg":
+            normalized_hint = "jpg"
+
+        try:
+            with Image.open(BytesIO(image_bytes)) as image:
+                detected_format = (image.format or "").lower()
+        except Exception as error:
+            raise ValueError(f"Decoded provider payload is not a valid image: {error}")
+
+        format_to_extension = {
+            "jpeg": "jpg",
+            "jpg": "jpg",
+            "png": "png",
+            "webp": "webp",
+            "gif": "gif",
+            "bmp": "bmp",
+            "tiff": "tiff",
+        }
+        detected_extension = format_to_extension.get(detected_format, normalized_hint or "png")
+
+        if normalized_hint and normalized_hint != detected_extension:
+            print(
+                f"WARNING: Image extension hint '{normalized_hint}' does not match detected format "
+                f"'{detected_extension}'. Using detected format."
+            )
+
+        return detected_extension
+
+    def _save_image_bytes(
+        self,
+        image_bytes: bytes,
+        output_directory: str,
+        extension_hint: str | None = None,
+    ) -> str:
+        os.makedirs(output_directory, exist_ok=True)
+        extension = self._detect_image_extension(image_bytes, extension_hint)
+        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.{extension}")
         with open(image_path, "wb") as f:
             f.write(image_bytes)
-
         return image_path
 
     def _save_base64_image(
@@ -165,11 +214,8 @@ class ImageGenerationService:
         output_directory: str,
         extension: str = "png",
     ) -> str:
-        os.makedirs(output_directory, exist_ok=True)
-        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.{extension}")
-        with open(image_path, "wb") as f:
-            f.write(base64.b64decode(image_b64))
-        return image_path
+        image_bytes = base64.b64decode(image_b64)
+        return self._save_image_bytes(image_bytes, output_directory, extension)
 
     def _parse_data_url(self, data_url: str) -> tuple[str, str]:
         if not data_url.startswith("data:image/"):
@@ -181,6 +227,112 @@ class ImageGenerationService:
         mime_type = header.split(";", 1)[0].replace("data:", "", 1)
         extension = (mimetypes.guess_extension(mime_type) or ".png").lstrip(".")
         return image_b64, extension
+
+    def _openai_image_result_to_payload(self, result: object) -> dict:
+        if isinstance(result, dict):
+            return result
+
+        payload: dict = {}
+        if hasattr(result, "model_dump"):
+            try:
+                payload = result.model_dump(exclude_none=True)
+            except TypeError:
+                payload = result.model_dump()
+        elif hasattr(result, "__dict__"):
+            payload = {
+                key: value
+                for key, value in vars(result).items()
+                if not key.startswith("_")
+            }
+
+        model_extra = getattr(result, "model_extra", None)
+        if isinstance(model_extra, dict):
+            payload = {**payload, **model_extra}
+
+        return payload
+
+    def _summarize_image_payload(self, payload: object) -> str:
+        if not isinstance(payload, dict):
+            return f"type={type(payload).__name__}"
+
+        summary: dict[str, object] = {"keys": sorted(payload.keys())}
+        for key in ("data", "images", "choices"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                summary[f"{key}_len"] = len(value)
+                if value:
+                    first = value[0]
+                    if isinstance(first, dict):
+                        summary[f"{key}_item_keys"] = sorted(first.keys())
+                    else:
+                        summary[f"{key}_item_type"] = type(first).__name__
+
+        return json.dumps(summary, ensure_ascii=False)
+
+    def _iter_openai_image_candidates(self, payload: dict):
+        data_items = payload.get("data")
+        if isinstance(data_items, list):
+            for item in data_items:
+                yield item
+        elif isinstance(data_items, dict):
+            yield data_items
+
+        images = payload.get("images")
+        if isinstance(images, list):
+            for item in images:
+                yield item
+
+        choices = payload.get("choices")
+        if isinstance(choices, list):
+            for choice in choices:
+                if not isinstance(choice, dict):
+                    continue
+                message = choice.get("message")
+                if not isinstance(message, dict):
+                    continue
+                nested_images = message.get("images")
+                if isinstance(nested_images, list):
+                    for item in nested_images:
+                        yield item
+
+    async def _save_image_from_openai_response(
+        self,
+        result: object,
+        output_directory: str,
+    ) -> str:
+        payload = self._openai_image_result_to_payload(result)
+
+        for image_item in self._iter_openai_image_candidates(payload):
+            if not isinstance(image_item, dict):
+                continue
+
+            image_b64 = (
+                image_item.get("b64_json")
+                or image_item.get("base64")
+                or image_item.get("image_base64")
+            )
+            if isinstance(image_b64, str) and image_b64:
+                return self._save_base64_image(image_b64, output_directory, "png")
+
+            image_url = image_item.get("url") or image_item.get("image_url")
+            if isinstance(image_url, dict):
+                image_url = image_url.get("url")
+
+            if isinstance(image_url, str):
+                if image_url.startswith("data:image/"):
+                    data_b64, extension = self._parse_data_url(image_url)
+                    return self._save_base64_image(data_b64, output_directory, extension)
+
+                if image_url.startswith("http://") or image_url.startswith("https://"):
+                    return await self._download_image_from_url(
+                        image_url,
+                        output_directory,
+                    )
+
+        raise Exception(
+            "Image provider returned no usable image payload. "
+            f"Payload summary: {self._summarize_image_payload(payload)}"
+        )
 
     async def _image_source_to_data_url(self, image_source: str) -> str:
         if image_source.startswith("data:image/"):
@@ -349,43 +501,49 @@ class ImageGenerationService:
             "response_format": "b64_json" if model == "dall-e-3" else NOT_GIVEN,
             "size": "1024x1024",
         }
-
-        try:
-            result = await client.images.generate(**request_params)
-        except Exception as first_error:
-            # Fallback for partially OpenAI-compatible providers that don't support
-            # quality / response_format / size the same way as OpenAI.
-            print(
-                f"Primary image generation params failed for model '{model}' at '{base_url}': {first_error}. "
-                f"Retrying with minimal params."
+        attempts = [
+            ("default params", request_params),
+            (
+                "minimal params",
+                {
+                    "model": model,
+                    "prompt": prompt,
+                    "n": 1,
+                },
+            ),
+        ]
+        if base_url:
+            attempts.append(
+                (
+                    "minimal params + b64_json",
+                    {
+                        "model": model,
+                        "prompt": prompt,
+                        "n": 1,
+                        "response_format": "b64_json",
+                    },
+                )
             )
-            result = await client.images.generate(
-                model=model,
-                prompt=prompt,
-                n=1,
-            )
 
-        if not result.data:
-            raise Exception("Image provider returned empty data list")
-
-        first_item = result.data[0]
-        image_b64 = getattr(first_item, "b64_json", None)
-        image_url = getattr(first_item, "url", None)
-
-        os.makedirs(output_directory, exist_ok=True)
-        image_path = os.path.join(output_directory, f"{uuid.uuid4()}.png")
-
-        if image_b64:
-            with open(image_path, "wb") as f:
-                f.write(base64.b64decode(image_b64))
-            return image_path
-
-        if image_url:
-            return await self._download_image_from_url(image_url, output_directory)
+        last_error: Exception | None = None
+        for index, (label, params) in enumerate(attempts, start=1):
+            try:
+                result = await client.images.generate(**params)
+                return await self._save_image_from_openai_response(
+                    result,
+                    output_directory,
+                )
+            except Exception as error:
+                last_error = error
+                if index == len(attempts):
+                    break
+                print(
+                    f"Image generation attempt {index}/{len(attempts)} failed for model '{model}' at '{base_url}' "
+                    f"using {label}: {error}. Retrying."
+                )
 
         raise Exception(
-            f"Image provider returned unsupported payload. "
-            f"Expected 'b64_json' or 'url', got keys: {list(first_item.__dict__.keys()) if hasattr(first_item, '__dict__') else 'unknown'}"
+            f"Image generation failed after {len(attempts)} attempts: {last_error}"
         )
 
     async def generate_image_openai_dalle3(

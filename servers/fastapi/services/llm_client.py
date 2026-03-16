@@ -56,8 +56,9 @@ from utils.get_env import (
 from utils.llm_provider import get_llm_provider, get_model
 from utils.parsers import parse_bool_or_none
 from utils.schema_utils import (
-    ensure_strict_json_schema,
+    decode_json_string_object_fields,
     flatten_json_schema,
+    normalize_openai_compatible_json_schema,
     remove_titles_from_schema,
 )
 
@@ -462,16 +463,18 @@ class LLMClient:
     ) -> dict | None:
         client: AsyncOpenAI = self._client
         response_schema = response_format
+        json_string_object_paths: List[tuple[str, ...]] = []
         all_tools = [*tools] if tools else None
 
         use_tool_calls_for_structured_output = (
             self.use_tool_calls_for_structured_output()
         )
-        if strict and depth == 0:
-            response_schema = ensure_strict_json_schema(
-                response_schema,
-                path=(),
-                root=response_schema,
+        if depth == 0:
+            response_schema, json_string_object_paths = (
+                normalize_openai_compatible_json_schema(
+                    response_schema,
+                    strict=strict,
+                )
             )
         if use_tool_calls_for_structured_output and depth == 0:
             if all_tools is None:
@@ -562,7 +565,13 @@ class LLMClient:
                 )
         if content:
             if depth == 0:
-                return dict(dirtyjson.loads(content))
+                parsed_content = dict(dirtyjson.loads(content))
+                if json_string_object_paths:
+                    parsed_content = decode_json_string_object_fields(
+                        parsed_content,
+                        json_string_object_paths,
+                    )
+                return parsed_content
             return content
         return None
 
@@ -1155,11 +1164,10 @@ class LLMClient:
         use_tool_calls_for_structured_output = (
             self.use_tool_calls_for_structured_output()
         )
-        if strict and depth == 0:
-            response_schema = ensure_strict_json_schema(
+        if depth == 0:
+            response_schema, _ = normalize_openai_compatible_json_schema(
                 response_schema,
-                path=(),
-                root=response_schema,
+                strict=strict,
             )
 
         if use_tool_calls_for_structured_output and depth == 0:
