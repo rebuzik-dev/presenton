@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation";
 import LoadingStates from "../components/LoadingStates";
 import { Card } from "@/components/ui/card";
@@ -56,6 +56,8 @@ const GroupLayoutPreview = () => {
   const [previewFontUrl, setPreviewFontUrl] = useState("");
   const [fontPickerOpen, setFontPickerOpen] = useState(false);
   const [fontSearch, setFontSearch] = useState("");
+  const headerRef = useRef<HTMLElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(220);
 
   const { getFullDataByTemplateID, loading, refetch } = useLayout();
   const layoutGroup = getFullDataByTemplateID(rawSlug);
@@ -157,6 +159,26 @@ const GroupLayoutPreview = () => {
       document.head.appendChild(script);
     }
   }, [rawSlug]);
+
+  useEffect(() => {
+    const headerElement = headerRef.current;
+    if (!headerElement) return;
+
+    const updateHeaderHeight = () => {
+      setHeaderHeight(Math.ceil(headerElement.getBoundingClientRect().height));
+    };
+
+    updateHeaderHeight();
+
+    const observer = new ResizeObserver(() => updateHeaderHeight());
+    observer.observe(headerElement);
+    window.addEventListener("resize", updateHeaderHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateHeaderHeight);
+    };
+  }, []);
 
   // Ensure fonts are injected if layoutsMap changes dynamically
   useEffect(() => {
@@ -309,7 +331,7 @@ const GroupLayoutPreview = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-30">
+      <header ref={headerRef} className="fixed inset-x-0 top-0 z-[80] bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-6">
           {/* Navigation */}
           <div className="flex items-center gap-4 mb-4">
@@ -456,8 +478,9 @@ const GroupLayoutPreview = () => {
         </div>
       </header>
 
+      <div style={{ paddingTop: `${headerHeight}px` }}>
       {/* Layout Grid */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-8 relative z-0">
         <div className="space-y-8">
           {layoutGroup.map((layout: any, index: number) => {
             const {
@@ -537,6 +560,7 @@ const GroupLayoutPreview = () => {
           </div>
         </div>
       </footer>
+      </div>
 
       {/* Right-side Sheet Editor */}
       {isCustom && (
