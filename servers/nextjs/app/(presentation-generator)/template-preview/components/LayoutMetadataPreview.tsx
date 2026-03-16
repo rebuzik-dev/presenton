@@ -5,12 +5,29 @@ import { cn } from "@/lib/utils";
 
 type PromptKind = "image" | "icon" | "text";
 
+interface SchemaFieldMeta {
+  description?: string;
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  minItems?: number;
+  maxItems?: number;
+}
+
 interface PromptEntry {
   path: string;
   key: string;
   kind: PromptKind;
   value: string;
-  description?: string;
+  meta?: SchemaFieldMeta;
+}
+
+interface TextMetaEntry {
+  path: string;
+  value: string;
+  normalizedValue: string;
+  meta?: SchemaFieldMeta;
 }
 
 interface OverlayItem {
@@ -23,6 +40,7 @@ interface OverlayItem {
   title: string;
   content: string;
   path?: string;
+  constraints?: string;
 }
 
 interface LayoutMetadataPreviewProps {
@@ -45,6 +63,94 @@ const GENERIC_ALT_VALUES = new Set([
 ]);
 
 const normalizePath = (parts: string[]): string => parts.join(".");
+const normalizeTextValue = (value: string): string =>
+  value.replace(/\s+/g, " ").trim().toLowerCase();
+
+const extractFieldMeta = (node: any): SchemaFieldMeta => {
+  const nextMeta: SchemaFieldMeta = {};
+
+  if (typeof node?.description === "string" && node.description.trim()) {
+    nextMeta.description = node.description.trim();
+  }
+
+  if (typeof node?.minLength === "number") nextMeta.minLength = node.minLength;
+  if (typeof node?.maxLength === "number") nextMeta.maxLength = node.maxLength;
+  if (typeof node?.minimum === "number") nextMeta.minimum = node.minimum;
+  if (typeof node?.maximum === "number") nextMeta.maximum = node.maximum;
+  if (typeof node?.minItems === "number") nextMeta.minItems = node.minItems;
+  if (typeof node?.maxItems === "number") nextMeta.maxItems = node.maxItems;
+
+  return nextMeta;
+};
+
+const mergeFieldMeta = (
+  primary: SchemaFieldMeta,
+  fallback?: SchemaFieldMeta
+): SchemaFieldMeta => ({
+  description: primary.description || fallback?.description,
+  minLength: primary.minLength ?? fallback?.minLength,
+  maxLength: primary.maxLength ?? fallback?.maxLength,
+  minimum: primary.minimum ?? fallback?.minimum,
+  maximum: primary.maximum ?? fallback?.maximum,
+  minItems: primary.minItems ?? fallback?.minItems,
+  maxItems: primary.maxItems ?? fallback?.maxItems,
+});
+
+const hasAnyMeta = (meta?: SchemaFieldMeta): boolean =>
+  Boolean(
+    meta &&
+      (meta.description ||
+        meta.minLength !== undefined ||
+        meta.maxLength !== undefined ||
+        meta.minimum !== undefined ||
+        meta.maximum !== undefined ||
+        meta.minItems !== undefined ||
+        meta.maxItems !== undefined)
+  );
+
+const formatMetaMinMax = (meta?: SchemaFieldMeta): string | undefined => {
+  if (!meta) return undefined;
+  const groups: string[] = [];
+
+  if (meta.minLength !== undefined || meta.maxLength !== undefined) {
+    groups.push(
+      `length: ${meta.minLength !== undefined ? meta.minLength : "?"}..${
+        meta.maxLength !== undefined ? meta.maxLength : "?"
+      }`
+    );
+  }
+
+  if (meta.minimum !== undefined || meta.maximum !== undefined) {
+    groups.push(
+      `value: ${meta.minimum !== undefined ? meta.minimum : "?"}..${
+        meta.maximum !== undefined ? meta.maximum : "?"
+      }`
+    );
+  }
+
+  if (meta.minItems !== undefined || meta.maxItems !== undefined) {
+    groups.push(
+      `items: ${meta.minItems !== undefined ? meta.minItems : "?"}..${
+        meta.maxItems !== undefined ? meta.maxItems : "?"
+      }`
+    );
+  }
+
+  if (groups.length === 0) return undefined;
+  return groups.join(" | ");
+};
+
+const getNearestFieldKey = (path: string[]): string => {
+  for (let index = path.length - 1; index >= 0; index -= 1) {
+    if (path[index] !== "[]") return path[index];
+  }
+  return "";
+};
+
+const isLikelyUrlField = (key: string): boolean => {
+  const lowerKey = key.toLowerCase();
+  return lowerKey.includes("url") || lowerKey.endsWith("_src") || lowerKey.endsWith("href");
+};
 
 const isPromptKey = (key: string): boolean => {
   const lowerKey = key.toLowerCase();
@@ -62,11 +168,11 @@ const detectPromptKind = (key: string): PromptKind => {
   return "text";
 };
 
-const collectSchemaPromptDescriptions = (
+const collectSchemaFieldDescriptions = (
   schema: any
-): { byPath: Map<string, string>; byKey: Map<string, string> } => {
-  const byPath = new Map<string, string>();
-  const byKey = new Map<string, string>();
+): { byPath: Map<string, SchemaFieldMeta>; byKey: Map<string, SchemaFieldMeta> } => {
+  const byPath = new Map<string, SchemaFieldMeta>();
+  const byKey = new Map<string, SchemaFieldMeta>();
   const visited = new WeakSet<object>();
 
   const walk = (node: any, path: string[]) => {
@@ -74,17 +180,32 @@ const collectSchemaPromptDescriptions = (
     if (visited.has(node)) return;
     visited.add(node);
 
+    const currentMeta = extractFieldMeta(node);
+
+    if (hasAnyMeta(currentMeta) && path.length > 0) {
+      const normalizedCurrentPath = normalizePath(path);
+      if (!byPath.has(normalizedCurrentPath)) {
+        byPath.set(normalizedCurrentPath, currentMeta);
+      }
+      const currentKey = getNearestFieldKey(path).toLowerCase();
+      if (currentKey && !byKey.has(currentKey)) {
+        byKey.set(currentKey, currentMeta);
+      }
+    }
+
     const properties = node?.properties as Record<string, any> | undefined;
     if (properties && typeof properties === "object") {
       for (const [key, childNode] of Object.entries(properties)) {
         const nextPath = [...path, key];
-        if (isPromptKey(key)) {
-          const description =
-            (typeof childNode?.description === "string" && childNode.description) ||
-            (typeof node?.description === "string" && node.description);
-          if (description) {
-            byPath.set(normalizePath(nextPath), description);
-            byKey.set(key.toLowerCase(), description);
+        const propertyMeta = mergeFieldMeta(extractFieldMeta(childNode), currentMeta);
+        if (hasAnyMeta(propertyMeta)) {
+          const normalizedPropertyPath = normalizePath(nextPath);
+          if (!byPath.has(normalizedPropertyPath)) {
+            byPath.set(normalizedPropertyPath, propertyMeta);
+          }
+          const lowerKey = key.toLowerCase();
+          if (!byKey.has(lowerKey)) {
+            byKey.set(lowerKey, propertyMeta);
           }
         }
         walk(childNode, nextPath);
@@ -109,7 +230,7 @@ const collectSchemaPromptDescriptions = (
 
 const collectPromptEntries = (
   sampleData: any,
-  schemaDescriptions: { byPath: Map<string, string>; byKey: Map<string, string> }
+  schemaDescriptions: { byPath: Map<string, SchemaFieldMeta>; byKey: Map<string, SchemaFieldMeta> }
 ): PromptEntry[] => {
   const entries: PromptEntry[] = [];
 
@@ -132,7 +253,7 @@ const collectPromptEntries = (
             key,
             kind: detectPromptKind(key),
             value: trimmedValue,
-            description:
+            meta:
               schemaDescriptions.byPath.get(normalizedPath) ||
               schemaDescriptions.byKey.get(key.toLowerCase()),
           });
@@ -147,6 +268,57 @@ const collectPromptEntries = (
   const deduped = new Map<string, PromptEntry>();
   entries.forEach((entry) => {
     const signature = `${entry.path}::${entry.value}`;
+    if (!deduped.has(signature)) deduped.set(signature, entry);
+  });
+  return Array.from(deduped.values());
+};
+
+const collectTextMetaEntries = (
+  sampleData: any,
+  schemaDescriptions: { byPath: Map<string, SchemaFieldMeta>; byKey: Map<string, SchemaFieldMeta> }
+): TextMetaEntry[] => {
+  const entries: TextMetaEntry[] = [];
+
+  const walk = (value: any, path: string[]) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => walk(item, [...path, "[]"]));
+      return;
+    }
+
+    if (value && typeof value === "object") {
+      Object.entries(value).forEach(([key, child]) => {
+        walk(child, [...path, key]);
+      });
+      return;
+    }
+
+    if (typeof value !== "string") return;
+    const trimmedValue = value.replace(/\s+/g, " ").trim();
+    if (!trimmedValue) return;
+
+    const key = getNearestFieldKey(path);
+    if (!key) return;
+    if (isPromptKey(key) || isLikelyUrlField(key)) return;
+
+    const normalizedPath = normalizePath(path);
+    const meta =
+      schemaDescriptions.byPath.get(normalizedPath) ||
+      schemaDescriptions.byPath.get(normalizedPath.replace(/\.?\[\]$/, "")) ||
+      schemaDescriptions.byKey.get(key.toLowerCase());
+
+    entries.push({
+      path: normalizedPath,
+      value: trimmedValue,
+      normalizedValue: normalizeTextValue(trimmedValue),
+      meta,
+    });
+  };
+
+  walk(sampleData, []);
+
+  const deduped = new Map<string, TextMetaEntry>();
+  entries.forEach((entry) => {
+    const signature = `${entry.path}::${entry.normalizedValue}`;
     if (!deduped.has(signature)) deduped.set(signature, entry);
   });
   return Array.from(deduped.values());
@@ -175,10 +347,7 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
   const [overlays, setOverlays] = useState<OverlayItem[]>([]);
   const [activeOverlayId, setActiveOverlayId] = useState<string | null>(null);
 
-  const schemaDescriptions = useMemo(
-    () => collectSchemaPromptDescriptions(schema),
-    [schema]
-  );
+  const schemaDescriptions = useMemo(() => collectSchemaFieldDescriptions(schema), [schema]);
 
   const promptEntries = useMemo(
     () => collectPromptEntries(sampleData, schemaDescriptions),
@@ -198,6 +367,24 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
     });
     return map;
   }, [imagePromptEntries]);
+
+  const textMetaEntries = useMemo(
+    () => collectTextMetaEntries(sampleData, schemaDescriptions),
+    [sampleData, schemaDescriptions]
+  );
+
+  const textMetaByValue = useMemo(() => {
+    const map = new Map<string, TextMetaEntry[]>();
+    textMetaEntries.forEach((entry) => {
+      const bucket = map.get(entry.normalizedValue);
+      if (bucket) {
+        bucket.push(entry);
+      } else {
+        map.set(entry.normalizedValue, [entry]);
+      }
+    });
+    return map;
+  }, [textMetaEntries]);
 
   const slidePrompt = useMemo(
     () => promptEntries.find((entry) => entry.kind === "text" && isSlidePromptPath(entry.path)),
@@ -243,14 +430,19 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         top: rect.top - wrapperRect.top,
         width: rect.width,
         height: rect.height,
-        title: matchedPrompt?.description || "Image generation prompt",
+        title: matchedPrompt?.meta?.description || "Image generation prompt",
         content: promptContent,
         path: matchedPrompt?.path,
+        constraints: formatMetaMinMax(matchedPrompt?.meta),
       });
     });
 
     const seenTextBlocks = new Set<string>();
     const textElements = Array.from(slideRoot.querySelectorAll<HTMLElement>(TEXT_SELECTOR));
+    const remainingTextMetaByValue = new Map<string, TextMetaEntry[]>();
+    textMetaByValue.forEach((entries, value) => {
+      remainingTextMetaByValue.set(value, [...entries]);
+    });
 
     textElements.forEach((element) => {
       if (element.querySelector(TEXT_SELECTOR)) return;
@@ -272,6 +464,27 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
       if (seenTextBlocks.has(signature)) return;
       seenTextBlocks.add(signature);
 
+      const normalizedText = normalizeTextValue(text);
+      let matchedMeta: TextMetaEntry | undefined;
+
+      const exactMatchBucket = remainingTextMetaByValue.get(normalizedText);
+      if (exactMatchBucket && exactMatchBucket.length > 0) {
+        matchedMeta = exactMatchBucket.shift();
+      }
+
+      if (!matchedMeta && normalizedText.length >= 8) {
+        for (const [candidateValue, bucket] of remainingTextMetaByValue.entries()) {
+          if (!bucket.length) continue;
+          if (
+            candidateValue.includes(normalizedText) ||
+            normalizedText.includes(candidateValue)
+          ) {
+            matchedMeta = bucket.shift();
+            break;
+          }
+        }
+      }
+
       nextOverlays.push({
         id: `text-${nextId++}`,
         type: "text",
@@ -279,8 +492,10 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         top: rect.top - wrapperRect.top,
         width: rect.width,
         height: rect.height,
-        title: "Rendered text block",
+        title: matchedMeta?.meta?.description || "Rendered text block",
         content: text,
+        path: matchedMeta?.path,
+        constraints: formatMetaMinMax(matchedMeta?.meta),
       });
     });
 
@@ -291,7 +506,7 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         ? previousId
         : nextOverlays[0]?.id || null;
     });
-  }, [imagePromptByValue, imagePromptEntries]);
+  }, [imagePromptByValue, imagePromptEntries, textMetaByValue]);
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -402,6 +617,9 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
           {activeOverlay.path && (
             <p className="mt-1 text-[11px] text-gray-500 font-mono">Path: {activeOverlay.path}</p>
           )}
+          {activeOverlay.constraints && (
+            <p className="mt-1 text-[11px] text-gray-600">min/max: {activeOverlay.constraints}</p>
+          )}
 
           <p className="mt-2 max-h-32 overflow-auto text-xs text-gray-700 whitespace-pre-wrap break-words select-text">
             {activeOverlay.content}
@@ -413,4 +631,3 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
 };
 
 export default LayoutMetadataPreview;
-
