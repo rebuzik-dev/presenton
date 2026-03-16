@@ -27,6 +27,7 @@ interface TextMetaEntry {
   path: string;
   value: string;
   normalizedValue: string;
+  looseNormalizedValue: string;
   meta?: SchemaFieldMeta;
 }
 
@@ -50,7 +51,7 @@ interface LayoutMetadataPreviewProps {
   previewFontFamily: string;
 }
 
-const TEXT_SELECTOR = "h1,h2,h3,h4,h5,h6,p,li,blockquote";
+const TEXT_SELECTOR = "h1,h2,h3,h4,h5,h6,p,li,blockquote,div,span";
 
 const GENERIC_ALT_VALUES = new Set([
   "image",
@@ -65,6 +66,11 @@ const GENERIC_ALT_VALUES = new Set([
 const normalizePath = (parts: string[]): string => parts.join(".");
 const normalizeTextValue = (value: string): string =>
   value.replace(/\s+/g, " ").trim().toLowerCase();
+const normalizeLooseTextValue = (value: string): string =>
+  normalizeTextValue(value)
+    .replace(/[«»"'`“”.,:;!?()[\]{}]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const extractFieldMeta = (node: any): SchemaFieldMeta => {
   const nextMeta: SchemaFieldMeta = {};
@@ -310,6 +316,7 @@ const collectTextMetaEntries = (
       path: normalizedPath,
       value: trimmedValue,
       normalizedValue: normalizeTextValue(trimmedValue),
+      looseNormalizedValue: normalizeLooseTextValue(trimmedValue),
       meta,
     });
   };
@@ -373,19 +380,6 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
     [sampleData, schemaDescriptions]
   );
 
-  const textMetaByValue = useMemo(() => {
-    const map = new Map<string, TextMetaEntry[]>();
-    textMetaEntries.forEach((entry) => {
-      const bucket = map.get(entry.normalizedValue);
-      if (bucket) {
-        bucket.push(entry);
-      } else {
-        map.set(entry.normalizedValue, [entry]);
-      }
-    });
-    return map;
-  }, [textMetaEntries]);
-
   const slidePrompt = useMemo(
     () => promptEntries.find((entry) => entry.kind === "text" && isSlidePromptPath(entry.path)),
     [promptEntries]
@@ -438,15 +432,34 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
     });
 
     const seenTextBlocks = new Set<string>();
-    const textElements = Array.from(slideRoot.querySelectorAll<HTMLElement>(TEXT_SELECTOR));
-    const remainingTextMetaByValue = new Map<string, TextMetaEntry[]>();
-    textMetaByValue.forEach((entries, value) => {
-      remainingTextMetaByValue.set(value, [...entries]);
-    });
+    const remainingTextMetaEntries = [...textMetaEntries];
+    const takeMatchingTextMeta = (
+      predicate: (entry: TextMetaEntry) => boolean
+    ): TextMetaEntry | undefined => {
+      const index = remainingTextMetaEntries.findIndex(predicate);
+      if (index < 0) return undefined;
+      const [entry] = remainingTextMetaEntries.splice(index, 1);
+      return entry;
+    };
+
+    const textElements = Array.from(slideRoot.querySelectorAll<HTMLElement>(TEXT_SELECTOR)).filter(
+      (element) => {
+        const text = (element.textContent || "").replace(/\s+/g, " ").trim();
+        if (text.length < 3) return false;
+
+        const nestedTextCandidate = Array.from(
+          element.querySelectorAll<HTMLElement>(TEXT_SELECTOR)
+        ).some(
+          (nestedElement) =>
+            nestedElement !== element &&
+            normalizeTextValue(nestedElement.textContent || "").length >= 3
+        );
+
+        return !nestedTextCandidate;
+      }
+    );
 
     textElements.forEach((element) => {
-      if (element.querySelector(TEXT_SELECTOR)) return;
-
       const text = (element.textContent || "").replace(/\s+/g, " ").trim();
       if (!text || text.length < 3) return;
 
@@ -465,24 +478,33 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
       seenTextBlocks.add(signature);
 
       const normalizedText = normalizeTextValue(text);
+      const looseNormalizedText = normalizeLooseTextValue(text);
       let matchedMeta: TextMetaEntry | undefined;
 
-      const exactMatchBucket = remainingTextMetaByValue.get(normalizedText);
-      if (exactMatchBucket && exactMatchBucket.length > 0) {
-        matchedMeta = exactMatchBucket.shift();
+      matchedMeta = takeMatchingTextMeta(
+        (entry) => entry.normalizedValue === normalizedText
+      );
+
+      if (!matchedMeta) {
+        matchedMeta = takeMatchingTextMeta(
+          (entry) => entry.looseNormalizedValue === looseNormalizedText
+        );
       }
 
       if (!matchedMeta && normalizedText.length >= 8) {
-        for (const [candidateValue, bucket] of remainingTextMetaByValue.entries()) {
-          if (!bucket.length) continue;
-          if (
-            candidateValue.includes(normalizedText) ||
-            normalizedText.includes(candidateValue)
-          ) {
-            matchedMeta = bucket.shift();
-            break;
-          }
-        }
+        matchedMeta = takeMatchingTextMeta(
+          (entry) =>
+            entry.normalizedValue.includes(normalizedText) ||
+            normalizedText.includes(entry.normalizedValue)
+        );
+      }
+
+      if (!matchedMeta && looseNormalizedText.length >= 8) {
+        matchedMeta = takeMatchingTextMeta(
+          (entry) =>
+            entry.looseNormalizedValue.includes(looseNormalizedText) ||
+            looseNormalizedText.includes(entry.looseNormalizedValue)
+        );
       }
 
       nextOverlays.push({
@@ -506,7 +528,7 @@ const LayoutMetadataPreview: React.FC<LayoutMetadataPreviewProps> = ({
         ? previousId
         : nextOverlays[0]?.id || null;
     });
-  }, [imagePromptByValue, imagePromptEntries, textMetaByValue]);
+  }, [imagePromptByValue, imagePromptEntries, textMetaEntries]);
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
