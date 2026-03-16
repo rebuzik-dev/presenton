@@ -22,6 +22,7 @@ import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { getHeader } from "../../services/api/header";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import LayoutMetadataPreview from "../components/LayoutMetadataPreview";
 
 type FontOption = { family: string; cssUrl?: string };
 
@@ -462,6 +463,7 @@ const GroupLayoutPreview = () => {
             const {
               component: LayoutComponent,
               sampleData,
+              schema,
               name,
               fileName,
             } = layout;
@@ -512,9 +514,12 @@ const GroupLayoutPreview = () => {
 
                 {/* Layout Content */}
                 <div className="bg-gray-50 aspect-video max-w-[1280px] w-full">
-                  <div style={{ ["--template-font" as any]: previewFontFamily }}>
-                    <LayoutComponent data={sampleData} />
-                  </div>
+                  <LayoutMetadataPreview
+                    LayoutComponent={LayoutComponent}
+                    sampleData={sampleData}
+                    schema={schema}
+                    previewFontFamily={previewFontFamily}
+                  />
                 </div>
               </Card>
             );
