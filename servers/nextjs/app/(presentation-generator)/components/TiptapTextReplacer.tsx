@@ -23,6 +23,7 @@ interface TiptapTextReplacerProps {
   slideData?: any;
   slideIndex?: number;
   layoutValidationBlocks?: Record<string, { fontScale?: number }>;
+  readOnly?: boolean;
   onContentChange?: (
     content: string,
     path: string,
@@ -36,9 +37,11 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
   slideData,
   slideIndex,
   layoutValidationBlocks = {},
+  readOnly = false,
   onContentChange = () => { },
   isEditable = true,
 }) => {
+  const effectiveEditable = isEditable && !readOnly;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [processedElements, setProcessedElements] = useState(
@@ -117,13 +120,13 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
                 onContentChange(newContent, dataPath, slideIndex);
               }
             }}
-            isEditable={isEditable}
+            isEditable={effectiveEditable}
             placeholder="Enter text..."
           />
         );
       }
     );
-  }, [isEditable, slideData, slideIndex, layoutValidationBlocks]);
+  }, [effectiveEditable, slideData, slideIndex, layoutValidationBlocks]);
 
 
   useEffect(() => {
@@ -246,7 +249,7 @@ const TiptapTextReplacer: React.FC<TiptapTextReplacerProps> = ({
               }
             }}
             placeholder="Enter text..."
-            isEditable={isEditable}
+            isEditable={effectiveEditable}
           />
         );
       });

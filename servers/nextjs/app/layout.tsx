@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Roboto, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import MixpanelInitializer from "./MixpanelInitializer";
@@ -16,18 +15,15 @@ const inter = localFont({
   variable: "--font-inter",
 });
 
-const instrument_sans = Instrument_Sans({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-instrument-sans",
+const syne = localFont({
+  src: [{ path: "./fonts/Inter.ttf", weight: "400", style: "normal" }],
+  variable: "--font-syne",
 });
 
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-roboto",
+const unbounded = localFont({
+  src: [{ path: "./fonts/Inter.ttf", weight: "400", style: "normal" }],
+  variable: "--font-unbounded",
 });
-
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://xn--80ajahh2akiw5b9f.xn----7sbbggiwcmf7aleqkcwkqr.xn--p1ai"),
@@ -82,7 +78,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${roboto.variable} ${instrument_sans.variable} antialiased`}
+        className={`${inter.variable} ${syne.variable} ${unbounded.variable} antialiased`}
       >
         <Providers>
           <MixpanelInitializer>

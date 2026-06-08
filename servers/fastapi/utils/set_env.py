@@ -37,6 +37,150 @@ def set_google_model_env(value):
     os.environ["GOOGLE_MODEL"] = value
 
 
+def set_vertex_api_key_env(value):
+    os.environ["VERTEX_API_KEY"] = value
+
+
+def set_vertex_model_env(value):
+    os.environ["VERTEX_MODEL"] = value
+
+
+def set_vertex_project_env(value):
+    os.environ["VERTEX_PROJECT"] = value
+
+
+def set_vertex_location_env(value):
+    os.environ["VERTEX_LOCATION"] = value
+
+
+def set_vertex_base_url_env(value):
+    os.environ["VERTEX_BASE_URL"] = value
+
+
+def set_azure_openai_api_key_env(value):
+    os.environ["AZURE_OPENAI_API_KEY"] = value
+
+
+def set_azure_openai_model_env(value):
+    os.environ["AZURE_OPENAI_MODEL"] = value
+
+
+def set_azure_openai_endpoint_env(value):
+    os.environ["AZURE_OPENAI_ENDPOINT"] = value
+
+
+def set_azure_openai_base_url_env(value):
+    os.environ["AZURE_OPENAI_BASE_URL"] = value
+
+
+def set_azure_openai_api_version_env(value):
+    os.environ["AZURE_OPENAI_API_VERSION"] = value
+
+
+def set_azure_openai_deployment_env(value):
+    os.environ["AZURE_OPENAI_DEPLOYMENT"] = value
+
+
+def set_bedrock_region_env(value):
+    os.environ["BEDROCK_REGION"] = value
+
+
+def set_bedrock_api_key_env(value):
+    os.environ["BEDROCK_API_KEY"] = value
+
+
+def set_bedrock_aws_access_key_id_env(value):
+    os.environ["BEDROCK_AWS_ACCESS_KEY_ID"] = value
+
+
+def set_bedrock_aws_secret_access_key_env(value):
+    os.environ["BEDROCK_AWS_SECRET_ACCESS_KEY"] = value
+
+
+def set_bedrock_aws_session_token_env(value):
+    os.environ["BEDROCK_AWS_SESSION_TOKEN"] = value
+
+
+def set_bedrock_profile_name_env(value):
+    os.environ["BEDROCK_PROFILE_NAME"] = value
+
+
+def set_bedrock_model_env(value):
+    os.environ["BEDROCK_MODEL"] = value
+
+
+def set_openrouter_api_key_env(value):
+    os.environ["OPENROUTER_API_KEY"] = value
+
+
+def set_openrouter_model_env(value):
+    os.environ["OPENROUTER_MODEL"] = value
+
+
+def set_openrouter_base_url_env(value):
+    os.environ["OPENROUTER_BASE_URL"] = value
+
+
+def set_fireworks_api_key_env(value):
+    os.environ["FIREWORKS_API_KEY"] = value
+
+
+def set_fireworks_model_env(value):
+    os.environ["FIREWORKS_MODEL"] = value
+
+
+def set_fireworks_base_url_env(value):
+    os.environ["FIREWORKS_BASE_URL"] = value
+
+
+def set_together_api_key_env(value):
+    os.environ["TOGETHER_API_KEY"] = value
+
+
+def set_together_model_env(value):
+    os.environ["TOGETHER_MODEL"] = value
+
+
+def set_together_base_url_env(value):
+    os.environ["TOGETHER_BASE_URL"] = value
+
+
+def set_cerebras_api_key_env(value):
+    os.environ["CEREBRAS_API_KEY"] = value
+
+
+def set_cerebras_model_env(value):
+    os.environ["CEREBRAS_MODEL"] = value
+
+
+def set_cerebras_base_url_env(value):
+    os.environ["CEREBRAS_BASE_URL"] = value
+
+
+def set_litellm_base_url_env(value):
+    os.environ["LITELLM_BASE_URL"] = value
+
+
+def set_litellm_api_key_env(value):
+    os.environ["LITELLM_API_KEY"] = value
+
+
+def set_litellm_model_env(value):
+    os.environ["LITELLM_MODEL"] = value
+
+
+def set_lmstudio_base_url_env(value):
+    os.environ["LMSTUDIO_BASE_URL"] = value
+
+
+def set_lmstudio_api_key_env(value):
+    os.environ["LMSTUDIO_API_KEY"] = value
+
+
+def set_lmstudio_model_env(value):
+    os.environ["LMSTUDIO_MODEL"] = value
+
+
 def set_anthropic_api_key_env(value):
     os.environ["ANTHROPIC_API_KEY"] = value
 
@@ -104,6 +248,58 @@ def set_dall_e_3_quality_env(value):
 # Gpt Image 1.5 Quality
 def set_gpt_image_1_5_quality_env(value):
     os.environ["GPT_IMAGE_1_5_QUALITY"] = value
+
+
+def set_codex_access_token_env(value: str):
+    os.environ["CODEX_ACCESS_TOKEN"] = value
+
+
+def set_codex_refresh_token_env(value: str):
+    os.environ["CODEX_REFRESH_TOKEN"] = value
+
+
+def set_codex_token_expires_env(value: str):
+    os.environ["CODEX_TOKEN_EXPIRES"] = value
+
+
+def set_codex_account_id_env(value: str):
+    os.environ["CODEX_ACCOUNT_ID"] = value
+
+
+def set_codex_username_env(value: str):
+    os.environ["CODEX_USERNAME"] = value
+
+
+def set_codex_email_env(value: str):
+    os.environ["CODEX_EMAIL"] = value
+
+
+def set_codex_is_pro_env(value: str):
+    os.environ["CODEX_IS_PRO"] = value
+
+
+def set_codex_model_env(value: str):
+    os.environ["CODEX_MODEL"] = value
+
+
+def set_open_webui_image_url_env(value: str):
+    os.environ["OPEN_WEBUI_IMAGE_URL"] = value
+
+
+def set_open_webui_image_api_key_env(value: str):
+    os.environ["OPEN_WEBUI_IMAGE_API_KEY"] = value
+
+
+def set_openai_compat_image_base_url_env(value: str):
+    os.environ["OPENAI_COMPAT_IMAGE_BASE_URL"] = value
+
+
+def set_openai_compat_image_api_key_env(value: str):
+    os.environ["OPENAI_COMPAT_IMAGE_API_KEY"] = value
+
+
+def set_openai_compat_image_model_env(value: str):
+    os.environ["OPENAI_COMPAT_IMAGE_MODEL"] = value
 
 
 def set_image_gen_api_key_env(value):

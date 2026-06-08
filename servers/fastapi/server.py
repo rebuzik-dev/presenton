@@ -3,6 +3,7 @@ import argparse
 
 from dotenv import load_dotenv
 import os
+from api.main import app
 
 if __name__ == "__main__":
     # Load .env from project root (2 levels up)
@@ -16,6 +17,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     reload = args.reload == "true"
+    host = "0.0.0.0"
+    os.environ["NEXT_PUBLIC_FAST_API"] = f"http://127.0.0.1:{args.port}"
     
     # Run icon extraction on startup
     print("Running startup tasks...")
@@ -27,7 +30,7 @@ if __name__ == "__main__":
     
     uvicorn.run(
         "api.main:app",
-        host="0.0.0.0",
+        host=host,
         port=args.port,
         log_level="debug",
         reload=reload,
