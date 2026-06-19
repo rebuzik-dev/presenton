@@ -103,8 +103,8 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "5000:5000"
-      - "8000:8080"
+      - "5000:80"
+      - "8000:8000"
     volumes:
       - .:/app
       - ./app_data:/app_data
@@ -114,6 +114,7 @@ services:
       - JWT_ALGORITHM=${JWT_ALGORITHM}
       - JWT_EXPIRES_MINUTES=${JWT_EXPIRES_MINUTES}
       - API_KEY_SECRET=${API_KEY_SECRET}
+      - DISABLE_AUTH=${DISABLE_AUTH:-true}
       - CAN_CHANGE_KEYS=${CAN_CHANGE_KEYS}
       - LLM=${LLM}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -155,8 +156,8 @@ services:
               count: 1
               capabilities: [ gpu ]
     ports:
-      - "5000:5000"
-      - "8000:8080"
+      - "5000:80"
+      - "8000:8000"
     volumes:
       - .:/app
       - ./app_data:/app_data
@@ -168,6 +169,7 @@ services:
       - JWT_ALGORITHM=${JWT_ALGORITHM}
       - JWT_EXPIRES_MINUTES=${JWT_EXPIRES_MINUTES}
       - API_KEY_SECRET=${API_KEY_SECRET}
+      - DISABLE_AUTH=${DISABLE_AUTH:-true}
       - CAN_CHANGE_KEYS=${CAN_CHANGE_KEYS}
       - LLM=${LLM}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
