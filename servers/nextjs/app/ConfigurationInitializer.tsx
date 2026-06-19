@@ -38,15 +38,16 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
     const canChangeKeys = (await response.json()).canChange;
     dispatch(setCanChangeKeys(canChangeKeys));
 
+    const configResponse = await fetch('/api/user-config', {
+      headers: getHeader(),
+    });
+    const llmConfig = await configResponse.json();
+    if (!llmConfig.LLM) {
+      llmConfig.LLM = 'openai';
+    }
+    dispatch(setLLMConfig(llmConfig));
+
     if (canChangeKeys) {
-      const response = await fetch('/api/user-config', {
-        headers: getHeader(),
-      });
-      const llmConfig = await response.json();
-      if (!llmConfig.LLM) {
-        llmConfig.LLM = 'openai';
-      }
-      dispatch(setLLMConfig(llmConfig));
       const isValid = hasValidLLMConfig(llmConfig);
       if (isValid) {
         // Check if the selected Ollama model is pulled

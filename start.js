@@ -93,6 +93,18 @@ const setupUserConfigFromEnv = () => {
     IMAGE_GEN_BASE_URL: process.env.IMAGE_GEN_BASE_URL || existingConfig.IMAGE_GEN_BASE_URL,
     IMAGE_GEN_MODEL: process.env.IMAGE_GEN_MODEL || existingConfig.IMAGE_GEN_MODEL,
     IMAGE_PROVIDER: process.env.IMAGE_PROVIDER || existingConfig.IMAGE_PROVIDER,
+    DISABLE_IMAGE_GENERATION:
+      process.env.DISABLE_IMAGE_GENERATION || existingConfig.DISABLE_IMAGE_GENERATION,
+    OPEN_WEBUI_IMAGE_URL:
+      process.env.OPEN_WEBUI_IMAGE_URL || existingConfig.OPEN_WEBUI_IMAGE_URL,
+    OPEN_WEBUI_IMAGE_API_KEY:
+      process.env.OPEN_WEBUI_IMAGE_API_KEY || existingConfig.OPEN_WEBUI_IMAGE_API_KEY,
+    OPENAI_COMPAT_IMAGE_BASE_URL:
+      process.env.OPENAI_COMPAT_IMAGE_BASE_URL || existingConfig.OPENAI_COMPAT_IMAGE_BASE_URL,
+    OPENAI_COMPAT_IMAGE_API_KEY:
+      process.env.OPENAI_COMPAT_IMAGE_API_KEY || existingConfig.OPENAI_COMPAT_IMAGE_API_KEY,
+    OPENAI_COMPAT_IMAGE_MODEL:
+      process.env.OPENAI_COMPAT_IMAGE_MODEL || existingConfig.OPENAI_COMPAT_IMAGE_MODEL,
     TOOL_CALLS: process.env.TOOL_CALLS || existingConfig.TOOL_CALLS,
     DISABLE_THINKING:
       process.env.DISABLE_THINKING || existingConfig.DISABLE_THINKING,

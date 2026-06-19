@@ -377,6 +377,7 @@ export const LayoutProvider: React.FC<{
         `/api/v1/ppt/template-management/summary`,
         {
           headers: authHeaders,
+          credentials: "include",
         }
       );
       const customTemplateData = await customTemplateResponse.json();
@@ -402,6 +403,7 @@ export const LayoutProvider: React.FC<{
           `/api/v1/ppt/template-management/get-templates/${presentationId}`,
           {
             headers: authHeaders,
+            credentials: "include",
           }
         );
         const customLayoutsData = await customLayoutResponse.json();

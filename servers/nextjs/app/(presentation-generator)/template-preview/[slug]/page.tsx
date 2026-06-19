@@ -119,6 +119,7 @@ const GroupLayoutPreview = () => {
       try {
         const res = await fetch(`/api/v1/ppt/template-management/get-templates/${presentationId}`, {
           headers: getHeader(),
+          credentials: "include",
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -207,6 +208,7 @@ const GroupLayoutPreview = () => {
     const response = await fetch(`/api/v1/ppt/template-management/delete-templates/${presentationId}`, {
       method: "DELETE",
       headers: getHeader(),
+      credentials: "include",
     });
     if (response.ok) {
       router.push("/template-preview");
@@ -241,6 +243,7 @@ const GroupLayoutPreview = () => {
       const response = await fetch(`/api/v1/ppt/template-management/templates`, {
         method: "POST",
         headers: getHeader(),
+        credentials: "include",
         body: JSON.stringify({
           id: presentationId,
           name: metaName.trim(),
@@ -310,6 +313,7 @@ const GroupLayoutPreview = () => {
       const res = await fetch(`/api/v1/ppt/template-management/save-templates`, {
         method: "POST",
         headers: getHeader(),
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       if (!res.ok) return;

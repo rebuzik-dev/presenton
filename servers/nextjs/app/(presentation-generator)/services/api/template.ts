@@ -38,7 +38,7 @@ class TemplateService {
 
     static async deleteCustomTemplate(presentationId: string) {
         try {
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template-management/delete-templates/${presentationId}`), { method: "DELETE", headers: getHeader() });
+            const response = await fetch(getApiUrl(`/api/v1/ppt/template-management/delete-templates/${presentationId}`), { method: "DELETE", headers: getHeader(), credentials: "include" });
             return await ApiResponseHandler.handleResponseWithResult(response, "Failed to delete custom template");
         } catch (error) {
             console.error("Failed to delete custom template", error);
