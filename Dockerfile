@@ -1,5 +1,4 @@
 FROM python:3.11-slim-bookworm
-RUN sed -i 's/deb.debian.org/mirror.docker.ru/g' /etc/apt/sources.list.d/debian.sources
 
 # Install Node.js and npm
 RUN apt-get update && apt-get install -y \
@@ -33,11 +32,15 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 RUN pip config set global.index-url https://pypi.mirrors.ustc.edu.cn/simple/ 
 
 # Install dependencies for FastAPI
-RUN pip install aiohttp aiomysql aiosqlite asyncpg fastapi[standard] \
+RUN pip install --default-timeout=120 --retries 10 aiohttp aiomysql aiosqlite asyncpg fastapi[standard] \
     pathvalidate pdfplumber chromadb sqlmodel \
-    anthropic google-genai openai fastmcp dirtyjson
+    anthropic google-genai openai llmai==0.2.5 fastmcp dirtyjson
 
-RUN pip install docling --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install --default-timeout=120 --retries 10 docling --extra-index-url https://download.pytorch.org/whl/cpu
+
+RUN pip install --default-timeout=120 --retries 10 \
+    alembic fastembed-vectorstore fonttools greenlet jsonschema \
+    mem0ai[nlp] nltk psycopg[binary] psycopg2-binary PyJWT python-pptx redis
 
 # Install dependencies for Next.js
 WORKDIR /app/servers/nextjs
