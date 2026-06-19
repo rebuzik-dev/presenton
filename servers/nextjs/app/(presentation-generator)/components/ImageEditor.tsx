@@ -149,9 +149,7 @@ const ImageEditor = ({
    */
   const handleImageChange = (newImage: string) => {
     if (onImageChange) {
-      const promptForSlide = stockImageProvider
-        ? (prompt.trim() || promptContent || "")
-        : promptContent;
+      const promptForSlide = prompt.trim() || promptContent || "";
       onImageChange(newImage, promptForSlide);
       setPreviewImages(newImage);
     }
