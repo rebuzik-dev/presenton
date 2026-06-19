@@ -10,11 +10,9 @@ export interface ImageGenerate {
   reference_image_paths?: string[];
 }
 export interface IconSearch {
- 
-
   query: string;
-
   limit: number;
+  icon_weight?: string;
 }
 
 export interface PreviousGeneratedImagesResponse {

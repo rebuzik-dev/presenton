@@ -1,12 +1,11 @@
 import os
 import uuid
 import shutil
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, File, UploadFile
 from pydantic import BaseModel
-from utils.asset_directory_utils import get_app_data_directory_env
-import uuid
+from templates.preview import FontCheckResponse, check_fonts_in_pptx_handler
+from utils.asset_directory_utils import absolute_fastapi_asset_url, get_app_data_directory_env
 
 try:
     from fontTools.ttLib import TTFont
@@ -37,6 +36,10 @@ class FontListResponse(BaseModel):
     success: bool
     fonts: List[dict]
     message: Optional[str] = None
+
+
+class UploadedFontsResponse(BaseModel):
+    fonts: List[dict]
 
 
 def get_fonts_directory() -> str:
@@ -168,7 +171,7 @@ async def upload_font(
             shutil.copyfileobj(font_file.file, buffer)
         
         # Generate accessible URL
-        font_url = f"/app_data/fonts/{unique_filename}"
+        font_url = absolute_fastapi_asset_url(f"/app_data/fonts/{unique_filename}")
         
         return FontUploadResponse(
             success=True,
@@ -225,7 +228,7 @@ async def list_fonts():
                             "filename": filename,
                             "font_name": font_name,  # Real font family name from metadata
                             "original_name": base_name,
-                            "font_url": f"/app_data/fonts/{filename}",
+                            "font_url": absolute_fastapi_asset_url(f"/app_data/fonts/{filename}"),
                             "font_type": SUPPORTED_FONT_EXTENSIONS.get(file_ext, 'unknown'),
                             "file_size": os.path.getsize(file_path)
                         })
@@ -242,6 +245,48 @@ async def list_fonts():
             status_code=500,
             detail=f"Error listing fonts: {str(e)}"
         )
+
+
+@FONTS_ROUTER.get("/uploaded", response_model=UploadedFontsResponse)
+async def get_uploaded_fonts():
+    """
+    Compatibility endpoint used by frontend theme flow.
+    Returns uploaded fonts as a compact list with id/name/url fields.
+    """
+    try:
+        fonts_dir = get_fonts_directory()
+        fonts = []
+
+        if os.path.exists(fonts_dir):
+            for filename in os.listdir(fonts_dir):
+                file_path = os.path.join(fonts_dir, filename)
+                if not os.path.isfile(file_path):
+                    continue
+
+                file_ext = os.path.splitext(filename)[1].lower()
+                if file_ext not in SUPPORTED_FONT_EXTENSIONS:
+                    continue
+
+                font_name = extract_font_name_from_file(file_path)
+                fonts.append(
+                    {
+                        "id": filename,
+                        "name": font_name,
+                        "url": absolute_fastapi_asset_url(f"/app_data/fonts/{filename}"),
+                    }
+                )
+
+        return UploadedFontsResponse(fonts=fonts)
+
+    except Exception as e:
+        print(f"Error getting uploaded fonts: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting uploaded fonts: {str(e)}"
+        )
+
+
+FONTS_ROUTER.post("/check", response_model=FontCheckResponse)(check_fonts_in_pptx_handler)
 
 
 @FONTS_ROUTER.delete("/delete/{filename}")

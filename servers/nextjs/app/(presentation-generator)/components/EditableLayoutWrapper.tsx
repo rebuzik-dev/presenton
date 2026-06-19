@@ -560,6 +560,7 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
             {activeEditor && activeEditor.type === 'icon' && (
                 <IconsEditor
                     icon_prompt={activeEditor.data?.__icon_query__ ? [activeEditor.data.__icon_query__] : []}
+                    currentIconUrl={activeEditor.src}
                     onClose={handleEditorClose}
                     onIconChange={handleIconChange}
                 >

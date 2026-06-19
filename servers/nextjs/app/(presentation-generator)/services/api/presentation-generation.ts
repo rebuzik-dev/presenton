@@ -28,7 +28,7 @@ export class PresentationGenerationApi {
     }
   }
 
-  static async decomposeDocuments(documentKeys: string[]) {
+  static async decomposeDocuments(documentKeys: string[], language?: string | null) {
     try {
       const response = await fetch(
         `/api/v1/ppt/files/decompose`,
@@ -37,6 +37,7 @@ export class PresentationGenerationApi {
           headers: getHeader(),
           body: JSON.stringify({
             file_paths: documentKeys,
+            language: language ?? null,
           }),
           cache: "no-cache",
         }
@@ -213,8 +214,15 @@ export class PresentationGenerationApi {
   
   static async searchIcons(iconSearch: IconSearch) {
     try {
+      const params = new URLSearchParams({
+        query: iconSearch.query,
+        limit: String(iconSearch.limit),
+      });
+      if (iconSearch.icon_weight) {
+        params.set("icon_weight", iconSearch.icon_weight);
+      }
       const response = await fetch(
-        `/api/v1/ppt/icons/search?query=${iconSearch.query}&limit=${iconSearch.limit}`,
+        `/api/v1/ppt/icons/search?${params.toString()}`,
         {
           method: "GET",
           headers: getHeader(),

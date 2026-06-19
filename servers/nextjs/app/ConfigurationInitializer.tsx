@@ -95,11 +95,23 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
           api_key: llmConfig.CUSTOM_LLM_API_KEY,
         }),
       });
+      if (!response.ok) {
+        return Boolean(llmConfig.CUSTOM_MODEL);
+      }
+
       const data = await response.json();
+      if (!Array.isArray(data)) {
+        return Boolean(llmConfig.CUSTOM_MODEL);
+      }
+
+      if (data.length === 0) {
+        return Boolean(llmConfig.CUSTOM_MODEL);
+      }
+
       return data.includes(llmConfig.CUSTOM_MODEL);
     } catch (error) {
       console.error('Error fetching custom models:', error);
-      return false;
+      return Boolean(llmConfig.CUSTOM_MODEL);
     }
   }
 

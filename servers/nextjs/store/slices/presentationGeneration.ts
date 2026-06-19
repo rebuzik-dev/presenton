@@ -1,3 +1,4 @@
+import { Theme } from "@/app/(presentation-generator)/services/api/types";
 import { Slide } from "@/app/(presentation-generator)/types/slide";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
@@ -12,6 +13,7 @@ export interface PresentationData {
   n_slides: number;
   title: string;
   slides: any;
+  theme: Theme | null;
 }
 
 interface PresentationGenerationState {
@@ -71,7 +73,7 @@ const presentationGenerationSlice = createSlice({
       state.presentation_id = action.payload;
       state.error = null;
     },
-    // Slides rendereimport { useEffect } from "react"d
+    // Slides rendered
     setSlidesRendered: (state, action: PayloadAction<boolean>) => {
       state.isSlidesRendered = action.payload;
     },
@@ -94,6 +96,11 @@ const presentationGenerationSlice = createSlice({
     // Set presentation data
     setPresentationData: (state, action: PayloadAction<PresentationData>) => {
       state.presentationData = action.payload;
+    },
+    updateTitle: (state, action: PayloadAction<string>) => {
+      if (state.presentationData) {
+        state.presentationData.title = action.payload;
+      }
     },
     deleteSlideOutline: (state, action: PayloadAction<{ index: number }>) => {
       if (state.outlines) {
@@ -126,8 +133,17 @@ const presentationGenerationSlice = createSlice({
       }
     },
     deletePresentationSlide: (state, action: PayloadAction<number>) => {
-      if (state.presentationData) {
-        state.presentationData.slides.splice(action.payload, 1);
+      if (state.presentationData?.slides) {
+        const slides = state.presentationData.slides;
+        if (
+          slides.length <= 1 ||
+          action.payload < 0 ||
+          action.payload >= slides.length
+        ) {
+          return;
+        }
+
+        slides.splice(action.payload, 1);
         state.presentationData.slides = state.presentationData.slides.map(
           (slide: any, idx: number) => ({
             ...slide,
@@ -446,7 +462,13 @@ const presentationGenerationSlice = createSlice({
         }
       }
     },
+    updateTheme: (state, action: PayloadAction<Theme | null>) => {
+      if (state.presentationData) {
+        state.presentationData['theme'] = action.payload;
+      }
+    },
   },
+
 });
 
 export const {
@@ -460,6 +482,7 @@ export const {
   clearOutlines,
   deleteSlideOutline,
   setPresentationData,
+  updateTitle,
   setOutlines,
   // slides operations
   addSlide,
@@ -471,6 +494,7 @@ export const {
   updateSlideLayoutValidation,
   updateSlideIcon,
   addNewSlide,
+  updateTheme,
 } = presentationGenerationSlice.actions;
 
 export default presentationGenerationSlice.reducer;

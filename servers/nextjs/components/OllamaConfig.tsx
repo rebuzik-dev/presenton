@@ -13,7 +13,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { cn } from "@/lib/utils";
 import { Switch } from "./ui/switch";
-import { toast } from "sonner";
+import { notify } from "@/components/ui/sonner";
+import { getApiUrl } from "@/utils/api";
 
 interface OllamaModel {
   label: string;
@@ -41,7 +42,7 @@ export default function OllamaConfig({
   const fetchOllamaModels = async () => {
     try {
       setOllamaModelsLoading(true);
-      const response = await fetch('/api/v1/ppt/ollama/models/supported');
+      const response = await fetch(getApiUrl("/api/v1/ppt/ollama/models/supported"));
 
       if (response.ok) {
         const data = await response.json();
@@ -50,11 +51,11 @@ export default function OllamaConfig({
       } else {
         console.error('Failed to fetch Ollama models');
         setOllamaModels([]);
-        toast.error('Failed to fetch Ollama models');
+        notify.error("Could not load models", "The server could not list Ollama models. Check that Ollama is running and try again.");
       }
     } catch (error) {
       console.error('Error fetching Ollama models:', error);
-      toast.error('Error fetching Ollama models');
+      notify.error("Could not load models", "The server could not list Ollama models. Check that Ollama is running and try again.");
       setOllamaModels([]);
     } finally {
       setOllamaModelsLoading(false);

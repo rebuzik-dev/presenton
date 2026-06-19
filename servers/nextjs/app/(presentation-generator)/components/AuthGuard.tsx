@@ -4,11 +4,22 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { getHeader } from "../services/api/header";
 
-export default function AuthGuard({ children }: { children: ReactNode }) {
+export default function AuthGuard({
+  authDisabled,
+  children,
+}: {
+  authDisabled?: boolean;
+  children: ReactNode;
+}) {
   const [checking, setChecking] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    if (authDisabled) {
+      setChecking(false);
+      return;
+    }
+
     const tokenFromQuery =
       typeof window !== "undefined"
         ? new URLSearchParams(window.location.search).get("token")
@@ -56,7 +67,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
         localStorage.removeItem("auth_token");
         router.replace("/login");
       });
-  }, [router]);
+  }, [authDisabled, router]);
 
   if (checking) {
     return (

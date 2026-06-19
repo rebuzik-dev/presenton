@@ -11,3 +11,5 @@ class ImageProvider(Enum):
     CUSTOM_OPENAI = "custom_openai"
     VSELLM = "vsellm"
     COMFYUI = "comfyui"
+    OPEN_WEBUI = "open_webui"
+    OPENAI_COMPATIBLE = "openai_compatible"
