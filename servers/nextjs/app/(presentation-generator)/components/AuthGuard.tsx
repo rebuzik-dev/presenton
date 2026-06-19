@@ -44,14 +44,10 @@ export default function AuthGuard({
       return;
     }
 
-    if (!token && !apiKeyFromQuery) {
-      router.replace("/login");
-      return;
-    }
     fetch("/api/v1/auth/me", {
       headers: {
         ...getHeader(),
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     })
       .then((res) => {
