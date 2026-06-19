@@ -68,6 +68,8 @@ export class ApiResponseHandler {
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_role");
+      document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+      document.cookie = "presenton_session=; path=/; max-age=0; SameSite=Lax";
       window.location.href = "/login";
     }
     
@@ -106,6 +108,8 @@ export class ApiResponseHandler {
       if (response.status === 401 && typeof window !== "undefined") {
         localStorage.removeItem("auth_token");
         localStorage.removeItem("auth_role");
+        document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+        document.cookie = "presenton_session=; path=/; max-age=0; SameSite=Lax";
         window.location.href = "/login";
       }
       
