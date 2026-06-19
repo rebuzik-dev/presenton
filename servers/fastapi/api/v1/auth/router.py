@@ -1,7 +1,7 @@
 from typing import List, Optional
 import uuid
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -18,12 +18,76 @@ from models.auth import (
 )
 from models.sql.api_key import ApiKeyModel
 from models.sql.user import UserModel
-from services.auth_service import authenticate_user, create_access_token, create_api_key, create_user
+from services.auth_service import (
+    authenticate_user,
+    create_access_token,
+    create_api_key,
+    create_user,
+)
 from services.database import get_async_session
 from utils.datetime_utils import get_current_utc_datetime
+from utils.jwt_auth import (
+    clear_access_token_cookie,
+    get_access_token_payload_from_request,
+    set_access_token_cookie,
+)
+from utils.simple_auth import (
+    clear_session_cookie,
+    get_auth_status,
+    get_session_token_from_request,
+)
 
 
 API_V1_AUTH_ROUTER = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
+
+
+async def _has_sql_users(session: AsyncSession) -> bool:
+    result = await session.execute(select(UserModel.id).limit(1))
+    return result.scalar_one_or_none() is not None
+
+
+async def _get_user_from_request_token(
+    request: Request,
+    session: AsyncSession,
+) -> Optional[UserModel]:
+    payload = get_access_token_payload_from_request(request)
+    user_id = payload.get("sub") if payload else None
+    if not user_id:
+        return None
+
+    try:
+        parsed_user_id = uuid.UUID(user_id)
+    except (TypeError, ValueError):
+        return None
+
+    user = await session.get(UserModel, parsed_user_id)
+    if not user or not user.is_active:
+        return None
+    return user
+
+
+@API_V1_AUTH_ROUTER.get("/status")
+async def auth_status(
+    request: Request,
+    session: AsyncSession = Depends(get_async_session),
+):
+    simple_status = get_auth_status(get_session_token_from_request(request))
+    if simple_status["authenticated"]:
+        return simple_status
+
+    user = await _get_user_from_request_token(request, session)
+    if user:
+        return {
+            "configured": True,
+            "authenticated": True,
+            "username": user.username,
+        }
+
+    return {
+        "configured": simple_status["configured"] or await _has_sql_users(session),
+        "authenticated": False,
+        "username": None,
+    }
 
 
 @API_V1_AUTH_ROUTER.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
@@ -68,9 +132,12 @@ async def register_user(
 
 @API_V1_AUTH_ROUTER.post("/login", response_model=TokenResponse)
 async def login(
-    request: UserLoginRequest, session: AsyncSession = Depends(get_async_session)
+    credentials: UserLoginRequest,
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(get_async_session),
 ):
-    user = await authenticate_user(session, request.username, request.password)
+    user = await authenticate_user(session, credentials.username, credentials.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -78,6 +145,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     token, expires_at = create_access_token(user)
+    set_access_token_cookie(response, token, expires_at, request)
     return TokenResponse(
         access_token=token,
         expires_at=expires_at,
@@ -89,6 +157,12 @@ async def login(
             created_at=user.created_at,
         ),
     )
+
+
+@API_V1_AUTH_ROUTER.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(request: Request, response: Response):
+    clear_access_token_cookie(response, request)
+    clear_session_cookie(response, request)
 
 
 @API_V1_AUTH_ROUTER.get("/me", response_model=UserPublic)

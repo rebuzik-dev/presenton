@@ -3,6 +3,7 @@ from starlette.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from utils.get_env import get_can_change_keys_env, is_disable_auth_enabled
+from utils.jwt_auth import is_access_token_request
 from utils.simple_auth import (
     get_auth_status,
     get_basic_auth_credentials_from_request,
@@ -70,6 +71,9 @@ class SessionAuthMiddleware(BaseHTTPMiddleware):
             )
 
         if not auth_status["authenticated"]:
+            if is_access_token_request(request):
+                return await call_next(request)
+
             basic_credentials = get_basic_auth_credentials_from_request(request)
             if basic_credentials and verify_credentials(
                 basic_credentials[0], basic_credentials[1]

@@ -31,11 +31,20 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 async function getAuthStatus(request: NextRequest): Promise<AuthStatus> {
   const cookieHeader = request.headers.get("cookie");
+  const authorizationHeader = request.headers.get("authorization");
   const authStatusUrl = `${getFastApiBaseUrl()}/api/v1/auth/status`;
   try {
+    const headers: Record<string, string> = {};
+    if (cookieHeader) {
+      headers.Cookie = cookieHeader;
+    }
+    if (authorizationHeader) {
+      headers.Authorization = authorizationHeader;
+    }
+
     const response = await fetch(authStatusUrl, {
       method: "GET",
-      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+      headers,
       cache: "no-store",
     });
     if (!response.ok) {

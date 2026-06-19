@@ -39,7 +39,6 @@ export default function LoginForm() {
       if (data.user?.role) {
         localStorage.setItem("auth_role", data.user.role);
       }
-      document.cookie = `auth_token=${data.access_token}; path=/; SameSite=Lax`;
       router.replace("/upload");
     } catch (err: any) {
       setError(err.message || "Login failed");

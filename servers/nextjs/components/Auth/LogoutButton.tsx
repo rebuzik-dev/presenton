@@ -32,6 +32,8 @@ export default function LogoutButton({
     } catch {
       // Always route back to auth gate even if backend logout fails.
     } finally {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_role");
       window.location.replace("/");
       setIsSubmitting(false);
     }
