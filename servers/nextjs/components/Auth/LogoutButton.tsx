@@ -34,6 +34,8 @@ export default function LogoutButton({
     } finally {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_role");
+      document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+      document.cookie = "presenton_session=; path=/; max-age=0; SameSite=Lax";
       window.location.replace("/");
       setIsSubmitting(false);
     }

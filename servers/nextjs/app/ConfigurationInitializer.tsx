@@ -32,12 +32,16 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
   const fetchUserConfigState = async () => {
     setIsLoading(true);
-    const response = await fetch('/api/can-change-keys');
+    const response = await fetch('/api/can-change-keys', {
+      headers: getHeader(),
+    });
     const canChangeKeys = (await response.json()).canChange;
     dispatch(setCanChangeKeys(canChangeKeys));
 
     if (canChangeKeys) {
-      const response = await fetch('/api/user-config');
+      const response = await fetch('/api/user-config', {
+        headers: getHeader(),
+      });
       const llmConfig = await response.json();
       if (!llmConfig.LLM) {
         llmConfig.LLM = 'openai';

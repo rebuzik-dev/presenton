@@ -35,7 +35,6 @@ export default function AuthGuard({
     // Allow headless/internal flows to bootstrap auth via URL token.
     if (tokenFromQuery) {
       localStorage.setItem("auth_token", tokenFromQuery);
-      document.cookie = `auth_token=${tokenFromQuery}; path=/; SameSite=Lax`;
     }
 
     // For API-key-only flows (headless export), skip JWT /me check.
@@ -48,10 +47,14 @@ export default function AuthGuard({
       router.replace("/login");
       return;
     }
+    if (token) {
+      document.cookie = `auth_token=${token}; path=/; SameSite=Lax`;
+    }
+
     fetch("/api/v1/auth/me", {
       headers: {
         ...getHeader(),
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     })
       .then((res) => {
