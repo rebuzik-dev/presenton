@@ -13,6 +13,7 @@ class ThemeApi {
         method: "GET",
         headers: getHeader(),
         cache: "no-store",
+        credentials: "include",
       })
       return await ApiResponseHandler.handleResponse(response, "Failed to get themes")
     } catch (error) {
@@ -28,6 +29,7 @@ class ThemeApi {
         headers: getHeader(),
         body: JSON.stringify(theme),
         cache: "no-store",
+        credentials: "include",
       })
       return await ApiResponseHandler.handleResponse(response, "Failed to create theme")
     }
@@ -43,6 +45,7 @@ class ThemeApi {
         headers: getHeader(),
         body: JSON.stringify(theme),
         cache: "no-store",
+        credentials: "include",
       })
       return await ApiResponseHandler.handleResponse(response, "Failed to update theme")
     }
@@ -57,6 +60,7 @@ class ThemeApi {
         method: "DELETE",
         headers: getHeader(),
         cache: "no-store",
+        credentials: "include",
       })
       return await ApiResponseHandler.handleResponse(response, "Failed to delete theme")
     }
@@ -78,6 +82,7 @@ class ThemeApi {
         method: "POST",
         headers: getHeader(),
         body: JSON.stringify(body),
+        credentials: "include",
       })
       return await ApiResponseHandler.handleResponse(response, "Failed to generate theme")
     }
@@ -95,6 +100,7 @@ class ThemeApi {
         method: "POST",
         headers: getHeaderForFormData(),
         body: formData,
+        credentials: "include",
       })
       return await ApiResponseHandler.handleResponse(response, "Failed to upload font")
     }
@@ -108,6 +114,7 @@ class ThemeApi {
       const response = await fetch(getApiUrl(`/api/v1/ppt/fonts/uploaded`), {
         method: "GET",
         headers: getHeader(),
+        credentials: "include",
       })
       return await ApiResponseHandler.handleResponse(response, "Failed to get user fonts")
     }

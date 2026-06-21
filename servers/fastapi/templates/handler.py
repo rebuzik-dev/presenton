@@ -298,15 +298,15 @@ async def get_all_templates(
 ):
     result = await sql_session.execute(
         select(
-            TemplateModel.id,
+            PresentationLayoutCodeModel.presentation,
             TemplateModel.name,
             func.count(PresentationLayoutCodeModel.id).label("total_layouts"),
         )
-        .join(
-            PresentationLayoutCodeModel,
-            PresentationLayoutCodeModel.presentation == TemplateModel.id,
+        .outerjoin(
+            TemplateModel,
+            TemplateModel.id == PresentationLayoutCodeModel.presentation,
         )
-        .group_by(TemplateModel.id, TemplateModel.name)
+        .group_by(PresentationLayoutCodeModel.presentation, TemplateModel.name)
     )
     rows = result.all()
 
@@ -319,7 +319,7 @@ async def get_all_templates(
     templates.extend(
         TemplateDetail(
             id=f"custom-{template_id}",
-            name=template_name,
+            name=template_name or f"custom-{template_id}",
             total_layouts=total_layouts,
         )
         for template_id, template_name, total_layouts in rows

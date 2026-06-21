@@ -18,7 +18,9 @@ class TemplateService {
 
     static async getCustomTemplateSummaries() {
         try {
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template/all`),);
+            const response = await fetch(getApiUrl(`/api/v1/ppt/template/all?include_defaults=false`), {
+                credentials: "include",
+            });
             return await ApiResponseHandler.handleResponse(response, "Failed to get custom template summaries");
         } catch (error) {
             console.error("Failed to get custom template summaries", error);
@@ -28,7 +30,9 @@ class TemplateService {
 
     static async getCustomTemplateDetails(templateId: string) {
         try {
-            const response = await fetch(getApiUrl(`/api/v1/ppt/template/${templateId}/layouts`),);
+            const response = await fetch(getApiUrl(`/api/v1/ppt/template/${templateId}/layouts`), {
+                credentials: "include",
+            });
             return await ApiResponseHandler.handleResponse(response, "Failed to get custom template details");
         } catch (error) {
             console.error("Failed to get custom template details", error);

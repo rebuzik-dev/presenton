@@ -14,6 +14,47 @@ from utils.asset_directory_utils import normalize_slide_asset_url
 
 THEMES_ROUTER = APIRouter(prefix="/themes", tags=["Themes"])
 THEMES_STORAGE_KEY = "presentation_custom_themes"
+THEME_COLOR_KEYS = [
+    "primary",
+    "background",
+    "card",
+    "stroke",
+    "primary_text",
+    "background_text",
+    "graph_0",
+    "graph_1",
+    "graph_2",
+    "graph_3",
+    "graph_4",
+    "graph_5",
+    "graph_6",
+    "graph_7",
+    "graph_8",
+    "graph_9",
+]
+GRAPH_COLOR_KEYS = [f"graph_{index}" for index in range(10)]
+DEFAULT_THEME_COLORS = {
+    "primary": "#161616",
+    "background": "#ffffff",
+    "card": "#dae6ff",
+    "stroke": "#d1d1d1",
+    "primary_text": "#eeeaea",
+    "background_text": "#000000",
+    "graph_0": "#2e2e2e",
+    "graph_1": "#424242",
+    "graph_2": "#585858",
+    "graph_3": "#6f6f6f",
+    "graph_4": "#868686",
+    "graph_5": "#9e9e9e",
+    "graph_6": "#b7b7b7",
+    "graph_7": "#d1d1d1",
+    "graph_8": "#e8e8e8",
+    "graph_9": "#f5f5f5",
+}
+DEFAULT_TEXT_FONT = {
+    "name": "Inter",
+    "url": "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap",
+}
 
 
 class ThemeRequest(BaseModel):
@@ -45,6 +86,57 @@ class ThemeResponse(BaseModel):
     data: dict[str, Any]
 
 
+def _normalize_text_font(theme: dict[str, Any], data: dict[str, Any]) -> dict[str, str]:
+    raw_fonts = data.get("fonts")
+    if not isinstance(raw_fonts, dict):
+        raw_fonts = theme.get("fonts")
+    if not isinstance(raw_fonts, dict):
+        raw_fonts = {}
+
+    raw_text_font = raw_fonts.get("textFont")
+    if not isinstance(raw_text_font, dict):
+        raw_text_font = data.get("textFont")
+    if not isinstance(raw_text_font, dict):
+        raw_text_font = theme.get("textFont")
+    if not isinstance(raw_text_font, dict):
+        raw_text_font = {}
+
+    name = raw_text_font.get("name")
+    url = raw_text_font.get("url")
+    if not isinstance(name, str) or not name.strip():
+        name = DEFAULT_TEXT_FONT["name"]
+    if not isinstance(url, str) or not url.strip():
+        url = DEFAULT_TEXT_FONT["url"]
+    return {"name": name.strip(), "url": url.strip()}
+
+
+def _normalize_theme_data(theme: dict[str, Any]) -> dict[str, Any]:
+    raw_data = theme.get("data")
+    data = copy.deepcopy(raw_data) if isinstance(raw_data, dict) else {}
+
+    raw_colors = data.get("colors")
+    if not isinstance(raw_colors, dict):
+        raw_colors = theme.get("colors")
+    if not isinstance(raw_colors, dict):
+        raw_colors = {}
+
+    colors = dict(DEFAULT_THEME_COLORS)
+    for key in THEME_COLOR_KEYS:
+        value = raw_colors.get(key)
+        if isinstance(value, str) and value.strip():
+            colors[key] = value.strip()
+
+    primary_fallback = colors["primary"]
+    for key in GRAPH_COLOR_KEYS:
+        value = raw_colors.get(key)
+        if not isinstance(value, str) or not value.strip():
+            colors[key] = primary_fallback
+
+    data["colors"] = colors
+    data["fonts"] = {"textFont": _normalize_text_font(theme, data)}
+    return data
+
+
 def _normalize_theme(theme: dict[str, Any]) -> ThemeResponse:
     raw_logo_url = theme.get("logo_url")
     if raw_logo_url is None:
@@ -55,14 +147,14 @@ def _normalize_theme(theme: dict[str, Any]) -> ThemeResponse:
     else:
         logo_url = raw_logo_url
     return ThemeResponse(
-        id=str(theme["id"]),
-        name=theme["name"],
-        description=theme["description"],
+        id=str(theme.get("id") or uuid.uuid4()),
+        name=str(theme.get("name") or "Custom Theme"),
+        description=str(theme.get("description") or "Custom theme"),
         user=theme.get("user", "local"),
         logo=theme.get("logo"),
         logo_url=logo_url,
         company_name=theme.get("company_name"),
-        data=theme.get("data", {}),
+        data=_normalize_theme_data(theme),
     )
 
 
@@ -75,11 +167,19 @@ async def _get_themes_row(sql_session: AsyncSession) -> Optional[KeyValueSqlMode
 def _read_themes_from_row(row: Optional[KeyValueSqlModel]) -> list[dict[str, Any]]:
     if not row:
         return []
-    value = row.value if isinstance(row.value, dict) else {}
-    themes = value.get("themes", [])
+    if isinstance(row.value, list):
+        themes = row.value
+    else:
+        value = row.value if isinstance(row.value, dict) else {}
+        themes = []
+        for key in ("themes", "customThemes", "custom_themes", "savedThemes", "saved_themes"):
+            candidate = value.get(key)
+            if isinstance(candidate, list):
+                themes = candidate
+                break
     if not isinstance(themes, list):
         return []
-    return copy.deepcopy(themes)
+    return copy.deepcopy([theme for theme in themes if isinstance(theme, dict)])
 
 
 async def _resolve_logo_url(
