@@ -32,12 +32,6 @@ const SECRET_FIELDS: Array<keyof LLMConfig> = [
   "CODEX_REFRESH_TOKEN",
 ];
 
-function compactConfig(config: LLMConfig): LLMConfig {
-  return Object.fromEntries(
-    Object.entries(config).filter(([, value]) => value !== undefined)
-  ) as LLMConfig;
-}
-
 function sanitizeConfig(config: LLMConfig): LLMConfig {
   const sanitized: LLMConfig = { ...config };
   for (const field of SECRET_FIELDS) {
@@ -67,8 +61,18 @@ function resolveSecretValue(
   return (value || existingConfig[field]) as string | undefined;
 }
 
+function compactEnvConfig(config: LLMConfig): LLMConfig {
+  return Object.fromEntries(
+    Object.entries(config).filter(([, value]) => {
+      if (value === undefined) return false;
+      if (typeof value === "string") return value.trim() !== "";
+      return true;
+    })
+  ) as LLMConfig;
+}
+
 function getConfigFromEnv(): LLMConfig {
-  return compactConfig({
+  return compactEnvConfig({
     LLM: process.env.LLM,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_MODEL: process.env.OPENAI_MODEL,
@@ -133,8 +137,8 @@ export async function GET() {
 
   const fileConfig = readFileConfig();
   const effectiveConfig = {
-    ...getConfigFromEnv(),
     ...fileConfig,
+    ...getConfigFromEnv(),
   };
 
   if (!canChangeKeys) {
@@ -156,8 +160,8 @@ export async function POST(request: Request) {
   fs.mkdirSync(path.dirname(userConfigPath), { recursive: true });
 
   const existingConfig: LLMConfig = {
-    ...getConfigFromEnv(),
     ...readFileConfig(),
+    ...getConfigFromEnv(),
   };
   const mergedConfig: LLMConfig = {
     LLM: userConfig.LLM || existingConfig.LLM,

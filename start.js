@@ -17,6 +17,31 @@ const isDev = hasDevArg;
 const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
 console.log("DEBUG: TEMPLATE_API_KEY in start.js env:", !!process.env.TEMPLATE_API_KEY, "Length:", process.env.TEMPLATE_API_KEY ? process.env.TEMPLATE_API_KEY.length : 0);
 
+const validLLMProviders = new Set([
+  "anthropic",
+  "azure",
+  "bedrock",
+  "cerebras",
+  "codex",
+  "custom",
+  "fireworks",
+  "google",
+  "litellm",
+  "lmstudio",
+  "ollama",
+  "openai",
+  "openrouter",
+  "together",
+  "vertex",
+]);
+
+const parseOptionalBool = (value) => {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    return undefined;
+  }
+  return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
+};
+
 const fastapiPort = 8000;
 const nextjsPort = 3000;
 const appmcpPort = 8001;
@@ -61,12 +86,15 @@ process.env.USER_CONFIG_PATH = userConfigPath;
 //? UserConfig is only setup if API Keys can be changed
 const setupUserConfigFromEnv = () => {
   let existingConfig = {};
+  const disableImageGeneration = parseOptionalBool(
+    process.env.DISABLE_IMAGE_GENERATION
+  );
 
   if (existsSync(userConfigPath)) {
     existingConfig = JSON.parse(readFileSync(userConfigPath, "utf8"));
   }
 
-  if (!["ollama", "openai", "google"].includes(existingConfig.LLM)) {
+  if (existingConfig.LLM && !validLLMProviders.has(existingConfig.LLM)) {
     existingConfig.LLM = undefined;
   }
 
@@ -94,7 +122,9 @@ const setupUserConfigFromEnv = () => {
     IMAGE_GEN_MODEL: process.env.IMAGE_GEN_MODEL || existingConfig.IMAGE_GEN_MODEL,
     IMAGE_PROVIDER: process.env.IMAGE_PROVIDER || existingConfig.IMAGE_PROVIDER,
     DISABLE_IMAGE_GENERATION:
-      process.env.DISABLE_IMAGE_GENERATION || existingConfig.DISABLE_IMAGE_GENERATION,
+      disableImageGeneration === undefined
+        ? existingConfig.DISABLE_IMAGE_GENERATION
+        : disableImageGeneration,
     OPEN_WEBUI_IMAGE_URL:
       process.env.OPEN_WEBUI_IMAGE_URL || existingConfig.OPEN_WEBUI_IMAGE_URL,
     OPEN_WEBUI_IMAGE_API_KEY:

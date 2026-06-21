@@ -152,6 +152,19 @@ from utils.set_env import (
 )
 
 
+def _prefer_env_value(env_value, existing_value):
+    return env_value or existing_value
+
+
+def _prefer_env_bool(env_value, existing_value, default=None):
+    parsed_env_value = parse_bool_or_none(env_value)
+    if parsed_env_value is not None:
+        return parsed_env_value
+    if existing_value is not None:
+        return existing_value
+    return default
+
+
 def get_user_config():
     user_config_path = get_user_config_path_env()
 
@@ -164,7 +177,7 @@ def get_user_config():
         pass
 
     return UserConfig(
-        LLM=existing_config.LLM or get_llm_provider_env(),
+        LLM=_prefer_env_value(get_llm_provider_env(), existing_config.LLM),
         OPENAI_API_KEY=existing_config.OPENAI_API_KEY or get_openai_api_key_env(),
         OPENAI_MODEL=existing_config.OPENAI_MODEL or get_openai_model_env(),
         GOOGLE_API_KEY=existing_config.GOOGLE_API_KEY or get_google_api_key_env(),
@@ -221,15 +234,22 @@ def get_user_config():
         ANTHROPIC_MODEL=existing_config.ANTHROPIC_MODEL or get_anthropic_model_env(),
         OLLAMA_URL=existing_config.OLLAMA_URL or get_ollama_url_env(),
         OLLAMA_MODEL=existing_config.OLLAMA_MODEL or get_ollama_model_env(),
-        CUSTOM_LLM_URL=existing_config.CUSTOM_LLM_URL or get_custom_llm_url_env(),
-        CUSTOM_LLM_API_KEY=existing_config.CUSTOM_LLM_API_KEY
-        or get_custom_llm_api_key_env(),
-        CUSTOM_MODEL=existing_config.CUSTOM_MODEL or get_custom_model_env(),
-        IMAGE_PROVIDER=existing_config.IMAGE_PROVIDER or get_image_provider_env(),
-        DISABLE_IMAGE_GENERATION=(
-            existing_config.DISABLE_IMAGE_GENERATION
-            if existing_config.DISABLE_IMAGE_GENERATION is not None
-            else (parse_bool_or_none(get_disable_image_generation_env()) or False)
+        CUSTOM_LLM_URL=_prefer_env_value(
+            get_custom_llm_url_env(), existing_config.CUSTOM_LLM_URL
+        ),
+        CUSTOM_LLM_API_KEY=_prefer_env_value(
+            get_custom_llm_api_key_env(), existing_config.CUSTOM_LLM_API_KEY
+        ),
+        CUSTOM_MODEL=_prefer_env_value(
+            get_custom_model_env(), existing_config.CUSTOM_MODEL
+        ),
+        IMAGE_PROVIDER=_prefer_env_value(
+            get_image_provider_env(), existing_config.IMAGE_PROVIDER
+        ),
+        DISABLE_IMAGE_GENERATION=_prefer_env_bool(
+            get_disable_image_generation_env(),
+            existing_config.DISABLE_IMAGE_GENERATION,
+            False,
         ),
         PIXABAY_API_KEY=existing_config.PIXABAY_API_KEY or get_pixabay_api_key_env(),
         PEXELS_API_KEY=existing_config.PEXELS_API_KEY or get_pexels_api_key_env(),
