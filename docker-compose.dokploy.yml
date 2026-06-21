@@ -73,6 +73,7 @@ services:
       - presenton_icons:/app/servers/nextjs/public/static/icons
     environment:
       - NEXT_INTERNAL_API_URL=http://backend:8000
+      - FAST_API_INTERNAL_URL=http://backend:8000
       - APP_DATA_DIRECTORY=/app_data
       - USER_CONFIG_PATH=/app_data/userConfig.json
       - TEMP_DIRECTORY=/tmp/presenton
