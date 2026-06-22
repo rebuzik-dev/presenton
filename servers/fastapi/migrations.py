@@ -144,6 +144,7 @@ def _is_unversioned_populated_database(database_url: str) -> bool:
         "async_presentation_generation_tasks",
         "webhook_subscriptions",
         "template_create_infos",
+        "template_prompt_profiles",
         "chat_history_messages",
     }
     engine = create_engine(database_url)

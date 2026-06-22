@@ -18,6 +18,7 @@ from models.sql.presentation import PresentationModel
 from models.sql.slide import SlideModel
 from models.sql.presentation_layout_code import PresentationLayoutCodeModel
 from models.sql.template import TemplateModel
+from models.sql.template_prompt_profile import TemplatePromptProfileModel
 from models.sql.webhook_subscription import WebhookSubscription
 from models.sql.user import UserModel
 from models.sql.api_key import ApiKeyModel
@@ -70,6 +71,7 @@ async def create_db_and_tables():
                     ImageAsset.__table__,
                     PresentationLayoutCodeModel.__table__,
                     TemplateModel.__table__,
+                    TemplatePromptProfileModel.__table__,
                     WebhookSubscription.__table__,
                     AsyncPresentationGenerationTaskModel.__table__,
                     UserModel.__table__,

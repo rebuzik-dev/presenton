@@ -10,10 +10,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from services.template_service import template_service
+from services.template_prompt_profile_service import template_prompt_profile_service
 from api.deps import get_current_user_or_api_key
 from models.sql.user import UserModel
 from utils.get_layout_by_name import get_layout_by_name
 from utils.template_image_summary import build_layout_image_summary
+from utils.template_prompt_overrides import (
+    normalize_prompt_profile_payload,
+    serialize_prompt_profile,
+)
 from utils.template_schema_summary import build_template_schema_summary
 from utils.template_style_summary import build_template_style_summary
 
@@ -171,6 +176,34 @@ class TemplateSchemaSummaryResponse(BaseModel):
     layouts: List[LayoutSchemaSummaryResponse]
 
 
+class TemplatePromptProfileOverridesResponse(BaseModel):
+    id: Optional[str] = None
+    template_slug: Optional[str] = None
+    template_id: Optional[str] = None
+    is_active: bool = True
+    template_prompt: Optional[str] = None
+    layout_prompts: dict[str, Any] = Field(default_factory=dict)
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class TemplatePromptProfileResponse(BaseModel):
+    template: str
+    template_id: Optional[UUID] = None
+    template_name: Optional[str] = None
+    template_type: str
+    source_prompt: Optional[str] = None
+    prompt_profile: TemplatePromptProfileOverridesResponse
+    schema_summary: TemplateSchemaSummaryResponse
+    image_summary: TemplateImageSummaryResponse
+
+
+class UpdateTemplatePromptProfileRequest(BaseModel):
+    template_prompt: Optional[str] = None
+    layout_prompts: dict[str, Any] = Field(default_factory=dict)
+    is_active: bool = True
+
+
 def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optional[str]]:
     authorization_header = http_request.headers.get("Authorization")
     auth_token = None
@@ -188,6 +221,59 @@ def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optiona
         or http_request.query_params.get("api_key")
     )
     return auth_token, api_key
+
+
+async def _resolve_template_for_prompt_profile(slug: str):
+    template = await template_service.get_by_slug(slug)
+    if template or not slug.startswith("custom-"):
+        return template
+
+    raw_template_id = slug.replace("custom-", "", 1)
+    try:
+        return await template_service.get_by_id(UUID(raw_template_id))
+    except ValueError:
+        return None
+
+
+def _template_type(template, slug: str) -> str:
+    if template and template.is_system:
+        return "built-in"
+    if slug.startswith("custom-") or (template and not template.is_system):
+        return "custom"
+    return "legacy"
+
+
+async def _build_prompt_profile_response(
+    slug: str,
+    http_request: Request,
+) -> TemplatePromptProfileResponse:
+    auth_token, api_key = _extract_auth_context(http_request)
+    template = await _resolve_template_for_prompt_profile(slug)
+    layout = await get_layout_by_name(
+        slug,
+        auth_token=auth_token,
+        api_key=api_key,
+    )
+    profile = await template_prompt_profile_service.get_by_slug(slug)
+    schema_summary = build_template_schema_summary(
+        slug,
+        layout,
+        template.layouts if template else None,
+    )
+    image_summary = build_layout_image_summary(slug, layout)
+
+    return TemplatePromptProfileResponse(
+        template=slug,
+        template_id=template.id if template else None,
+        template_name=template.name if template else layout.name,
+        template_type=_template_type(template, slug),
+        source_prompt=template.description if template else None,
+        prompt_profile=TemplatePromptProfileOverridesResponse(
+            **serialize_prompt_profile(profile)
+        ),
+        schema_summary=TemplateSchemaSummaryResponse(**schema_summary),
+        image_summary=TemplateImageSummaryResponse(**image_summary),
+    )
 
 
 # --- Endpoints ---
@@ -301,6 +387,51 @@ async def get_template_style_summary(slug: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
+
+@TEMPLATES_ROUTER.get(
+    "/{slug}/prompt-profile",
+    response_model=TemplatePromptProfileResponse,
+)
+async def get_template_prompt_profile(slug: str, http_request: Request):
+    """
+    Get editable prompt overrides and source summaries for a template.
+
+    Overrides are stored separately from built-in TSX files and custom layout code.
+    The returned schema/image summaries already include active overrides.
+    """
+    return await _build_prompt_profile_response(slug, http_request)
+
+
+@TEMPLATES_ROUTER.patch(
+    "/{slug}/prompt-profile",
+    response_model=TemplatePromptProfileResponse,
+)
+async def update_template_prompt_profile(
+    slug: str,
+    request: UpdateTemplatePromptProfileRequest,
+    http_request: Request,
+    current_user: UserModel = Depends(get_current_user_or_api_key),
+):
+    """
+    Save editable prompt overrides for built-in, custom, or legacy templates.
+    """
+    template = await _resolve_template_for_prompt_profile(slug)
+    normalized_template_prompt, normalized_layout_prompts = (
+        normalize_prompt_profile_payload(
+            template_prompt=request.template_prompt,
+            layout_prompts=request.layout_prompts,
+        )
+    )
+    await template_prompt_profile_service.upsert(
+        template_slug=slug,
+        template_id=template.id if template else None,
+        template_prompt=normalized_template_prompt,
+        layout_prompts=normalized_layout_prompts,
+        is_active=request.is_active,
+        created_by_id=current_user.id,
+    )
+    return await _build_prompt_profile_response(slug, http_request)
 
 
 @TEMPLATES_ROUTER.get(

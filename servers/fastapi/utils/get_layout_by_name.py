@@ -12,6 +12,8 @@ from urllib.parse import urlencode
 from fastapi import HTTPException
 from models.presentation_layout import PresentationLayoutModel
 from services.template_service import template_service
+from services.template_prompt_profile_service import template_prompt_profile_service
+from utils.template_prompt_overrides import apply_prompt_profile_to_layout
 
 
 async def get_layout_by_name(
@@ -53,39 +55,42 @@ async def get_layout_by_name(
             # For system templates, trust Next.js settings.json as the source of truth.
             # Only apply explicit request override when `ordered` is provided.
             resolved_ordered = ordered if ordered is not None else None
-            return await _fetch_layout_from_nextjs(
+            layout = await _fetch_layout_from_nextjs(
                 layout_name,
                 resolved_ordered,
                 auth_token=auth_token,
                 api_key=api_key,
             )
+            return await _apply_prompt_profile(layout_name, layout)
         
         # Custom templates: prefer DB-backed layouts when available
         if template.layouts:
             layout = _build_layout_from_db(template)
             if ordered is not None:
                 layout.ordered = ordered
-            return layout
+            return await _apply_prompt_profile(layout_name, layout)
 
         # Legacy custom templates store raw layout code in presentation_layout_codes and
         # must be resolved through Next.js schema extraction.
         # For compatibility, legacy schema loading still expects `custom-<template_uuid>` group.
         legacy_group_name = f"custom-{template.id}"
         resolved_ordered = ordered if ordered is not None else template.ordered
-        return await _fetch_layout_from_nextjs(
+        layout = await _fetch_layout_from_nextjs(
             legacy_group_name,
             resolved_ordered,
             auth_token=auth_token,
             api_key=api_key,
         )
+        return await _apply_prompt_profile(layout_name, layout)
     
     # Fallback: try Next.js directly (for backwards compatibility)
-    return await _fetch_layout_from_nextjs(
+    layout = await _fetch_layout_from_nextjs(
         layout_name,
         ordered=ordered,
         auth_token=auth_token,
         api_key=api_key,
     )
+    return await _apply_prompt_profile(layout_name, layout)
 
 
 async def _fetch_layout_from_nextjs(
@@ -149,3 +154,11 @@ def _build_layout_from_db(template) -> PresentationLayoutModel:
         slides=slides,
         ordered=template.ordered,
     )
+
+
+async def _apply_prompt_profile(
+    template_slug: str,
+    layout: PresentationLayoutModel,
+) -> PresentationLayoutModel:
+    profile = await template_prompt_profile_service.get_by_slug(template_slug)
+    return apply_prompt_profile_to_layout(layout, profile)
