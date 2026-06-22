@@ -14,6 +14,16 @@ export interface CloneLayoutPayload {
     layout_name?: string;
 }
 
+export interface TemplatePromptProfilePayload {
+    is_active?: boolean;
+    template_prompt?: string | null;
+    layout_prompts: Record<string, {
+        layout_prompt?: string;
+        field_prompts?: Record<string, string>;
+        image_prompt_overrides?: Record<string, string>;
+    }>;
+}
+
 class TemplateService {
 
     static async getCustomTemplateSummaries() {
@@ -74,6 +84,33 @@ class TemplateService {
             return await ApiResponseHandler.handleResponse(response, "Failed to clone layout");
         } catch (error) {
             console.error("Failed to clone layout", error);
+            throw error;
+        }
+    }
+
+    static async getTemplatePromptProfile(slug: string) {
+        try {
+            const response = await fetch(getApiUrl(`/api/v1/ppt/templates/${encodeURIComponent(slug)}/prompt-profile`), {
+                credentials: "include",
+            });
+            return await ApiResponseHandler.handleResponse(response, "Failed to get template prompt profile");
+        } catch (error) {
+            console.error("Failed to get template prompt profile", error);
+            throw error;
+        }
+    }
+
+    static async updateTemplatePromptProfile(slug: string, payload: TemplatePromptProfilePayload) {
+        try {
+            const response = await fetch(getApiUrl(`/api/v1/ppt/templates/${encodeURIComponent(slug)}/prompt-profile`), {
+                method: "PATCH",
+                headers: getHeader(),
+                body: JSON.stringify(payload),
+                credentials: "include",
+            });
+            return await ApiResponseHandler.handleResponse(response, "Failed to update template prompt profile");
+        } catch (error) {
+            console.error("Failed to update template prompt profile", error);
             throw error;
         }
     }
