@@ -25,6 +25,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import LayoutMetadataPreview from "../components/LayoutMetadataPreview";
 import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
+import TemplatePromptBlocksInline from "../../components/TemplatePromptBlocksInline";
+import { useTemplatePromptProfile } from "../../hooks/useTemplatePromptProfile";
 
 type FontOption = { family: string; cssUrl?: string };
 
@@ -83,6 +85,7 @@ const GroupLayoutPreview = () => {
   const [isSavingMeta, setIsSavingMeta] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [focusedLayoutId, setFocusedLayoutId] = useState<string | undefined>(undefined);
+  const promptProfile = useTemplatePromptProfile(rawSlug);
 
   const slugify = (value: string) =>
     value
@@ -588,6 +591,16 @@ const GroupLayoutPreview = () => {
                     aiDescriptionsEnabled={aiDescriptionsEnabled}
                   />
                 </div>
+                <TemplatePromptBlocksInline
+                  slug={rawSlug}
+                  layoutId={layoutsMap[fileName]?.layout_id || layout.layoutId}
+                  layoutName={name}
+                  sourceFile={fileName}
+                  index={index}
+                  profileData={promptProfile.data}
+                  profileLoading={promptProfile.loading}
+                  onUpdateOverride={promptProfile.updateOverride}
+                />
               </Card>
             );
           })}
