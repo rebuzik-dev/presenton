@@ -1,10 +1,12 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Pencil } from "lucide-react";
 import "../../utils/prism-languages";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
 
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import TemplateService from "../../services/api/template";
@@ -20,6 +22,9 @@ const GroupLayoutPreview = () => {
   const pathname = usePathname();
 
   const templateParams = searchParams.get("slug") || "";
+
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [focusedLayoutId, setFocusedLayoutId] = useState<string | undefined>(undefined);
 
   const isCustom = templateParams.startsWith("custom-");
   const customTemplateId = isCustom ? templateParams.split("custom-")[1] : null;
@@ -119,10 +124,6 @@ const GroupLayoutPreview = () => {
   const templateDescription = isCustom
     ? customTemplate?.template.description || ""
     : staticGroup?.description || "";
-  const layoutCount = isCustom
-    ? customTemplate?.layouts.length || 0
-    : staticTemplates.length;
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -130,10 +131,20 @@ const GroupLayoutPreview = () => {
       <header className=" z-30">
         <div className=" mx-auto px-6 pb-[30px]">
           <div className="flex items-center justify-between mb-4 max-w-[1440px] mx-auto">
-
-
-            {isCustom && (
-              <div className="flex items-center justify-end ml-auto mr-0 gap-4">
+            <div className="flex items-center gap-3 ml-auto mr-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFocusedLayoutId(undefined);
+                  setPromptOpen(true);
+                }}
+                className="flex items-center gap-2 text-purple-700 hover:text-purple-800 border-purple-200 hover:bg-purple-50 bg-white"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit Prompt
+              </Button>
+              {isCustom && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -142,13 +153,13 @@ const GroupLayoutPreview = () => {
                     trackEvent(MixpanelEvent.TemplatePreview_Delete_Templates_API_Call);
                     handleDeleteCustomTemplate();
                   }}
-                  className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50"
+                  className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50 bg-white"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete Template
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <div className="text-center">
@@ -161,7 +172,6 @@ const GroupLayoutPreview = () => {
               )}
             </div>
             <p className="text-gray-600 text-xl">
-              {/* {layoutCount} layout{layoutCount !== 1 ? "s" : ""} •{" "} */}
               {templateDescription}
             </p>
           </div>
@@ -198,14 +208,20 @@ const GroupLayoutPreview = () => {
                           {template.layoutDescription}
                         </p>
                       </div>
-                      {/* <div className="flex items-center gap-3">
-                        <span className="px-3 py-1  text-gray-600 rounded text-sm font-mono">
-                          {template.layoutId}
-                        </span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                          #{index + 1}
-                        </span>
-                      </div> */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50 bg-white"
+                          onClick={() => {
+                            setFocusedLayoutId(template.layoutId || template.layoutName);
+                            setPromptOpen(true);
+                          }}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span>Edit Prompt</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -243,6 +259,20 @@ const GroupLayoutPreview = () => {
                           {layout.layoutDescription}
                         </p>
                       </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50 bg-white"
+                          onClick={() => {
+                            setFocusedLayoutId(layout.rawLayoutId || layout.layoutId || layout.rawLayoutName);
+                            setPromptOpen(true);
+                          }}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span>Edit Prompt</span>
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex items-end justify-end ">
                       <span className="px-3 py-1  text-gray-600 rounded text-sm font-mono">
@@ -265,6 +295,21 @@ const GroupLayoutPreview = () => {
           </div>
         )}
       </div>
+
+      <Sheet open={promptOpen} onOpenChange={setPromptOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-[650px] md:max-w-[750px] p-0" overlayClassName="bg-black/20 backdrop-blur-[2px]">
+          <SheetTitle className="sr-only">Edit template prompts</SheetTitle>
+          <SheetDescription className="sr-only">
+            Edit template, layout, field, and image prompt overrides while previewing slides.
+          </SheetDescription>
+          <TemplatePromptEditorPanel
+            slug={templateParams}
+            initialLayoutId={focusedLayoutId}
+            compact={true}
+            onClose={() => setPromptOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

@@ -15,7 +15,7 @@ import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-markup";
 import "prismjs/components/prism-jsx";
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useFontLoader } from "../../hooks/useFontLoader";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import LayoutMetadataPreview from "../components/LayoutMetadataPreview";
+import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
 
 type FontOption = { family: string; cssUrl?: string };
 
@@ -80,6 +81,8 @@ const GroupLayoutPreview = () => {
   const [metaSlug, setMetaSlug] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [isSavingMeta, setIsSavingMeta] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [focusedLayoutId, setFocusedLayoutId] = useState<string | undefined>(undefined);
 
   const slugify = (value: string) =>
     value
@@ -365,6 +368,18 @@ const GroupLayoutPreview = () => {
               <Home className="w-4 h-4" />
               All Templates
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFocusedLayoutId(undefined);
+                setPromptOpen(true);
+              }}
+              className="flex items-center gap-2 text-purple-700 hover:text-purple-800 border-purple-200 hover:bg-purple-50"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit Prompt
+            </Button>
             {isCustom && (
               <>
                 <Button
@@ -532,6 +547,18 @@ const GroupLayoutPreview = () => {
                       <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                         Layout #{index + 1}
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50"
+                        onClick={() => {
+                          setFocusedLayoutId(layoutsMap[fileName]?.layout_id || layout.layoutId || layout.fileName || layout.name);
+                          setPromptOpen(true);
+                        }}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit Prompt</span>
+                      </Button>
                       {isCustom && (
                         <Button
                           variant="outline"
@@ -700,6 +727,21 @@ const GroupLayoutPreview = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      <Sheet open={promptOpen} onOpenChange={setPromptOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-[650px] md:max-w-[750px] p-0" overlayClassName="bg-black/20 backdrop-blur-[2px]">
+          <SheetTitle className="sr-only">Edit template prompts</SheetTitle>
+          <SheetDescription className="sr-only">
+            Edit template, layout, field, and image prompt overrides while previewing slides.
+          </SheetDescription>
+          <TemplatePromptEditorPanel
+            slug={rawSlug}
+            initialLayoutId={focusedLayoutId}
+            compact={true}
+            onClose={() => setPromptOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { ArrowUpRight, ChevronRight, Loader2, Pencil } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Loader2 } from "lucide-react";
 import { templates } from "@/app/presentation-templates";
 import { TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
 import {
@@ -48,18 +48,6 @@ export const CustomTemplateCard = React.memo(function CustomTemplateCard({ templ
             <div className="relative z-40 flex items-center justify-between gap-4 border-t border-[#EDEEEF] bg-white px-6 py-5">
                 <h3 className="max-w-[min(191px,65%)] text-base font-bold text-gray-900">{template.name}</h3>
                 <div className="flex items-center gap-2 shrink-0">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const slug = template.id.startsWith('custom-') ? template.id : `custom-${template.id}`;
-                            router.push(`/template-prompts/${encodeURIComponent(slug)}`);
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-600 hover:text-white bg-purple-50 hover:bg-purple-600 border border-purple-200 hover:border-purple-600 rounded-full transition-all duration-200"
-                        title="Edit prompt"
-                    >
-                        <Pencil className="h-3 w-3" />
-                        <span>Edit prompt</span>
-                    </button>
                     <ArrowUpRight className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-purple-600" />
                 </div>
             </div>
@@ -80,7 +68,6 @@ const InbuiltTemplateCard = React.memo(function InbuiltTemplateCard({
     template: TemplateLayoutsWithSettings;
     onOpen: (id: string) => void;
 }) {
-    const router = useRouter();
     const handleOpen = useCallback(() => onOpen(template.id), [onOpen, template.id]);
 
     return (
@@ -99,17 +86,6 @@ const InbuiltTemplateCard = React.memo(function InbuiltTemplateCard({
                     <p className="mt-1 line-clamp-2 text-sm text-gray-500">{template.description}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/template-prompts/${encodeURIComponent(template.id)}`);
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 border border-blue-200 hover:border-blue-600 rounded-full transition-all duration-200"
-                        title="Edit prompt"
-                    >
-                        <Pencil className="h-3 w-3" />
-                        <span>Edit prompt</span>
-                    </button>
                     <ArrowUpRight className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-blue-600" />
                 </div>
             </div>
