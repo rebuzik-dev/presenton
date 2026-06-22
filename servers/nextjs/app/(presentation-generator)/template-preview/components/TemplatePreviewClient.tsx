@@ -7,6 +7,8 @@ import { ArrowLeft, Loader2, Trash2, Pencil } from "lucide-react";
 import "../../utils/prism-languages";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
+import TemplatePromptBlocksInline from "../../components/TemplatePromptBlocksInline";
+import { useTemplatePromptProfile } from "../../hooks/useTemplatePromptProfile";
 
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import TemplateService from "../../services/api/template";
@@ -25,6 +27,7 @@ const GroupLayoutPreview = () => {
 
   const [promptOpen, setPromptOpen] = useState(false);
   const [focusedLayoutId, setFocusedLayoutId] = useState<string | undefined>(undefined);
+  const promptProfile = useTemplatePromptProfile(templateParams);
 
   const isCustom = templateParams.startsWith("custom-");
   const customTemplateId = isCustom ? templateParams.split("custom-")[1] : null;
@@ -233,6 +236,15 @@ const GroupLayoutPreview = () => {
                       <LayoutComponent data={template.sampleData} />
                     </div>
                   </div>
+                  <TemplatePromptBlocksInline
+                    slug={templateParams}
+                    layoutId={template.layoutId}
+                    layoutName={template.layoutName}
+                    index={index}
+                    profileData={promptProfile.data}
+                    profileLoading={promptProfile.loading}
+                    onUpdateOverride={promptProfile.updateOverride}
+                  />
                 </div>
               );
             })}
@@ -289,6 +301,15 @@ const GroupLayoutPreview = () => {
                       <LayoutComponent data={layout.sampleData} />
                     </div>
                   </div>
+                  <TemplatePromptBlocksInline
+                    slug={templateParams}
+                    layoutId={layout.rawLayoutId || layout.layoutId}
+                    layoutName={layout.rawLayoutName}
+                    index={index}
+                    profileData={promptProfile.data}
+                    profileLoading={promptProfile.loading}
+                    onUpdateOverride={promptProfile.updateOverride}
+                  />
                 </Card>
               );
             })}
