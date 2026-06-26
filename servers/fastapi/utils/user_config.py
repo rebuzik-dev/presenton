@@ -76,6 +76,7 @@ from utils.get_env import (
 )
 from utils.parsers import parse_bool_or_none
 from utils.user_config_store import read_user_config_file, update_user_config_file
+from utils.llm_provider_profiles import resolve_active_model_profile
 from utils.set_env import (
     set_anthropic_api_key_env,
     set_anthropic_model_env,
@@ -176,7 +177,7 @@ def get_user_config():
         print("Error while loading user config")
         pass
 
-    return UserConfig(
+    return resolve_active_model_profile(UserConfig(
         LLM=_prefer_env_value(get_llm_provider_env(), existing_config.LLM),
         OPENAI_API_KEY=existing_config.OPENAI_API_KEY or get_openai_api_key_env(),
         OPENAI_MODEL=existing_config.OPENAI_MODEL or get_openai_model_env(),
@@ -293,7 +294,10 @@ def get_user_config():
         or get_openai_compat_image_api_key_env(),
         OPENAI_COMPAT_IMAGE_MODEL=existing_config.OPENAI_COMPAT_IMAGE_MODEL
         or get_openai_compat_image_model_env(),
-    )
+        LLM_PROVIDER_CONNECTIONS=existing_config.LLM_PROVIDER_CONNECTIONS,
+        LLM_MODEL_PROFILES=existing_config.LLM_MODEL_PROFILES,
+        ACTIVE_LLM_MODEL_PROFILE_ID=existing_config.ACTIVE_LLM_MODEL_PROFILE_ID,
+    ))
 
 
 def update_env_with_user_config():

@@ -2,6 +2,34 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class LLMProviderConnection(BaseModel):
+    id: str
+    name: str
+    provider_type: str
+    base_url: Optional[str] = None
+    api_key: Optional[str] = None
+    models_cache: Optional[list[str]] = None
+    models_cache_updated_at: Optional[str] = None
+    models_cache_error: Optional[str] = None
+    is_active: Optional[bool] = True
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class LLMModelProfile(BaseModel):
+    id: str
+    name: str
+    provider_connection_id: str
+    model_id: str
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+    purpose: Optional[str] = "default"
+    is_default: Optional[bool] = False
+    is_active: Optional[bool] = True
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
 class UserConfig(BaseModel):
     LLM: Optional[str] = None
 
@@ -116,3 +144,8 @@ class UserConfig(BaseModel):
     OPENAI_COMPAT_IMAGE_BASE_URL: Optional[str] = None
     OPENAI_COMPAT_IMAGE_API_KEY: Optional[str] = None
     OPENAI_COMPAT_IMAGE_MODEL: Optional[str] = None
+
+    # LLM provider connections and model profiles
+    LLM_PROVIDER_CONNECTIONS: Optional[list[LLMProviderConnection]] = None
+    LLM_MODEL_PROFILES: Optional[list[LLMModelProfile]] = None
+    ACTIVE_LLM_MODEL_PROFILE_ID: Optional[str] = None
