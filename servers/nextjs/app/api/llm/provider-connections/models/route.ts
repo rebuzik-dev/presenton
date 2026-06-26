@@ -99,6 +99,48 @@ function providerBaseUrl(connection: LLMProviderConnection): string {
   }
 }
 
+function normalizeOpenAICompatibleBaseUrl(rawUrl: string): string {
+  const trimmed = (rawUrl || "").trim().replace(/\/+$/, "");
+  if (!trimmed) return trimmed;
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return trimmed;
+  }
+
+  const pathname = url.pathname.replace(/\/+$/, "");
+  if (pathname.endsWith("/models")) {
+    url.pathname = pathname.slice(0, -"/models".length) || "/";
+  }
+
+  const normalizedPath = url.pathname.replace(/\/+$/, "");
+  if (url.hostname === "polza.ai" && (normalizedPath === "" || normalizedPath === "/")) {
+    url.pathname = "/api/v1";
+  } else if (!normalizedPath.endsWith("/v1") && !normalizedPath.includes("/v1/")) {
+    url.pathname = `${normalizedPath}/v1`.replace(/^\/\//, "/");
+  }
+
+  return url.toString().replace(/\/+$/, "");
+}
+
+async function requestOpenAICompatibleModels(connection: LLMProviderConnection): Promise<string[]> {
+  const baseUrl = normalizeOpenAICompatibleBaseUrl(providerBaseUrl(connection));
+  if (!baseUrl) return [];
+  const modelsUrl = `${baseUrl.replace(/\/+$/, "")}/models`;
+  const apiKey = (connection.api_key || "").trim();
+  const headers: HeadersInit = { Accept: "application/json" };
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetch(modelsUrl, { method: "GET", headers });
+  if (!response.ok) {
+    throw new Error(`Provider models endpoint returned ${response.status}`);
+  }
+  return normalizeModelsResponse(await response.json());
+}
+
 async function requestModels(connection: LLMProviderConnection): Promise<string[]> {
   const fastApiUrl = getFastAPIUrl().replace(/\/$/, "");
   const apiKey = connection.api_key || "";
@@ -129,16 +171,7 @@ async function requestModels(connection: LLMProviderConnection): Promise<string[
     return normalizeModelsResponse(await response.json());
   }
 
-  const response = await fetch(`${fastApiUrl}/api/v1/ppt/openai/models/available`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      url: providerBaseUrl(connection),
-      api_key: apiKey,
-    }),
-  });
-  if (!response.ok) throw new Error(`Provider returned ${response.status}`);
-  return normalizeModelsResponse(await response.json());
+  return requestOpenAICompatibleModels(connection);
 }
 
 export async function POST(request: Request) {
