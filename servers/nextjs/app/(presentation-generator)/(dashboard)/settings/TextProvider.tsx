@@ -1,921 +1,710 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { LLMConfig } from "@/types/llm_config";
-import { getApiUrl } from "@/utils/api";
-import { LLM_PROVIDERS } from "@/utils/providerConstants";
-import { Check, Loader2, Eye, EyeOff, ChevronUp } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import { notify } from "@/components/ui/sonner";
+import {
+  LLMConfig,
+  LLMModelProfile,
+  LLMProviderConnection,
+} from "@/types/llm_config";
+import {
+  CONFIGURED_SECRET_MARKER,
+  MODEL_PROFILE_PURPOSES,
+  TEXT_PROVIDER_TYPES,
+  migrateLegacyLLMConfig,
+  resolveActiveProfileToLegacyConfig,
+} from "@/utils/llmProviderProfiles";
+import { LLM_PROVIDERS } from "@/utils/providerConstants";
+import {
+  Check,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Star,
+  Trash2,
+} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import CodexConfig from "./SettingCodex";
-import VertexAzureManualFields from "@/components/VertexAzureManualFields";
-import BedrockManualFields from "@/components/BedrockManualFields";
 
-interface OpenAIConfigProps {
-  onInputChange: (value: string | boolean, field: string) => void;
+interface TextProviderProps {
   llmConfig: LLMConfig;
+  setLlmConfig: React.Dispatch<React.SetStateAction<LLMConfig>>;
 }
 
-interface ModelOption {
-  value: string;
-  label: string;
-  size?: string;
+type ConnectionDraft = LLMProviderConnection;
+type ProfileDraft = LLMModelProfile;
+
+const DEFAULT_CONNECTION: ConnectionDraft = {
+  id: "",
+  name: "",
+  provider_type: "openai_compatible",
+  base_url: "https://api.vsellm.ru/v1",
+  api_key: "",
+  models_cache: [],
+  is_active: true,
+};
+
+const DEFAULT_PROFILE: ProfileDraft = {
+  id: "",
+  name: "",
+  provider_connection_id: "",
+  model_id: "",
+  purpose: "default",
+  is_default: true,
+  is_active: true,
+};
+
+function createId(prefix: string): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
+  }
+  return `${prefix}_${Date.now().toString(36)}`;
 }
 
-const MANUAL_MODEL_PROVIDERS = new Set(["vertex", "azure", "bedrock"]);
+function providerLabel(providerType: string): string {
+  if (providerType === "openai_compatible") return "Custom OpenAI-compatible";
+  return LLM_PROVIDERS[providerType]?.label || providerType;
+}
 
-const TextProvider = ({ onInputChange, llmConfig }: OpenAIConfigProps) => {
-  const [openProviderSelect, setOpenProviderSelect] = useState(false);
-  const [openModelSelect, setOpenModelSelect] = useState(false);
-  const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsChecked, setModelsChecked] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const isFirstRender = useRef(true);
+function nowIso(): string {
+  return new Date().toISOString();
+}
 
-  const selectedProvider = (llmConfig.LLM ||
-    "openai") as keyof typeof LLM_PROVIDERS;
-  const selectedProviderMeta = LLM_PROVIDERS[selectedProvider];
-  const isManualModelProvider = MANUAL_MODEL_PROVIDERS.has(selectedProvider);
-  const currentModelField = useMemo(() => {
-    switch (selectedProvider) {
-      case "openai":
-        return "OPENAI_MODEL";
-      case "google":
-        return "GOOGLE_MODEL";
-      case "vertex":
-        return "VERTEX_MODEL";
-      case "azure":
-        return "AZURE_OPENAI_MODEL";
-      case "bedrock":
-        return "BEDROCK_MODEL";
-      case "openrouter":
-        return "OPENROUTER_MODEL";
-      case "fireworks":
-        return "FIREWORKS_MODEL";
-      case "together":
-        return "TOGETHER_MODEL";
-      case "cerebras":
-        return "CEREBRAS_MODEL";
-      case "litellm":
-        return "LITELLM_MODEL";
-      case "lmstudio":
-        return "LMSTUDIO_MODEL";
-      case "anthropic":
-        return "ANTHROPIC_MODEL";
-      case "ollama":
-        return "OLLAMA_MODEL";
-      case "custom":
-        return "CUSTOM_MODEL";
-      case "codex":
-        return "CODEX_MODEL";
-      default:
-        return "";
-    }
-  }, [selectedProvider]);
+function toConfigWithRuntime(config: LLMConfig): LLMConfig {
+  return resolveActiveProfileToLegacyConfig(migrateLegacyLLMConfig(config));
+}
 
-  const currentApiKeyField = useMemo(() => {
-    switch (selectedProvider) {
-      case "openai":
-        return "OPENAI_API_KEY";
-      case "google":
-        return "GOOGLE_API_KEY";
-      case "vertex":
-        return "VERTEX_API_KEY";
-      case "azure":
-        return "AZURE_OPENAI_API_KEY";
-      case "bedrock":
-        return "BEDROCK_API_KEY";
-      case "openrouter":
-        return "OPENROUTER_API_KEY";
-      case "fireworks":
-        return "FIREWORKS_API_KEY";
-      case "together":
-        return "TOGETHER_API_KEY";
-      case "cerebras":
-        return "CEREBRAS_API_KEY";
-      case "litellm":
-        return "LITELLM_API_KEY";
-      case "lmstudio":
-        return "LMSTUDIO_API_KEY";
-      case "anthropic":
-        return "ANTHROPIC_API_KEY";
-      case "custom":
-        return "CUSTOM_LLM_API_KEY";
-      default:
-        return "";
-    }
-  }, [selectedProvider]);
-
-  const currentModel = currentModelField
-    ? ((llmConfig as Record<string, unknown>)[currentModelField] as string) ||
-      ""
-    : "";
-  const currentApiKey = currentApiKeyField
-    ? ((llmConfig as Record<string, unknown>)[currentApiKeyField] as string) ||
-      ""
-    : "";
-  const currentCustomUrl = llmConfig.CUSTOM_LLM_URL || "";
-  const currentLitellmUrl = (llmConfig.LITELLM_BASE_URL || "").trim();
-  const currentLmStudioUrl = (llmConfig.LMSTUDIO_BASE_URL || "").trim();
-  const currentFireworksUrl = (llmConfig.FIREWORKS_BASE_URL || "").trim();
-  const currentTogetherUrl = (llmConfig.TOGETHER_BASE_URL || "").trim();
-  const currentOllamaUrl = llmConfig.OLLAMA_URL || "";
-  const useCustomOllamaUrl = !!llmConfig.USE_CUSTOM_URL;
-  const modelLabel = selectedProviderMeta?.label || selectedProvider;
-  const providerApiKeyLabel =
-    selectedProvider === "custom"
-      ? "Custom LLM API Key"
-      : selectedProvider === "vertex"
-      ? "Vertex API Key"
-      : selectedProvider === "azure"
-      ? "Azure OpenAI API Key"
-      : selectedProvider === "bedrock"
-      ? "Bedrock API Key (optional)"
-      : selectedProvider === "openrouter"
-      ? "OpenRouter API Key"
-      : selectedProvider === "fireworks"
-      ? "Fireworks API Key"
-      : selectedProvider === "together"
-      ? "Together API Key"
-      : selectedProvider === "cerebras"
-      ? "Cerebras API Key"
-      : selectedProvider === "litellm"
-      ? "LiteLLM API key (optional)"
-      : selectedProvider === "lmstudio"
-      ? "LM Studio API key (optional)"
-      : `${selectedProvider} API Key`;
+const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
+  const normalizedConfig = useMemo(
+    () => migrateLegacyLLMConfig(llmConfig),
+    [llmConfig]
+  );
+  const connections = normalizedConfig.LLM_PROVIDER_CONNECTIONS || [];
+  const profiles = normalizedConfig.LLM_MODEL_PROFILES || [];
+  const activeProfileId = normalizedConfig.ACTIVE_LLM_MODEL_PROFILE_ID || "";
+  const [connectionDraft, setConnectionDraft] =
+    useState<ConnectionDraft>(DEFAULT_CONNECTION);
+  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(DEFAULT_PROFILE);
+  const [refreshingConnectionId, setRefreshingConnectionId] = useState("");
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    setLlmConfig((prev) => {
+      const migrated = migrateLegacyLLMConfig(prev);
+      if (
+        migrated.LLM_PROVIDER_CONNECTIONS === prev.LLM_PROVIDER_CONNECTIONS &&
+        migrated.LLM_MODEL_PROFILES === prev.LLM_MODEL_PROFILES
+      ) {
+        return prev;
+      }
+      return migrated;
+    });
+  }, [setLlmConfig]);
 
-    setAvailableModels([]);
-    setModelsChecked(false);
-    if (currentModelField) {
-      onInputChange("", currentModelField);
-    }
-  }, [
-    selectedProvider,
-    currentApiKey,
-    currentCustomUrl,
-    currentLitellmUrl,
-    currentLmStudioUrl,
-    currentFireworksUrl,
-    currentTogetherUrl,
-    currentModelField,
-  ]);
+  const activeProfile = profiles.find((profile) => profile.id === activeProfileId);
+  const selectedProfileConnection = connections.find(
+    (connection) => connection.id === profileDraft.provider_connection_id
+  );
+  const selectedConnectionModels = selectedProfileConnection?.models_cache || [];
 
-  const onApiKeyChange = (llm: keyof typeof LLM_PROVIDERS, value: string) => {
-    if (llm === "ollama") {
-      onInputChange(value, "OLLAMA_URL");
-      return;
-    }
-
-    const keyField =
-      llm === "openai"
-        ? "OPENAI_API_KEY"
-        : llm === "google"
-        ? "GOOGLE_API_KEY"
-        : llm === "vertex"
-        ? "VERTEX_API_KEY"
-        : llm === "azure"
-        ? "AZURE_OPENAI_API_KEY"
-        : llm === "bedrock"
-        ? "BEDROCK_API_KEY"
-        : llm === "openrouter"
-        ? "OPENROUTER_API_KEY"
-        : llm === "fireworks"
-        ? "FIREWORKS_API_KEY"
-        : llm === "together"
-        ? "TOGETHER_API_KEY"
-        : llm === "cerebras"
-        ? "CEREBRAS_API_KEY"
-        : llm === "litellm"
-        ? "LITELLM_API_KEY"
-        : llm === "lmstudio"
-        ? "LMSTUDIO_API_KEY"
-        : llm === "anthropic"
-        ? "ANTHROPIC_API_KEY"
-        : llm === "custom"
-        ? "CUSTOM_LLM_API_KEY"
-        : "";
-    if (keyField) {
-      onInputChange(value, keyField);
-    }
+  const patchConfig = (patch: Partial<LLMConfig>) => {
+    setLlmConfig((prev) => toConfigWithRuntime({ ...prev, ...patch }));
   };
 
-  const fetchAvailableModels = async () => {
-    if (isManualModelProvider) return;
-    if (selectedProvider === "openai" && !currentApiKey) return;
-    if (selectedProvider === "google" && !currentApiKey) return;
-    if (selectedProvider === "anthropic" && !currentApiKey) return;
-    if (selectedProvider === "openrouter" && !currentApiKey) return;
-    if (selectedProvider === "fireworks" && !currentApiKey) return;
-    if (selectedProvider === "together" && !currentApiKey) return;
-    if (selectedProvider === "cerebras" && !currentApiKey) return;
-    if (selectedProvider === "custom" && !currentCustomUrl) return;
-    if (selectedProvider === "litellm" && !currentLitellmUrl) return;
+  const upsertConnection = () => {
+    const name = connectionDraft.name.trim();
+    if (!name) {
+      notify.warning("Connection name is required");
+      return;
+    }
 
-    setModelsLoading(true);
+    const id = connectionDraft.id || createId("conn");
+    const nextConnection: LLMProviderConnection = {
+      ...connectionDraft,
+      id,
+      name,
+      provider_type: connectionDraft.provider_type || "openai_compatible",
+      base_url: connectionDraft.base_url?.trim() || "",
+      api_key: connectionDraft.api_key || "",
+      models_cache: connectionDraft.models_cache || [],
+      is_active: connectionDraft.is_active !== false,
+      updated_at: nowIso(),
+      created_at: connectionDraft.created_at || nowIso(),
+    };
+    const exists = connections.some((connection) => connection.id === id);
+    patchConfig({
+      LLM_PROVIDER_CONNECTIONS: exists
+        ? connections.map((connection) =>
+            connection.id === id ? nextConnection : connection
+          )
+        : [...connections, nextConnection],
+    });
+    setConnectionDraft(DEFAULT_CONNECTION);
+  };
+
+  const editConnection = (connection: LLMProviderConnection) => {
+    setConnectionDraft({ ...connection, api_key: "" });
+  };
+
+  const deleteConnection = (connectionId: string) => {
+    const used = profiles.some(
+      (profile) => profile.provider_connection_id === connectionId
+    );
+    if (used) {
+      notify.warning("Connection is used by a model profile");
+      return;
+    }
+    patchConfig({
+      LLM_PROVIDER_CONNECTIONS: connections.filter(
+        (connection) => connection.id !== connectionId
+      ),
+    });
+  };
+
+  const refreshModels = async (connectionId: string) => {
+    setRefreshingConnectionId(connectionId);
     try {
-      let response: Response;
-      if (selectedProvider === "google") {
-        response = await fetch(
-          getApiUrl("/api/v1/ppt/google/models/available"),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              api_key: currentApiKey,
-            }),
-          }
-        );
-      } else if (selectedProvider === "anthropic") {
-        response = await fetch(
-          getApiUrl("/api/v1/ppt/anthropic/models/available"),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              api_key: currentApiKey,
-            }),
-          }
-        );
-      } else if (selectedProvider === "ollama") {
-        response = await fetch(
-          getApiUrl("/api/v1/ppt/ollama/models/supported")
-        );
-      } else {
-        const openAiCompatibleUrl =
-          selectedProvider === "custom"
-            ? currentCustomUrl
-            : selectedProvider === "litellm"
-            ? currentLitellmUrl
-            : selectedProvider === "lmstudio"
-            ? currentLmStudioUrl || selectedProviderMeta?.url || ""
-            : selectedProvider === "fireworks"
-            ? currentFireworksUrl || selectedProviderMeta?.url || ""
-            : selectedProvider === "together"
-            ? currentTogetherUrl || selectedProviderMeta?.url || ""
-            : selectedProviderMeta?.url || "";
-        response = await fetch(
-          getApiUrl("/api/v1/ppt/openai/models/available"),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              url: openAiCompatibleUrl,
-              api_key: currentApiKey,
-            }),
-          }
-        );
+      const response = await fetch("/api/llm/provider-connections/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connection_id: connectionId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Could not refresh models");
       }
-
-      if (response.ok) {
-        const data = await response.json();
-        const normalizedModels: ModelOption[] =
-          selectedProvider === "ollama"
-            ? Array.isArray(data)
-              ? data
-                  .map((model) => {
-                    if (typeof model === "string") {
-                      return {
-                        value: model,
-                        label: model,
-                      };
-                    }
-
-                    if (model && typeof model === "object") {
-                      const typedModel = model as {
-                        value?: string;
-                        label?: string;
-                        size?: string;
-                      };
-                      return {
-                        value: typedModel.value || typedModel.label || "",
-                        label: typedModel.label || typedModel.value || "",
-                        size: typedModel.size,
-                      };
-                    }
-
-                    return {
-                      value: "",
-                      label: "",
-                    };
-                  })
-                  .filter((model: ModelOption) => Boolean(model.value))
-              : []
-            : Array.isArray(data)
-            ? data
-                .filter((model): model is string => typeof model === "string")
-                .map((model) => ({
-                  value: model,
-                  label: model,
-                }))
-            : [];
-
-        setAvailableModels(normalizedModels);
-        setModelsChecked(true);
-
-        if (normalizedModels.length > 0 && currentModelField) {
-          const modelValues = normalizedModels.map((model) => model.value);
-          if (currentModel && modelValues.includes(currentModel)) {
-            onInputChange(currentModel, currentModelField);
-            return;
-          }
-
-          const preferredDefault =
-            selectedProvider === "openai"
-              ? "gpt-4.1"
-              : selectedProvider === "google"
-              ? "models/gemini-2.5-flash"
-              : selectedProvider === "anthropic"
-              ? "claude-sonnet-4-20250514"
-              : selectedProvider === "openrouter"
-              ? "openai/gpt-4o"
-              : selectedProvider === "fireworks"
-              ? "accounts/fireworks/models/llama-v3p1-8b-instruct"
-              : selectedProvider === "together"
-              ? "openai/gpt-oss-20b"
-              : selectedProvider === "cerebras"
-              ? "llama-3.3-70b"
-              : selectedProvider === "litellm"
-              ? "gpt-4.1"
-              : selectedProvider === "lmstudio"
-              ? "openai/gpt-oss-20b"
-              : modelValues[0];
-
-          const nextModel = modelValues.includes(preferredDefault)
-            ? preferredDefault
-            : modelValues[0];
-          onInputChange(nextModel, currentModelField);
-        }
-      } else {
-        console.error("Failed to fetch models");
-        setAvailableModels([]);
-        setModelsChecked(true);
-        notify.error(
-          "Could not load models",
-          `The server could not list ${modelLabel} models. Check your API key or endpoint and try again.`
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching models:", error);
-      notify.error(
-        "Could not load models",
-        "Something went wrong while contacting the provider. Check your network and try again."
+      const nextConnections = connections.map((connection) =>
+        connection.id === connectionId
+          ? {
+              ...connection,
+              models_cache: data.models || [],
+              models_cache_updated_at: new Date().toISOString(),
+              models_cache_error: "",
+            }
+          : connection
       );
-      setAvailableModels([]);
-      setModelsChecked(true);
+      patchConfig({ LLM_PROVIDER_CONNECTIONS: nextConnections });
+      notify.success("Models refreshed", `${data.models?.length || 0} models cached.`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not refresh models";
+      patchConfig({
+        LLM_PROVIDER_CONNECTIONS: connections.map((connection) =>
+          connection.id === connectionId
+            ? { ...connection, models_cache_error: message }
+            : connection
+        ),
+      });
+      notify.error("Could not refresh models", message);
     } finally {
-      setModelsLoading(false);
+      setRefreshingConnectionId("");
     }
   };
 
-  useEffect(() => {
-    if (selectedProvider === "ollama" && !modelsChecked && !modelsLoading) {
-      fetchAvailableModels();
+  const upsertProfile = () => {
+    if (!profileDraft.provider_connection_id) {
+      notify.warning("Choose a provider connection");
+      return;
     }
-  }, [selectedProvider, modelsChecked, modelsLoading]);
+    const modelId = profileDraft.model_id.trim();
+    if (!modelId) {
+      notify.warning("Model ID is required");
+      return;
+    }
+
+    const id = profileDraft.id || createId("model");
+    const nextProfile: LLMModelProfile = {
+      ...profileDraft,
+      id,
+      name: profileDraft.name.trim() || modelId,
+      model_id: modelId,
+      purpose: profileDraft.purpose || "default",
+      is_active: profileDraft.is_active !== false,
+      updated_at: nowIso(),
+      created_at: profileDraft.created_at || nowIso(),
+    };
+    const exists = profiles.some((profile) => profile.id === id);
+    const shouldBeDefault = !!nextProfile.is_default;
+    const nextProfiles = (exists
+      ? profiles.map((profile) => (profile.id === id ? nextProfile : profile))
+      : [...profiles, nextProfile]
+    ).map((profile) =>
+      shouldBeDefault
+        ? { ...profile, is_default: profile.id === id }
+        : profile
+    );
+
+    patchConfig({
+      LLM_MODEL_PROFILES: nextProfiles,
+      ACTIVE_LLM_MODEL_PROFILE_ID: shouldBeDefault ? id : activeProfileId || id,
+    });
+    setProfileDraft(DEFAULT_PROFILE);
+  };
+
+  const editProfile = (profile: LLMModelProfile) => {
+    setProfileDraft({ ...profile });
+  };
+
+  const setDefaultProfile = (profileId: string) => {
+    patchConfig({
+      LLM_MODEL_PROFILES: profiles.map((profile) => ({
+        ...profile,
+        is_default: profile.id === profileId,
+      })),
+      ACTIVE_LLM_MODEL_PROFILE_ID: profileId,
+    });
+  };
+
+  const deleteProfile = (profileId: string) => {
+    const nextProfiles = profiles.filter((profile) => profile.id !== profileId);
+    patchConfig({
+      LLM_MODEL_PROFILES: nextProfiles,
+      ACTIVE_LLM_MODEL_PROFILE_ID:
+        activeProfileId === profileId
+          ? nextProfiles.find((profile) => profile.is_default)?.id ||
+            nextProfiles[0]?.id ||
+            ""
+          : activeProfileId,
+    });
+  };
 
   return (
-    <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
-      {/* API Key Input */}
-      <div className="mb-4 flex flex-col gap-8 rounded-[12px] bg-white pt-5 pb-10 px-10 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
-        <div className="max-w-[290px] shrink-0 ">
-          <div
-            className="w-[60px] h-[60px] rounded-[4px] flex items-center justify-center"
-            style={{ backgroundColor: "#4C55541A" }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-            >
-              <path
-                d="M15.9459 5.31543V26.5767"
-                stroke="#4C5554"
-                strokeWidth="1.59459"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M5.31531 9.30192V6.64426C5.31531 6.29183 5.45531 5.95384 5.70451 5.70463C5.95372 5.45543 6.29171 5.31543 6.64414 5.31543H25.2477C25.6002 5.31543 25.9382 5.45543 26.1874 5.70463C26.4366 5.95384 26.5766 6.29183 26.5766 6.64426V9.30192"
-                stroke="#4C5554"
-                strokeWidth="1.59459"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M11.9594 26.5762H19.9324"
-                stroke="#4C5554"
-                strokeWidth="1.59459"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+    <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px]">
+      <section className="rounded-[12px] bg-white p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-xl font-normal text-[#191919]">
+              Provider Connections
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Save endpoint and key once, then reuse it across model profiles.
+            </p>
           </div>
-          <h3 className="text-xl font-normal text-[#191919] py-2.5">
-            Text Generation Settings
-          </h3>
-          <p className=" text-sm  text-gray-500">
-            Choosing where text content comes from
-          </p>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col items-stretch justify-end gap-4 sm:items-end">
-          <div
-            className={`flex w-full min-w-0 flex-wrap gap-4 sm:justify-end ${
-              selectedProvider === "codex" ? "items-end" : "items-start"
-            }`}
-          >
-            <div
-              className={`relative shrink-0 ${
-                selectedProvider === "codex" ? "w-[240px]" : "w-[262px]"
-              }`}
-            >
-              <div className="flex flex-col justify-start ">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Text Provider
-                </label>
-                <Popover
-                  open={openProviderSelect}
-                  onOpenChange={setOpenProviderSelect}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openProviderSelect}
-                      className="w-[222px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
-                    >
-                      <div className="flex gap-3 items-center">
-                        <span className="text-sm font-medium text-gray-900">
-                          {llmConfig.LLM
-                            ? LLM_PROVIDERS[llmConfig.LLM]?.label ||
-                              llmConfig.LLM
-                            : "Select text provider"}
-                        </span>
-                      </div>
-                      <ChevronUp className="w-4 h-4 text-gray-500" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="p-0"
-                    align="start"
-                    style={{ width: "300px" }}
-                  >
-                    <Command>
-                      <CommandInput placeholder="Search provider..." />
-                      <CommandList>
-                        <CommandEmpty>No provider found.</CommandEmpty>
-                        <CommandGroup>
-                          {Object.values(LLM_PROVIDERS).map(
-                            (provider, index) => (
-                              <CommandItem
-                                key={index}
-                                value={provider.value}
-                                onSelect={(value) => {
-                                  onInputChange(value, "LLM");
-                                  setOpenProviderSelect(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    llmConfig.LLM === provider.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex gap-3 items-center">
-                                  <div className="flex flex-col space-y-1 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-sm font-medium text-gray-900 capitalize">
-                                        {provider.label}
-                                      </span>
-                                    </div>
-                                    <span className="text-xs text-gray-600 leading-relaxed">
-                                      {provider.description}
-                                    </span>
-                                  </div>
-                                </div>
-                              </CommandItem>
-                            )
-                          )}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <div
-              className={`relative flex min-w-0 flex-col  justify-end ${
-                selectedProvider === "codex"
-                  ? "items-end w-[262px]  max-w-full shrink-0"
-                  : "items-end w-[282px]  shrink-0 max-w-full"
-              }`}
-            >
-              <div className="flex flex-col justify-start w-full ">
-                {selectedProvider === "ollama" ? (
-                  <>
-                    {!useCustomOllamaUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onInputChange(true, "USE_CUSTOM_URL");
-                          if (!currentOllamaUrl) {
-                            onInputChange(
-                              "http://localhost:11434",
-                              "OLLAMA_URL"
-                            );
-                          }
-                        }}
-                        className="mt-8 py-2.5 bg-[#EDEEEF] px-3.5 w-fit rounded-[48px] text-xs font-semibold text-[#101323] transition-all duration-200 border border-[#EDEEEF] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
-                      >
-                        Use Ollama URL
-                      </button>
-                    ) : (
-                      <>
-                        <label className="block text-sm font-medium capitalize text-gray-700 mb-2">
-                          Ollama URL
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={currentOllamaUrl}
-                            onChange={(e) =>
-                              onApiKeyChange(selectedProvider, e.target.value)
-                            }
-                            className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                            placeholder="http://localhost:11434"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onInputChange(false, "USE_CUSTOM_URL");
-                            onInputChange(
-                              "http://localhost:11434",
-                              "OLLAMA_URL"
-                            );
-                          }}
-                          className="mt-2 text-xs font-medium text-[#4B5563] underline underline-offset-2"
-                        >
-                          Use default Ollama URL
-                        </button>
-                      </>
-                    )}
-                  </>
-                ) : selectedProvider === "codex" ? (
-                  <div className="w-full mt-0 rounded-[12px]  ">
-                    <CodexConfig
-                      codexModel={llmConfig.CODEX_MODEL || ""}
-                      onInputChange={(value, field) => {
-                        const normalizedField =
-                          field === "codex_model" ? "CODEX_MODEL" : field;
-                        onInputChange(value, normalizedField);
-                      }}
-                    />
-                  </div>
-                ) : selectedProvider === "bedrock" ? (
-                  <BedrockManualFields
-                    llmConfig={llmConfig}
-                    onPatch={(patch) => {
-                      for (const [field, value] of Object.entries(patch)) {
-                        if (value !== undefined)
-                          onInputChange(value as string, field);
-                      }
-                    }}
-                  />
-                ) : (
-                  <>
-                    <label className="block text-sm font-medium capitalize text-gray-700 mb-2">
-                      {providerApiKeyLabel}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showApiKey ? "text" : "password"}
-                        value={currentApiKey}
-                        onChange={(e) =>
-                          onApiKeyChange(selectedProvider, e.target.value)
-                        }
-                        className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                        placeholder={
-                          selectedProvider === "litellm"
-                            ? "Optional if your proxy does not require auth"
-                            : `Enter your ${providerApiKeyLabel}`
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowApiKey((prev) => !prev)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer"
-                      >
-                        {showApiKey ? (
-                          <Eye className="w-4 h-4 text-gray-500" />
-                        ) : (
-                          <EyeOff className="w-4 h-4 text-gray-500" />
-                        )}
-                      </button>
-                    </div>
-                  </>
-                )}
-                {selectedProvider === "custom" && (
-                  <input
-                    type="text"
-                    value={currentCustomUrl}
-                    onChange={(e) =>
-                      onInputChange(e.target.value, "CUSTOM_LLM_URL")
-                    }
-                    className="w-full mt-2 px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                    placeholder="OpenAI-compatible URL"
-                  />
-                )}
-                {selectedProvider === "litellm" && (
-                  <>
-                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                      LiteLLM base URL
-                    </label>
-                    <input
-                      type="text"
-                      value={llmConfig.LITELLM_BASE_URL || ""}
-                      onChange={(e) =>
-                        onInputChange(e.target.value, "LITELLM_BASE_URL")
-                      }
-                      className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                      placeholder="e.g. http://host.docker.internal:4000/v1"
-                    />
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      OpenAI-compatible root (usually ends with /v1); /v1 is
-                      added if omitted. API key above is optional for local
-                      proxies with no auth.
-                    </p>
-                  </>
-                )}
-                {selectedProvider === "lmstudio" && (
-                  <>
-                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                      LM Studio base URL
-                    </label>
-                    <input
-                      type="text"
-                      value={llmConfig.LMSTUDIO_BASE_URL || ""}
-                      onChange={(e) =>
-                        onInputChange(e.target.value, "LMSTUDIO_BASE_URL")
-                      }
-                      className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                      placeholder="http://localhost:1234/v1"
-                    />
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      Defaults to localhost:1234/v1, and /v1 is added
-                      automatically when omitted.
-                    </p>
-                  </>
-                )}
-                {selectedProvider === "fireworks" && (
-                  <>
-                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                      Fireworks base URL (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={llmConfig.FIREWORKS_BASE_URL || ""}
-                      onChange={(e) =>
-                        onInputChange(e.target.value, "FIREWORKS_BASE_URL")
-                      }
-                      className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                      placeholder="https://api.fireworks.ai/inference/v1"
-                    />
-                  </>
-                )}
-                {selectedProvider === "together" && (
-                  <>
-                    <label className="mt-3 block text-sm font-medium text-gray-700 mb-2">
-                      Together base URL (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={llmConfig.TOGETHER_BASE_URL || ""}
-                      onChange={(e) =>
-                        onInputChange(e.target.value, "TOGETHER_BASE_URL")
-                      }
-                      className="w-full px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                      placeholder="https://api.together.ai/v1"
-                    />
-                  </>
-                )}
-                {(selectedProvider === "vertex" ||
-                  selectedProvider === "azure") && (
-                  <VertexAzureManualFields
-                    key={selectedProvider}
-                    provider={selectedProvider}
-                    llmConfig={llmConfig}
-                    onPatch={(patch) => {
-                      for (const [field, value] of Object.entries(patch)) {
-                        if (value !== undefined)
-                          onInputChange(value as string, field);
-                      }
-                    }}
-                  />
-                )}
-              </div>
-              {!isManualModelProvider &&
-                selectedProvider !== "ollama" &&
-                selectedProvider !== "codex" &&
-                (!modelsChecked ||
-                  (modelsChecked && availableModels.length === 0)) && (
-                  <button
-                    onClick={fetchAvailableModels}
-                    disabled={
-                      modelsLoading ||
-                      (selectedProvider === "openai" && !currentApiKey) ||
-                      (selectedProvider === "google" && !currentApiKey) ||
-                      (selectedProvider === "anthropic" && !currentApiKey) ||
-                      (selectedProvider === "openrouter" && !currentApiKey) ||
-                      (selectedProvider === "fireworks" && !currentApiKey) ||
-                      (selectedProvider === "together" && !currentApiKey) ||
-                      (selectedProvider === "cerebras" && !currentApiKey) ||
-                      (selectedProvider === "custom" && !currentCustomUrl) ||
-                      (selectedProvider === "litellm" && !currentLitellmUrl)
-                    }
-                    className={`mt-4 py-2.5 bg-[#EDEEEF] px-3.5 w-fit  rounded-[48px] text-xs font-semibold text-[#101323] transition-all duration-200 border ${
-                      modelsLoading
-                        ? " border-gray-300 cursor-not-allowed text-gray-500"
-                        : " border-[#EDEEEF] text-[#101323] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
-                    }`}
-                  >
-                    {modelsLoading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Checking for models...
-                      </span>
-                    ) : (
-                      "Check models"
-                    )}
-                  </button>
-                )}
-            </div>
-          </div>
-          {/* Model Selection - only show if models are available */}
-          {!isManualModelProvider &&
-          selectedProvider !== "codex" &&
-          modelsChecked &&
-          availableModels.length > 0 ? (
-            <div className="w-[262px]">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  {selectedProvider === "ollama"
-                    ? "Choose a supported model"
-                    : `Select ${modelLabel} Model`}
-                </label>
-                <div className="w-full">
-                  <Popover
-                    open={openModelSelect}
-                    onOpenChange={setOpenModelSelect}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openModelSelect}
-                        className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
-                      >
-                        <span className="text-sm truncate font-medium text-gray-900">
-                          {(() => {
-                            if (!currentModel) return "Select a model";
-                            const selectedModel = availableModels.find(
-                              (model) => model.value === currentModel
-                            );
-                            if (!selectedModel) return currentModel;
-                            if (
-                              selectedProvider === "ollama" &&
-                              selectedModel.size
-                            ) {
-                              return `${selectedModel.label} (${selectedModel.size})`;
-                            }
-                            return selectedModel.label;
-                          })()}
-                        </span>
-
-                        <ChevronUp className="w-4 h-4 text-gray-500" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="p-0"
-                      align="start"
-                      style={{ width: "var(--radix-popover-trigger-width)" }}
-                    >
-                      <Command>
-                        <CommandInput placeholder="Search models..." />
-                        <CommandList>
-                          <CommandEmpty>No model found.</CommandEmpty>
-                          <CommandGroup>
-                            {availableModels.map((model) => (
-                              <CommandItem
-                                key={model.value}
-                                value={model.value}
-                                onSelect={() => {
-                                  if (currentModelField) {
-                                    onInputChange(
-                                      model.value,
-                                      currentModelField
-                                    );
-                                  }
-                                  setOpenModelSelect(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    currentModel === model.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex gap-3 items-center">
-                                  <div className="flex flex-col space-y-1 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {model.label}
-                                      </span>
-                                      {selectedProvider === "ollama" &&
-                                      model.size ? (
-                                        <span className="text-xs font-medium text-gray-500">
-                                          {model.size}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
+          {activeProfile ? (
+            <span className="rounded-full border border-[#EDEEEF] px-3 py-1 text-xs text-[#494A4D]">
+              Active: {activeProfile.name}
+            </span>
           ) : null}
         </div>
-      </div>
-      {/* Show message if no models found */}
-      {modelsChecked && availableModels.length === 0 && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            No models found. Please make sure your provider credentials are
-            valid and the selected provider is reachable.
-          </p>
-        </div>
-      )}
 
-      {/* <div className="bg-white flex justify-between items-center p-10 rounded-[12px]">
-                <div className=' max-w-[290px]'>
-
-                    <h4 className="text-xl font-normal text-[#191919]">Advanced</h4>
-                    <p className="mt-2.5 text-sm  text-gray-500">
-                        Configure advanced AI features.
+        <div className="mt-5 grid gap-3">
+          {connections.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-300 p-5 text-sm text-gray-500">
+              No provider connections yet. Add one below to cache models.
+            </div>
+          ) : (
+            connections.map((connection) => (
+              <div
+                key={connection.id}
+                className="grid gap-4 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-[1fr_auto]"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-medium text-[#191919]">{connection.name}</h4>
+                    <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-xs text-gray-600">
+                      {providerLabel(connection.provider_type)}
+                    </span>
+                    <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-xs text-gray-600">
+                      {connection.api_key ? "Key configured" : "No key"}
+                    </span>
+                  </div>
+                  {connection.base_url ? (
+                    <p className="mt-1 truncate text-sm text-gray-500">
+                      {connection.base_url}
                     </p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-gray-500">
+                    {(connection.models_cache || []).length} cached models
+                    {connection.models_cache_updated_at
+                      ? ` · refreshed ${new Date(
+                          connection.models_cache_updated_at
+                        ).toLocaleString()}`
+                      : ""}
+                  </p>
+                  {connection.models_cache_error ? (
+                    <p className="mt-2 text-xs text-red-600">
+                      {connection.models_cache_error}
+                    </p>
+                  ) : null}
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="w-[222px]">
-                        <div className="flex items-center  mb-4 gap-2.5 ">
-                            <Switch
-                                checked={!!llmConfig.WEB_GROUNDING}
-                                onCheckedChange={(checked) => onInputChange(checked, "WEB_GROUNDING")}
-                            />
-                            <label className="text-sm font-medium text-gray-700">
-                                Enable Web Grounding
-                            </label>
-                        </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-lg"
+                    onClick={() => editConnection(connection)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-lg"
+                    onClick={() => refreshModels(connection.id)}
+                    disabled={refreshingConnectionId === connection.id}
+                  >
+                    {refreshingConnectionId === connection.id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                    )}
+                    Refresh
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-lg"
+                    onClick={() => deleteConnection(connection.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-6 grid gap-3 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-2">
+          <label className="text-sm font-medium text-gray-700">
+            Connection name
+            <input
+              value={connectionDraft.name}
+              onChange={(event) =>
+                setConnectionDraft((draft) => ({
+                  ...draft,
+                  name: event.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              placeholder="vseLLM"
+            />
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Provider type
+            <select
+              value={connectionDraft.provider_type}
+              onChange={(event) =>
+                setConnectionDraft((draft) => ({
+                  ...draft,
+                  provider_type: event.target.value,
+                  base_url:
+                    event.target.value === "openai_compatible" && !draft.base_url
+                      ? "https://api.vsellm.ru/v1"
+                      : draft.base_url,
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+            >
+              {TEXT_PROVIDER_TYPES.map((providerType) => (
+                <option key={providerType} value={providerType}>
+                  {providerLabel(providerType)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Base URL
+            <input
+              value={connectionDraft.base_url || ""}
+              onChange={(event) =>
+                setConnectionDraft((draft) => ({
+                  ...draft,
+                  base_url: event.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              placeholder="https://api.vsellm.ru/v1"
+            />
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            API key
+            <input
+              value={connectionDraft.api_key || ""}
+              onChange={(event) =>
+                setConnectionDraft((draft) => ({
+                  ...draft,
+                  api_key: event.target.value,
+                }))
+              }
+              type="password"
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              placeholder={
+                connectionDraft.id ? "Leave blank to keep configured key" : "API key"
+              }
+            />
+            {connectionDraft.id ? (
+              <span className="mt-1 block text-xs text-gray-500">
+                Empty or {CONFIGURED_SECRET_MARKER} keeps the saved key.
+              </span>
+            ) : null}
+          </label>
+          <div className="lg:col-span-2">
+            <Button
+              type="button"
+              className="rounded-lg"
+              onClick={upsertConnection}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {connectionDraft.id ? "Update connection" : "Add connection"}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[12px] bg-white p-6">
+        <h3 className="text-xl font-normal text-[#191919]">Model Profiles</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Choose a saved connection and model. Profiles never store API keys.
+        </p>
+
+        <div className="mt-5 grid gap-3">
+          {profiles.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-300 p-5 text-sm text-gray-500">
+              No model profiles yet. Add a provider connection, refresh models,
+              then create a default profile.
+            </div>
+          ) : (
+            profiles.map((profile) => {
+              const connection = connections.find(
+                (candidate) => candidate.id === profile.provider_connection_id
+              );
+              const isActive = profile.id === activeProfileId;
+              return (
+                <div
+                  key={profile.id}
+                  className="grid gap-4 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-[1fr_auto]"
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="font-medium text-[#191919]">{profile.name}</h4>
+                      {isActive ? (
+                        <span className="rounded-full bg-[#EEF8F1] px-2 py-0.5 text-xs text-[#176B38]">
+                          Active
+                        </span>
+                      ) : null}
+                      {profile.is_default ? (
+                        <span className="rounded-full bg-[#F7F2FF] px-2 py-0.5 text-xs text-[#6941C6]">
+                          Default
+                        </span>
+                      ) : null}
                     </div>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {connection?.name || "Missing connection"} · {profile.model_id}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Purpose: {profile.purpose || "default"}
+                      {profile.temperature !== undefined
+                        ? ` · temperature ${profile.temperature}`
+                        : ""}
+                      {profile.max_tokens ? ` · max tokens ${profile.max_tokens}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-lg"
+                      onClick={() => editProfile(profile)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-lg"
+                      onClick={() => setDefaultProfile(profile.id)}
+                    >
+                      {isActive ? (
+                        <Check className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Star className="mr-2 h-4 w-4" />
+                      )}
+                      Set default
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-lg"
+                      onClick={() => deleteProfile(profile.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-            </div> */}
+              );
+            })
+          )}
+        </div>
+
+        <div className="mt-6 grid gap-3 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-2">
+          <label className="text-sm font-medium text-gray-700">
+            Profile name
+            <input
+              value={profileDraft.name}
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  name: event.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              placeholder="GPT presentation model"
+            />
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Provider connection
+            <select
+              value={profileDraft.provider_connection_id}
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  provider_connection_id: event.target.value,
+                  model_id: "",
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+            >
+              <option value="">Choose connection</option>
+              {connections.map((connection) => (
+                <option key={connection.id} value={connection.id}>
+                  {connection.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Cached model
+            <select
+              value={
+                selectedConnectionModels.includes(profileDraft.model_id)
+                  ? profileDraft.model_id
+                  : ""
+              }
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  model_id: event.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+            >
+              <option value="">Manual model ID</option>
+              {selectedConnectionModels.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Manual model ID
+            <input
+              value={profileDraft.model_id}
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  model_id: event.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              placeholder="openai/gpt-5.4"
+            />
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Purpose
+            <select
+              value={profileDraft.purpose || "default"}
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  purpose: event.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+            >
+              {MODEL_PROFILE_PURPOSES.map((purpose) => (
+                <option key={purpose} value={purpose}>
+                  {purpose}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Temperature
+            <input
+              type="number"
+              min="0"
+              max="2"
+              step="0.1"
+              value={profileDraft.temperature ?? ""}
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  temperature:
+                    event.target.value === ""
+                      ? undefined
+                      : Number(event.target.value),
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              placeholder="0.2"
+            />
+          </label>
+          <label className="text-sm font-medium text-gray-700">
+            Max tokens
+            <input
+              type="number"
+              min="1"
+              value={profileDraft.max_tokens ?? ""}
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  max_tokens:
+                    event.target.value === "" ? null : Number(event.target.value),
+                }))
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              placeholder="Optional"
+            />
+          </label>
+          <label className="flex items-center gap-2 pt-8 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              checked={!!profileDraft.is_default}
+              onChange={(event) =>
+                setProfileDraft((draft) => ({
+                  ...draft,
+                  is_default: event.target.checked,
+                }))
+              }
+            />
+            Set as default
+          </label>
+          <div className="lg:col-span-2">
+            <Button type="button" className="rounded-lg" onClick={upsertProfile}>
+              <Plus className="mr-2 h-4 w-4" />
+              {profileDraft.id ? "Update profile" : "Add profile"}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[12px] bg-white p-6">
+        <h3 className="text-xl font-normal text-[#191919]">ChatGPT OAuth</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          ChatGPT remains available as a legacy OAuth provider.
+        </p>
+        <div className="mt-4 max-w-md">
+          <CodexConfig
+            codexModel={llmConfig.CODEX_MODEL || ""}
+            onInputChange={(value, field) => {
+              patchConfig({
+                LLM: "codex",
+                [field === "codex_model" ? "CODEX_MODEL" : field]: value,
+              } as Partial<LLMConfig>);
+            }}
+          />
+        </div>
+      </section>
     </div>
   );
 };

@@ -2,14 +2,21 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { LLMConfig } from "@/types/llm_config";
+import {
+  CONFIGURED_SECRET_MARKER,
+  mergeProviderConnectionSecrets,
+  migrateLegacyLLMConfig,
+  resolveActiveProfileToLegacyConfig,
+  sanitizeProviderConnectionSecrets,
+} from "@/utils/llmProviderProfiles";
 
 const userConfigPath = process.env.USER_CONFIG_PATH || "./user_config.json";
 const canChangeKeys = process.env.CAN_CHANGE_KEYS !== "false";
-const CONFIGURED_SECRET_MARKER = "__configured__";
 
 const SECRET_FIELDS: Array<keyof LLMConfig> = [
   "OPENAI_API_KEY",
   "GOOGLE_API_KEY",
+  "VERTEX_API_KEY",
   "ANTHROPIC_API_KEY",
   "CUSTOM_LLM_API_KEY",
   "PEXELS_API_KEY",
@@ -33,12 +40,17 @@ const SECRET_FIELDS: Array<keyof LLMConfig> = [
 ];
 
 function sanitizeConfig(config: LLMConfig): LLMConfig {
-  const sanitized: LLMConfig = { ...config };
+  const sanitized: LLMConfig = {
+    ...migrateLegacyLLMConfig(config),
+  };
   for (const field of SECRET_FIELDS) {
     if (sanitized[field]) {
       (sanitized as Record<string, unknown>)[field] = CONFIGURED_SECRET_MARKER;
     }
   }
+  sanitized.LLM_PROVIDER_CONNECTIONS = sanitizeProviderConnectionSecrets(
+    sanitized.LLM_PROVIDER_CONNECTIONS
+  );
   return sanitized;
 }
 
@@ -55,10 +67,41 @@ function resolveSecretValue(
   field: keyof LLMConfig
 ): string | undefined {
   const value = userConfig[field];
-  if (value === CONFIGURED_SECRET_MARKER) {
+  if (value === CONFIGURED_SECRET_MARKER || value === "") {
     return existingConfig[field] as string | undefined;
   }
   return (value || existingConfig[field]) as string | undefined;
+}
+
+function mergeConfig(userConfig: LLMConfig, existingConfig: LLMConfig): LLMConfig {
+  const mergedConfig: LLMConfig = {
+    ...existingConfig,
+    ...userConfig,
+  };
+
+  for (const field of SECRET_FIELDS) {
+    (mergedConfig as Record<string, unknown>)[field] = resolveSecretValue(
+      userConfig,
+      existingConfig,
+      field
+    );
+  }
+
+  const existingMigratedConfig = migrateLegacyLLMConfig(existingConfig);
+  mergedConfig.LLM_PROVIDER_CONNECTIONS = mergeProviderConnectionSecrets(
+    Array.isArray(userConfig.LLM_PROVIDER_CONNECTIONS)
+      ? userConfig.LLM_PROVIDER_CONNECTIONS
+      : existingMigratedConfig.LLM_PROVIDER_CONNECTIONS,
+    existingMigratedConfig.LLM_PROVIDER_CONNECTIONS
+  );
+  mergedConfig.LLM_MODEL_PROFILES = Array.isArray(userConfig.LLM_MODEL_PROFILES)
+    ? userConfig.LLM_MODEL_PROFILES
+    : existingMigratedConfig.LLM_MODEL_PROFILES || [];
+  mergedConfig.ACTIVE_LLM_MODEL_PROFILE_ID =
+    userConfig.ACTIVE_LLM_MODEL_PROFILE_ID ||
+    existingConfig.ACTIVE_LLM_MODEL_PROFILE_ID;
+
+  return resolveActiveProfileToLegacyConfig(mergedConfig);
 }
 
 function compactEnvConfig(config: LLMConfig): LLMConfig {
@@ -163,67 +206,7 @@ export async function POST(request: Request) {
     ...readFileConfig(),
     ...getConfigFromEnv(),
   };
-  const mergedConfig: LLMConfig = {
-    LLM: userConfig.LLM || existingConfig.LLM,
-    OPENAI_API_KEY: resolveSecretValue(userConfig, existingConfig, "OPENAI_API_KEY"),
-    OPENAI_MODEL: userConfig.OPENAI_MODEL || existingConfig.OPENAI_MODEL,
-    GOOGLE_API_KEY: resolveSecretValue(userConfig, existingConfig, "GOOGLE_API_KEY"),
-    GOOGLE_MODEL: userConfig.GOOGLE_MODEL || existingConfig.GOOGLE_MODEL,
-    ANTHROPIC_API_KEY: resolveSecretValue(userConfig, existingConfig, "ANTHROPIC_API_KEY"),
-    ANTHROPIC_MODEL:
-      userConfig.ANTHROPIC_MODEL || existingConfig.ANTHROPIC_MODEL,
-    OLLAMA_URL: userConfig.OLLAMA_URL || existingConfig.OLLAMA_URL,
-    OLLAMA_MODEL: userConfig.OLLAMA_MODEL || existingConfig.OLLAMA_MODEL,
-    CUSTOM_LLM_URL: userConfig.CUSTOM_LLM_URL || existingConfig.CUSTOM_LLM_URL,
-    CUSTOM_LLM_API_KEY: resolveSecretValue(userConfig, existingConfig, "CUSTOM_LLM_API_KEY"),
-    CUSTOM_MODEL: userConfig.CUSTOM_MODEL || existingConfig.CUSTOM_MODEL,
-    DISABLE_IMAGE_GENERATION:
-      userConfig.DISABLE_IMAGE_GENERATION === undefined
-        ? existingConfig.DISABLE_IMAGE_GENERATION
-        : userConfig.DISABLE_IMAGE_GENERATION,
-    PIXABAY_API_KEY: resolveSecretValue(userConfig, existingConfig, "PIXABAY_API_KEY"),
-    IMAGE_PROVIDER: userConfig.IMAGE_PROVIDER || existingConfig.IMAGE_PROVIDER,
-    PEXELS_API_KEY: resolveSecretValue(userConfig, existingConfig, "PEXELS_API_KEY"),
-    COMFYUI_URL: userConfig.COMFYUI_URL || existingConfig.COMFYUI_URL,
-    COMFYUI_WORKFLOW:
-      userConfig.COMFYUI_WORKFLOW || existingConfig.COMFYUI_WORKFLOW,
-    OPEN_WEBUI_IMAGE_URL:
-      userConfig.OPEN_WEBUI_IMAGE_URL || existingConfig.OPEN_WEBUI_IMAGE_URL,
-    OPEN_WEBUI_IMAGE_API_KEY: resolveSecretValue(userConfig, existingConfig, "OPEN_WEBUI_IMAGE_API_KEY"),
-    OPENAI_COMPAT_IMAGE_BASE_URL:
-      userConfig.OPENAI_COMPAT_IMAGE_BASE_URL || existingConfig.OPENAI_COMPAT_IMAGE_BASE_URL,
-    OPENAI_COMPAT_IMAGE_API_KEY: resolveSecretValue(userConfig, existingConfig, "OPENAI_COMPAT_IMAGE_API_KEY"),
-    OPENAI_COMPAT_IMAGE_MODEL:
-      userConfig.OPENAI_COMPAT_IMAGE_MODEL || existingConfig.OPENAI_COMPAT_IMAGE_MODEL,
-    DALL_E_3_QUALITY:
-      userConfig.DALL_E_3_QUALITY || existingConfig.DALL_E_3_QUALITY,
-    GPT_IMAGE_1_5_QUALITY:
-      userConfig.GPT_IMAGE_1_5_QUALITY || existingConfig.GPT_IMAGE_1_5_QUALITY,
-    IMAGE_GEN_API_KEY: resolveSecretValue(userConfig, existingConfig, "IMAGE_GEN_API_KEY"),
-    IMAGE_GEN_BASE_URL:
-      userConfig.IMAGE_GEN_BASE_URL || existingConfig.IMAGE_GEN_BASE_URL,
-    IMAGE_GEN_MODEL: userConfig.IMAGE_GEN_MODEL || existingConfig.IMAGE_GEN_MODEL,
-    TOOL_CALLS:
-      userConfig.TOOL_CALLS === undefined
-        ? existingConfig.TOOL_CALLS
-        : userConfig.TOOL_CALLS,
-    DISABLE_THINKING:
-      userConfig.DISABLE_THINKING === undefined
-        ? existingConfig.DISABLE_THINKING
-        : userConfig.DISABLE_THINKING,
-    EXTENDED_REASONING:
-      userConfig.EXTENDED_REASONING === undefined
-        ? existingConfig.EXTENDED_REASONING
-        : userConfig.EXTENDED_REASONING,
-    WEB_GROUNDING:
-      userConfig.WEB_GROUNDING === undefined
-        ? existingConfig.WEB_GROUNDING
-        : userConfig.WEB_GROUNDING,
-    USE_CUSTOM_URL:
-      userConfig.USE_CUSTOM_URL === undefined
-        ? existingConfig.USE_CUSTOM_URL
-        : userConfig.USE_CUSTOM_URL,
-  };
+  const mergedConfig = mergeConfig(userConfig, existingConfig);
   fs.writeFileSync(userConfigPath, JSON.stringify(mergedConfig));
   return NextResponse.json(sanitizeConfig(mergedConfig));
 }

@@ -1,3 +1,31 @@
+export interface LLMProviderConnection {
+  id: string;
+  name: string;
+  provider_type: string;
+  base_url?: string;
+  api_key?: string;
+  models_cache?: string[];
+  models_cache_updated_at?: string;
+  models_cache_error?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface LLMModelProfile {
+  id: string;
+  name: string;
+  provider_connection_id: string;
+  model_id: string;
+  temperature?: number;
+  max_tokens?: number | null;
+  purpose?: "default" | "text" | "template" | string;
+  is_default?: boolean;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface LLMConfig {
   LLM?: string;
 
@@ -123,6 +151,11 @@ export interface LLMConfig {
 
   // Only used in UI settings
   USE_CUSTOM_URL?: boolean;
+
+  // LLM provider connections and model profiles
+  LLM_PROVIDER_CONNECTIONS?: LLMProviderConnection[];
+  LLM_MODEL_PROFILES?: LLMModelProfile[];
+  ACTIVE_LLM_MODEL_PROFILE_ID?: string;
 
   /** When `"true"`, anonymous analytics (Mixpanel) are off */
   DISABLE_ANONYMOUS_TRACKING?: string;

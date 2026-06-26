@@ -283,10 +283,6 @@ const SettingsPage = () => {
     }
   }, [canChangeKeys, router]);
 
-  if (!canChangeKeys) {
-    return null;
-  }
-
   const textProviderKey = llmConfig.LLM || "openai";
   const textProviderLabel =
     LLM_PROVIDERS[textProviderKey]?.label || textProviderKey;
@@ -332,7 +328,6 @@ const SettingsPage = () => {
       ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]?.label ||
       llmConfig.IMAGE_PROVIDER
       : "No image provider";
-
 
   useEffect(() => {
 
@@ -408,6 +403,10 @@ const SettingsPage = () => {
 
   }, [llmConfig, pathname]);
 
+  if (!canChangeKeys) {
+    return null;
+  }
+
 
 
   return (
@@ -435,15 +434,8 @@ const SettingsPage = () => {
             <h4>Nano Banana</h4>
           </div>}
           {mode === 'presenton' && selectedProvider === 'text-provider' && <TextProvider
-
-
-            onInputChange={(value, field) => {
-              setLlmConfig(prev => ({
-                ...prev,
-                [field]: value
-              }));
-            }}
             llmConfig={llmConfig}
+            setLlmConfig={setLlmConfig}
           />}
           {mode === 'presenton' && selectedProvider === 'image-provider' && <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
           {selectedProvider === 'privacy' && <PrivacySettings />}
