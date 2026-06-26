@@ -3,13 +3,87 @@ import treeKill from 'tree-kill'
 import { getTempDir, getUserConfigPath, localhost } from './constants'
 import { readUserConfigFile, updateUserConfigFile } from './user-config-store'
 
+const CONFIGURED_SECRET_MARKER = "__configured__";
+
+const SECRET_FIELDS: Array<keyof UserConfig> = [
+  "OPENAI_API_KEY",
+  "GOOGLE_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "CUSTOM_LLM_API_KEY",
+  "PEXELS_API_KEY",
+  "PIXABAY_API_KEY",
+  "BEDROCK_API_KEY",
+  "BEDROCK_AWS_ACCESS_KEY_ID",
+  "BEDROCK_AWS_SECRET_ACCESS_KEY",
+  "BEDROCK_AWS_SESSION_TOKEN",
+  "OPENROUTER_API_KEY",
+  "FIREWORKS_API_KEY",
+  "TOGETHER_API_KEY",
+  "CEREBRAS_API_KEY",
+  "LITELLM_API_KEY",
+  "LMSTUDIO_API_KEY",
+  "OPEN_WEBUI_IMAGE_API_KEY",
+  "OPENAI_COMPAT_IMAGE_API_KEY",
+  "IMAGE_GEN_API_KEY",
+  "CODEX_ACCESS_TOKEN",
+  "CODEX_REFRESH_TOKEN",
+];
+
+function mergeSecretFields(userConfig: UserConfig, existingConfig: UserConfig): UserConfig {
+  const merged: UserConfig = {};
+  for (const field of SECRET_FIELDS) {
+    const value = userConfig[field];
+    if (value === "" || value === CONFIGURED_SECRET_MARKER || value === undefined) {
+      (merged as Record<string, unknown>)[field] = existingConfig[field];
+    } else {
+      (merged as Record<string, unknown>)[field] = value;
+    }
+  }
+  return merged;
+}
+
+function mergeProviderConnectionSecrets(
+  incoming: UserConfig["LLM_PROVIDER_CONNECTIONS"],
+  existing: UserConfig["LLM_PROVIDER_CONNECTIONS"],
+) {
+  if (!Array.isArray(incoming)) return existing;
+  const existingById = new Map((existing || []).map((connection) => [connection.id, connection]));
+  return incoming.map((connection) => {
+    const existingConnection = existingById.get(connection.id);
+    const shouldKeepExistingKey =
+      connection.api_key === undefined ||
+      connection.api_key === "" ||
+      connection.api_key === CONFIGURED_SECRET_MARKER;
+    return {
+      ...connection,
+      api_key: shouldKeepExistingKey ? existingConnection?.api_key || "" : connection.api_key,
+    };
+  });
+}
+
 export function setUserConfig(userConfig: UserConfig) {
   const userConfigPath = getUserConfigPath()
   updateUserConfigFile<UserConfig>(userConfigPath, (existingConfig) => {
-    const definedIncomingEntries = Object.entries(userConfig).filter(([, value]) => value !== undefined)
+    const definedIncomingConfig: UserConfig = {};
+    for (const field in userConfig) {
+      const key = field as keyof UserConfig;
+      if (userConfig[key] !== undefined) {
+        (definedIncomingConfig as Record<string, unknown>)[key] = userConfig[key];
+      }
+    }
     return {
       ...existingConfig,
-      ...Object.fromEntries(definedIncomingEntries),
+      ...definedIncomingConfig,
+      ...mergeSecretFields(userConfig, existingConfig),
+      LLM_PROVIDER_CONNECTIONS: mergeProviderConnectionSecrets(
+        userConfig.LLM_PROVIDER_CONNECTIONS,
+        existingConfig.LLM_PROVIDER_CONNECTIONS,
+      ),
+      LLM_MODEL_PROFILES: Array.isArray(userConfig.LLM_MODEL_PROFILES)
+        ? userConfig.LLM_MODEL_PROFILES
+        : existingConfig.LLM_MODEL_PROFILES,
+      ACTIVE_LLM_MODEL_PROFILE_ID:
+        userConfig.ACTIVE_LLM_MODEL_PROFILE_ID ?? existingConfig.ACTIVE_LLM_MODEL_PROFILE_ID,
       CODEX_ACCESS_TOKEN: existingConfig.CODEX_ACCESS_TOKEN,
       CODEX_REFRESH_TOKEN: existingConfig.CODEX_REFRESH_TOKEN,
       CODEX_TOKEN_EXPIRES: existingConfig.CODEX_TOKEN_EXPIRES,
