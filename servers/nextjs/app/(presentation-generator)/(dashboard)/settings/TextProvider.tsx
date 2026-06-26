@@ -268,8 +268,8 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
   };
 
   return (
-    <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px]">
-      <section className="rounded-[12px] bg-white p-6">
+    <div className="min-w-0 space-y-5 rounded-[12px] bg-[#F9F8F8] p-4 sm:p-5 lg:p-6">
+      <section className="min-w-0 rounded-[12px] bg-white p-4 sm:p-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 className="text-xl font-normal text-[#191919]">
@@ -295,11 +295,11 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
             connections.map((connection) => (
               <div
                 key={connection.id}
-                className="grid gap-4 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-[1fr_auto]"
+                className="grid min-w-0 gap-3 rounded-lg border border-[#EDEEEF] p-4 md:grid-cols-[minmax(0,1fr)_auto]"
               >
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="font-medium text-[#191919]">{connection.name}</h4>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <h4 className="min-w-0 truncate font-medium text-[#191919]">{connection.name}</h4>
                     <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-xs text-gray-600">
                       {providerLabel(connection.provider_type)}
                     </span>
@@ -326,7 +326,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
                     </p>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 md:justify-end">
                   <Button
                     type="button"
                     variant="outline"
@@ -363,7 +363,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
           )}
         </div>
 
-        <div className="mt-6 grid gap-3 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-2">
+        <div className="mt-5 grid min-w-0 gap-3 rounded-lg border border-[#EDEEEF] p-4 sm:grid-cols-2 xl:grid-cols-4">
           <label className="text-sm font-medium text-gray-700">
             Connection name
             <input
@@ -401,7 +401,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               ))}
             </select>
           </label>
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-gray-700 xl:col-span-2">
             Base URL
             <input
               value={connectionDraft.base_url || ""}
@@ -437,7 +437,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               </span>
             ) : null}
           </label>
-          <div className="lg:col-span-2">
+          <div className="sm:col-span-2 xl:col-span-4">
             <Button
               type="button"
               className="rounded-lg"
@@ -450,7 +450,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
         </div>
       </section>
 
-      <section className="rounded-[12px] bg-white p-6">
+      <section className="min-w-0 rounded-[12px] bg-white p-4 sm:p-5">
         <h3 className="text-xl font-normal text-[#191919]">Model Profiles</h3>
         <p className="mt-1 text-sm text-gray-500">
           Choose a saved connection and model. Profiles never store API keys.
@@ -471,11 +471,11 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               return (
                 <div
                   key={profile.id}
-                  className="grid gap-4 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-[1fr_auto]"
+                  className="grid min-w-0 gap-3 rounded-lg border border-[#EDEEEF] p-4 md:grid-cols-[minmax(0,1fr)_auto]"
                 >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="font-medium text-[#191919]">{profile.name}</h4>
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <h4 className="min-w-0 truncate font-medium text-[#191919]">{profile.name}</h4>
                       {isActive ? (
                         <span className="rounded-full bg-[#EEF8F1] px-2 py-0.5 text-xs text-[#176B38]">
                           Active
@@ -487,10 +487,10 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 truncate text-sm text-gray-600">
                       {connection?.name || "Missing connection"} · {profile.model_id}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 break-words text-xs text-gray-500">
                       Purpose: {profile.purpose || "default"}
                       {profile.temperature !== undefined
                         ? ` · temperature ${profile.temperature}`
@@ -498,7 +498,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
                       {profile.max_tokens ? ` · max tokens ${profile.max_tokens}` : ""}
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 md:justify-end">
                     <Button
                       type="button"
                       variant="outline"
@@ -535,7 +535,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
           )}
         </div>
 
-        <div className="mt-6 grid gap-3 rounded-lg border border-[#EDEEEF] p-4 lg:grid-cols-2">
+        <div className="mt-5 grid min-w-0 gap-3 rounded-lg border border-[#EDEEEF] p-4 sm:grid-cols-2 xl:grid-cols-4">
           <label className="text-sm font-medium text-gray-700">
             Profile name
             <input
@@ -679,7 +679,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
             />
             Set as default
           </label>
-          <div className="lg:col-span-2">
+          <div className="sm:col-span-2 xl:col-span-4">
             <Button type="button" className="rounded-lg" onClick={upsertProfile}>
               <Plus className="mr-2 h-4 w-4" />
               {profileDraft.id ? "Update profile" : "Add profile"}
@@ -688,7 +688,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
         </div>
       </section>
 
-      <section className="rounded-[12px] bg-white p-6">
+      <section className="min-w-0 rounded-[12px] bg-white p-4 sm:p-5">
         <h3 className="text-xl font-normal text-[#191919]">ChatGPT OAuth</h3>
         <p className="mt-1 text-sm text-gray-500">
           ChatGPT remains available as a legacy OAuth provider.

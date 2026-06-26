@@ -418,7 +418,7 @@ const SettingsPage = () => {
           selectedProvider={selectedProvider}
           setSelectedProvider={setSelectedProvider}
         />
-        <div className="w-full">
+        <div className="w-full min-w-0 pb-28">
           <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
             <div className="flex  gap-3 items-center ">
               <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-black flex items-center gap-2">
@@ -459,7 +459,7 @@ const SettingsPage = () => {
 
       {/* Fixed Bottom Button — hidden on Sign out; nothing to save there */}
       {selectedProvider !== "session" ? (
-        <div className=" mx-auto fixed bottom-20 right-5 ">
+        <div className="fixed bottom-5 right-5 z-40 mx-auto sm:bottom-8">
           <button
             onClick={handleSaveConfig}
             disabled={buttonState.isDisabled}
