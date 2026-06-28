@@ -4,13 +4,16 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(10).max(320).meta({ description: "Prompt for the image" }),
+  __image_prompt__: z.string().min(10).max(360).meta({
+    description:
+      "Photozone visual prompt based on the brief. The first image should be a wide overall view; the second a related vertical/detail angle. Do not invent fixed flowers, symbols, people, logos, text, colors, or constructions.",
+  }),
 });
 
 const layoutId = "photozone-proposals-slide";
 const layoutName = "Photozone Design Proposals Slide";
 const layoutDescription =
-  "Photozone slide: title on top, left wide image + right tall image with overlay label.";
+  "Brief-driven photozone proposal slide with two related images: a wide overall view and a vertical or detail angle using only supported theme, palette, materials, floristics, venue, and mood.";
 
 const Schema = z.object({
   title: z
@@ -18,14 +21,20 @@ const Schema = z.object({
     .min(5)
     .max(80)
     .default("ПРЕДЛОЖЕНИЯ ПО ОФОРМЛЕНИЮ ФОТОЗОНЫ")
-    .meta({ description: "Main slide title" }),
+    .meta({
+      description:
+        "Main title for photozone design proposals. Keep universal unless the brief gives a specific zone name or format.",
+    }),
 
   leftLabel: z
     .string()
     .min(2)
     .max(30)
     .default("Фотозона")
-    .meta({ description: "Overlay label on left image" }),
+    .meta({
+      description:
+        "Overlay label for the left photozone image, based on the brief if a more specific label is provided.",
+    }),
 
   visuals: z
     .array(ImageSchema)
@@ -35,15 +44,18 @@ const Schema = z.object({
       {
         __image_url__: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg",
         __image_prompt__:
-          "Premium March 8 photozone design: turquoise matte backdrop, large warm cream-gold circular arch with soft halo lighting, lush mimosa floristry compositions on both sides, candles in glass holders, elegant draped turquoise fabric, decorative podium, professional event setup, no logos, no text, high-end editorial photography, wide horizontal composition",
+          "Wide photozone design proposal based on the brief: overall composition, venue context, coherent palette, materials, floristics, lighting, photo-friendly focal point, no unsupported text or logos",
       },
       {
         __image_url__: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg",
         __image_prompt__:
-          "Vertical portrait-style photozone setup for March 8 ceremony: turquoise backdrop with golden illuminated arch, abundant yellow mimosa arrangements, candles, elegant guests posing for photos, festive official atmosphere, soft professional lighting, no logos, no text, high resolution, vertical composition",
+          "Vertical or detailed photozone angle tied to the same brief: matching palette, materials, floristics, lighting, focal point, venue mood, no unsupported people, text, or logos",
       },
     ])
-    .meta({ description: "Left wide + right vertical photozone visuals" }),
+    .meta({
+      description:
+        "Two related photozone proposal visuals. visuals[0] is the wide overall view; visuals[1] is a vertical/detail view of the same concept. Keep both consistent with the brief.",
+    }),
 });
 
 type PhotozoneSlideData = z.infer<typeof Schema>;

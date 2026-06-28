@@ -4,13 +4,16 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(10).max(260).meta({ description: "Image prompt" }),
+  __image_prompt__: z.string().min(10).max(320).meta({
+    description:
+      "Main decor scene prompt based on the brief. Include relevant event type, venue, palette, materials, floristics, lighting, and mood only; do not invent fixed objects, people, symbols, or logos.",
+  }),
 });
 
 const layoutId = "decor-elements-slide";
 const layoutName = "Decor Elements Slide";
 const layoutDescription =
-  "Reference-like: title on top, left description blocks, right wide decor/floristics image.";
+  "Brief-driven decor elements slide: title, two text blocks, and a main scene image describing the spatial, material, floral, lighting, and styling decisions supported by the brief.";
 
 const Schema = z.object({
   title: z
@@ -18,7 +21,10 @@ const Schema = z.object({
     .min(5)
     .max(60)
     .default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДЕКОРА")
-    .meta({ description: "Slide title" }),
+    .meta({
+      description:
+        "Universal section title for decor elements. Do not mention a specific occasion, flower, palette, or construction unless required by the brief.",
+    }),
 
   // 2 цельных текстовых блока (не бьём разметкой)
   descriptionTop: z
@@ -26,24 +32,33 @@ const Schema = z.object({
     .min(20)
     .max(420)
     .default(
-      "Декор оформлен в сдержанной статусной стилистике: матовый бирюзово-голубой фон, круглая арка в тёплом кремово-золотистом оттенке с мягкой подсветкой, светлый круглый подиум и цилиндрические пьедесталы в нейтральной гамме."
+      "Основные пространственные элементы выбираются из задач брифа: зона встречи, сцена, фотозона, проходы, столы, навигация или другие ключевые точки оформляются в единой стилистике события."
     )
-    .meta({ description: "Top description paragraph (single block)" }),
+    .meta({
+      description:
+        "Describe the main architectural or spatial decor elements from the brief. Include forms, zones, scale, venue constraints, and function only when supported.",
+    }),
 
   descriptionBottom: z
     .string()
     .min(10)
     .max(260)
     .default(
-      "Композицию дополняют драпировки в приглушенном бирюзовом цвете и белые элементы айдентики на фоне."
+      "Дополнительные решения раскрываются через материалы, фактуры, флористику, свет, текстиль, мебель и малые детали, которые поддерживают настроение и формат мероприятия."
     )
-    .meta({ description: "Bottom description paragraph (single block)" }),
+    .meta({
+      description:
+        "Describe secondary decor layers: materials, floristics, lighting, textile, furniture, props, print, and details from the brief. Avoid unsupported specifics.",
+    }),
 
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg",
     __image_prompt__:
-      "Elegant event decor scene in restrained premium style: matte turquoise-blue backdrop, warm cream-gold circular arch with soft backlight, light round podium and cylindrical pedestals in neutral tones, abundant mimosa floristry with yellow blooms and green leaves, soft daylight, high-end editorial photo, no people, clean композиция",
-  }).meta({ description: "Right-side decor image" }),
+      "Main event decor scene based on the brief: relevant venue zone, coherent palette, materials, floristics, lighting, scale, and mood, high-end editorial interior/event photo",
+  }).meta({
+    description:
+      "Right-side decor image prompt. Use the brief as source of truth and keep it consistent with palette, materials, floristics, and mood across the presentation.",
+  }),
 });
 
 type DecorElementsData = z.infer<typeof Schema>;
@@ -86,7 +101,7 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
               {slideData?.descriptionTop ||
-                "Декор оформлен в сдержанной статусной стилистике: матовый бирюзово-голубой фон, круглая арка..."}
+                "Основные пространственные элементы выбираются из задач брифа..."}
             </div>
 
             <div
@@ -94,7 +109,7 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
               {slideData?.descriptionBottom ||
-                "Композицию дополняют драпировки в приглушенном бирюзовом цвете..."}
+                "Дополнительные решения раскрываются через материалы, фактуры, флористику и свет..."}
             </div>
           </div>
 

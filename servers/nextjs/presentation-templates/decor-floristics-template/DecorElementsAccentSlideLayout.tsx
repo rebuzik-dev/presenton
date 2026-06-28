@@ -4,13 +4,16 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(10).max(260).meta({ description: "Image prompt text" }),
+  __image_prompt__: z.string().min(10).max(320).meta({
+    description:
+      "Wide editorial decor reference based on the brief. Include the main visual accent, palette, materials, floristics, lighting, venue, and mood only when supported.",
+  }),
 });
 
 const layoutId = "storyboard-split-visual-slide";
 const layoutName = "Decor Elements Wide Image Slide";
 const layoutDescription =
-  "Reference-like decor slide: title on top, left wide floristics image, right two text paragraphs.";
+  "Brief-driven wide decor reference slide: a large editorial image plus two paragraphs about the main visual accent, palette, materials, atmosphere, and meaning.";
 
 const Schema = z.object({
   title: z
@@ -18,7 +21,10 @@ const Schema = z.object({
     .min(5)
     .max(60)
     .default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДЕКОРА")
-    .meta({ description: "Main slide title" }),
+    .meta({
+      description:
+        "Universal title for the decor elements or main visual accent section. Avoid unsupported event-specific wording.",
+    }),
 
   // 2 цельных текстовых блока (как в рефе)
   textTop: z
@@ -26,25 +32,34 @@ const Schema = z.object({
     .min(20)
     .max(520)
     .default(
-      "Главный акцент — объёмные композиции из мимозы с зеленью, интегрированные у основания арки и по бокам, а также группы свечей разной высоты в стеклянных подсвечниках."
+      "Главный визуальный акцент определяется брифом: это может быть пространственная форма, флористическая масса, световой прием, материал, объект, зона или композиция, которая собирает образ события."
     )
-    .meta({ description: "Top paragraph (single block, auto-wrap)" }),
+    .meta({
+      description:
+        "Explain the main visual accent from the brief and how it works in the space. Do not invent a construction, flower, object, or lighting effect.",
+    }),
 
   textBottom: z
     .string()
     .min(20)
     .max(520)
     .default(
-      "Палитра строится на сочетании бирюзовой базы, мимозного жёлтого акцента и молочно-белых деталей, создавая торжественный, весенний и официальный образ."
+      "Палитра, материалы, флористика и атмосфера должны продолжать исходный бриф: описывайте только те фактуры, оттенки, сезонность и смыслы, которые заданы или логично выведены."
     )
-    .meta({ description: "Bottom paragraph (single block, auto-wrap)" }),
+    .meta({
+      description:
+        "Explain palette, materials, floristics, atmosphere, and meaning from the brief. Keep consistency with previous slides and avoid unsupported specifics.",
+    }),
 
   // В референсе одно большое изображение слева
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg",
     __image_prompt__:
-      "Premium event decor scene with mimosa floristry: turquoise-blue matte backdrop, warm cream-gold circular arch with soft backlight, clusters of candles in glass holders of different heights, neutral round podium and cylindrical pedestals, abundant yellow mimosa with green foliage, soft daylight, high-end editorial photo, no people, clean composition",
-  }).meta({ description: "Left wide decor image" }),
+      "Wide editorial event decor reference based on the brief: main visual accent, coherent palette, materials, floristics, lighting, venue context, atmosphere, high-end composition",
+  }).meta({
+    description:
+      "Left wide decor image prompt. Keep the visual consistent with the brief and earlier palette/material choices; do not force any fixed flower, object, structure, or people.",
+  }),
 });
 
 type DecorSplitData = z.infer<typeof Schema>;
@@ -100,7 +115,7 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
               {slideData?.textTop ||
-                "Главный акцент — объёмные композиции из мимозы с зеленью, интегрированные у основания арки и по бокам, а также группы свечей разной высоты в стеклянных подсвечниках."}
+                "Главный визуальный акцент определяется брифом и собирает образ события."}
             </div>
 
             <div
@@ -108,7 +123,7 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
               {slideData?.textBottom ||
-                "Палитра строится на сочетании бирюзовой базы, мимозного жёлтого акцента и молочно-белых деталей, создавая торжественный, весенний и официальный образ."}
+                "Палитра, материалы, флористика и атмосфера продолжают исходный бриф."}
             </div>
           </div>
         </div>

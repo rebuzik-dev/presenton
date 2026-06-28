@@ -4,13 +4,16 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(10).max(320).meta({ description: "Prompt for the image" }),
+  __image_prompt__: z.string().min(10).max(360).meta({
+    description:
+      "Stage visual prompt based on the brief. The first image should be a wide view; the second a related vertical alternate angle or detail. Do not invent fixed symbols, people, logos, text, flowers, or constructions.",
+  }),
 });
 
 const layoutId = "storyboard-event-point-slide";
 const layoutName = "Stage Design Proposals Slide";
 const layoutDescription =
-  "Reference-like: big title on top, two images below (left wide + right tall). Small overlay label on left image.";
+  "Brief-driven stage proposal slide with two related images: a wide stage view and a vertical alternate angle or detail using only supported event, venue, palette, material, floral, lighting, and mood inputs.";
 
 const Schema = z.object({
   title: z
@@ -18,14 +21,20 @@ const Schema = z.object({
     .min(5)
     .max(80)
     .default("ПРЕДЛОЖЕНИЯ ПО ОФОРМЛЕНИЮ СЦЕНЫ")
-    .meta({ description: "Main slide title" }),
+    .meta({
+      description:
+        "Main title for stage design proposals. Keep universal unless the brief names a specific stage zone, format, or event title.",
+    }),
 
   leftLabel: z
     .string()
     .min(2)
     .max(20)
     .default("Сцена")
-    .meta({ description: "Small label on the left image" }),
+    .meta({
+      description:
+        "Small overlay label for the left stage image, based on the brief if a more specific zone name is given.",
+    }),
 
   visuals: z
     .array(ImageSchema)
@@ -35,15 +44,18 @@ const Schema = z.object({
       {
         __image_url__: "https://images.pexels.com/photos/713149/pexels-photo-713149.jpeg",
         __image_prompt__:
-          "Wide stage design proposal for March 8 ceremony: turquoise-blue backdrop, large warm cream-gold circular arch with soft backlight, abundant mimosa floristry arrangements on both sides and along the front edge, draped turquoise fabric, candles in glass holders, audience view, professional stage lighting, festive official look, no text, no logos, high-end editorial photo",
+          "Wide stage design proposal based on the brief: venue context, stage scale, coherent palette, materials, floristics, lighting, focal elements, event mood, no unsupported text or logos",
       },
       {
         __image_url__: "https://images.pexels.com/photos/713149/pexels-photo-713149.jpeg",
         __image_prompt__:
-          "Vertical close-up stage design proposal for March 8 award ceremony: turquoise-blue backdrop with warm cream-gold circular arch, mimosa floristry clusters, candles in glass holders, presenters on stage receiving awards, official festive atmosphere, professional photography, no text, no logos, high detail, vertical composition",
+          "Vertical alternate stage angle or detail tied to the same brief: matching palette, materials, floristics, lighting, focal element, venue mood, no unsupported people, text, or logos",
       },
     ])
-    .meta({ description: "Two stage proposal visuals: left wide, right tall" }),
+    .meta({
+      description:
+        "Two related stage proposal visuals. visuals[0] is a wide stage view; visuals[1] is a vertical alternate angle or detail of the same concept. Keep both consistent with the brief.",
+    }),
 });
 
 type StageProposalsData = z.infer<typeof Schema>;

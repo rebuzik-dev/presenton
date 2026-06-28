@@ -5,22 +5,25 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 const layoutId = "typography-spec-slide";
 const layoutName = "Typography Spec Slide";
 const layoutDescription =
-  "Typography slide matching reference: static typography sheet + generated right photo (poster on stand).";
+  "Typography slide with a static type specimen and a brief-driven right image showing a relevant signage, navigation, or print carrier.";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Right-side image URL" }),
   __image_prompt__: z
     .string()
     .min(10)
-    .max(220)
-    .meta({ description: "Prompt for the right image (poster on stand)" }),
+    .max(260)
+    .meta({
+      description:
+        "Prompt for a typography carrier, such as signage, navigation, menu, invitation, or poster. Use brief-derived style, palette, materials, and mood only.",
+    }),
 });
 
 const Schema = z.object({
   rightImage: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/1227511/pexels-photo-1227511.jpeg",
     __image_prompt__:
-      "A vertical poster on a stand, teal paper texture background with subtle flowers, clean white border frame, shallow depth of field, realistic photo, typography-focused, no people",
+      "Typography-focused event print or navigation object based on the brief: relevant carrier, palette, materials, lighting, and mood, realistic editorial photo, clean readable surface",
   }),
 });
 

@@ -13,26 +13,36 @@ const ImageSchema = z.object({
   __image_prompt__: z
     .string()
     .min(3)
-    .max(180)
+    .max(260)
     .default("Photo for slide")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .meta({
+      description:
+        "Mood/reference image prompt for the decor palette. Use brief-derived theme, style, venue, materials, floristics, and palette; do not invent fixed flowers, constructions, people, logos, or colors.",
+    }),
 })
 
 const layoutId = "color-palette-listing-slide"
 const layoutName = "Color Palette Listing Slide"
-const layoutDescription = "A slide with grouped color cards and a supporting image."
+const layoutDescription =
+  "A brief-driven color palette slide: derive primary and secondary colors from brand inputs when provided, otherwise from event mood, venue, audience, season, format, and desired style."
 
 const ColorItemSchema = z.object({
   hex: z
     .string()
     .min(4)
     .max(9)
-    .meta({ description: "Hex code string" }),
+    .meta({
+      description:
+        "Hex color from the brand palette if provided; otherwise choose a role-appropriate color inferred from the brief, venue, mood, format, audience, and desired style.",
+    }),
   label: z
     .string()
     .min(2)
     .max(70)
-    .meta({ description: "Color label text" }),
+    .meta({
+      description:
+        "Explain this color's role in the concept, such as base, accent, contrast, background, floristics, material, or lighting. Do not tie it to unsupported symbols.",
+    }),
 })
 
 const Schema = z.object({
@@ -41,49 +51,52 @@ const Schema = z.object({
     .min(5)
     .max(40)
     .default("ЦВЕТОВАЯ ПАЛИТРА")
-    .meta({ description: "Main header" }),
+    .meta({ description: "Universal palette section title." }),
   primaryTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Основные цвета")
-    .meta({ description: "Left column header (Primary colors)" }),
+    .meta({ description: "Header for the main palette colors selected from the brief." }),
   secondaryTitle: z
     .string()
     .min(3)
     .max(40)
     .default("Дополнительные цвета")
-    .meta({ description: "Right column header (Secondary colors)" }),
+    .meta({ description: "Header for secondary/supporting colors selected from the brief." }),
   primaryColors: z
     .array(ColorItemSchema)
     .min(1)
     .max(3)
     .default([
-      { hex: "#F2C94C", label: "Мимозный жёлтый (акцентный цвет, символ весны и праздника)" },
-      { hex: "#6F9FA3", label: "Мягкий бирюзово-голубой (основной фон, лёгкость и статусность)" },
-      { hex: "#FFFFFF", label: "Чистый белый (официальность, минимализм)" }
+      { hex: "#2F3A3D", label: "Основной тон: задает характер и глубину визуальной системы" },
+      { hex: "#F4F1EA", label: "Светлая база: поддерживает воздух и чистоту композиции" },
+      { hex: "#B8794C", label: "Акцент: выделяет ключевые зоны и детали оформления" }
     ])
     .meta({
       description:
-        "LEFT column. Primary colors only. Order is important: render top-to-bottom as given (most important first). Max 3 items.",
+        "LEFT column. Select up to 3 primary colors from brand guidance if present; otherwise infer them from the brief. Order top-to-bottom by importance.",
     }),
   secondaryColors: z
     .array(ColorItemSchema)
     .min(1)
     .max(3)
     .default([
-      { hex: "#ebe45e", label: "Светлый тёплый бежево- жёлтый (поддержка флористической темы и тепла)" },
-      { hex: "#2F4F5B", label: "Глубокий серо-бирюзовый (контраст, деловой характер)" },
-      { hex: "#A7BFC2", label: "Пыльный светло-голубой (баланс и мягкость визуала)" }
+      { hex: "#D7C7B2", label: "Материальный оттенок: связывает фактуры, мебель и декор" },
+      { hex: "#6F7D73", label: "Поддерживающий тон: балансирует флористику и фон" },
+      { hex: "#FFFFFF", label: "Нейтральный свет: дает паузы и читабельность элементов" }
     ])
     .meta({
       description:
-        "RIGHT column. Secondary colors only. Order is important: render top-to-bottom as given. Max 3 items.",
+        "RIGHT column. Select up to 3 secondary colors that support the brief-derived concept, materials, floristics, lighting, and spatial context.",
     }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Floral installation with lush mimosa branches and eucalyptus on cylindrical plinths of different heights. Many burning pillar candles in glass holders around. Background with a glowing circular arch and soft fabric drapery. Soft studio lighting, aesthetic interior design.",
-  }).meta({ description: "Supporting image. Max 30 words" }),
+    __image_prompt__: "Moodboard-style decor palette reference based on the brief: event theme, venue, materials, floristics, lighting, and brand or inferred colors, cohesive editorial photo.",
+  }).meta({
+    description:
+      "Supporting mood/reference image. Build it from the brief and palette logic; do not force any specific flower, structure, object, people, logo, or color.",
+  }),
 })
 
 type ColorPaletteListingData = z.infer<typeof Schema>

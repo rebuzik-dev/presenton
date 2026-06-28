@@ -4,16 +4,18 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 
 const layoutId = "concept-mission-mood-slide";
 const layoutName = "Concept Mission Mood Slide";
-const layoutDescription = "A concept slide with a hero quote card and two columns (mission + mood).";
+const layoutDescription =
+  "A brief-driven concept slide with a central decor idea plus mission and mood blocks. Use only theme, mood, format, audience, venue, and visual references supported by the brief.";
 
 /**
  * В эталоне (изобр.1):
- * 1) Большая бирюзовая плашка-цитата (концепция) сверху на всю ширину.
+ * 1) Большая цветовая плашка-цитата (концепция) сверху на всю ширину.
  * 2) Ниже 2 колонки: заголовок + тонкая линия + текст (без серых карточек).
  */
 const Schema = z.object({
   title: z.string().min(5).max(40).default("КОНЦЕПЦИЯ ДЕКОРАЦИОННОГО ОФОРМЛЕНИЯ").meta({
-    description: "Main section title. Max 3 words",
+    description:
+      "Universal section title about the decor concept. Keep it broad and do not include a specific occasion, flower, symbol, or venue unless the brief requires it.",
   }),
 
   // Верхняя широкая плашка (цитата/концепт)
@@ -22,9 +24,12 @@ const Schema = z.object({
     .min(40)
     .max(700)
     .default(
-      "Визуал строится на синтезе официальной государственной символики и теплого весеннего образа мимозы, что подчеркивает уважение, признание и благодарность женщинам в отрасли. Образ 8 как центральный композиционный элемент символизирует не только Международный женский день, но и непрерывность вклада женщин в развитие энергетики, экономики и общества."
+      "Визуальная идея оформления формируется из брифа: тема события, формат, площадка, настроение, аудитория, сезонность, палитра, материалы и флористика соединяются в единый образ. Не добавляйте символы, даты, цветы, людей, логотипы или предметные решения, если они не указаны или явно не следуют из брифа."
     )
-    .meta({ description: "Main concept quote in the teal card." }),
+    .meta({
+      description:
+        "Central decor idea inferred from the brief. Summarize the event-specific visual logic and explicitly avoid unsupported dates, symbols, flowers, people, logos, industries, or fixed decor elements.",
+    }),
 
   missionTitle: z.string().min(2).max(30).default("Миссия").meta({
     description: "Mission block title. Max 2 words",
@@ -34,9 +39,12 @@ const Schema = z.object({
     .min(20)
     .max(400)
     .default(
-      "Создать визуально легкое, элегантное и статусное пространство, которое подчеркнет праздничный характер 8 Марта и сохранит соответствие деловому и отраслевому контексту."
+      "Сформировать цельное пространство для события: поддержать сценарий, настроение и статус мероприятия, сделать ключевые зоны выразительными и согласовать декор с площадкой, аудиторией и задачами брифа."
     )
-    .meta({ description: "Mission description." }),
+    .meta({
+      description:
+        "Describe the visual styling task for this event based on the brief: function, atmosphere, audience, format, venue, and desired impression. Do not invent a holiday, industry, or ceremonial meaning.",
+    }),
 
   moodTitle: z.string().min(2).max(30).default("Ключевые смыслы").meta({
     description: "Mood block title. Max 3 words",
@@ -46,9 +54,12 @@ const Schema = z.object({
     .min(20)
     .max(400)
     .default(
-      "мимоза как символ весны, признания и благодарности; сочетание строгости и мягкости в оформлении; эстетика сдержанной торжественности; гармония природных элементов и официальной символики."
+      "Ключевые смыслы раскрываются через настроение, визуальные опоры, палитру, фактуры, свет, флористику и композиционные приемы, которые заданы брифом или логично следуют из него."
     )
-    .meta({ description: "Mood description." }),
+    .meta({
+      description:
+        "List the mood, meanings, style references, palette, materials, floristics, lighting, and spatial cues from the brief. Do not add unsupported symbolic or seasonal references.",
+    }),
 });
 
 type ConceptMissionMoodData = z.infer<typeof Schema>;
@@ -86,7 +97,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
           {slideData?.title || "КОНЦЕПЦИЯ ДЕКОРАЦИОННОГО ОФОРМЛЕНИЯ"}
         </div>
 
-        {/* Бирюзовая плашка-цитата */}
+        {/* Цветовая плашка-цитата */}
         <div
           className="mt-[26px] rounded-[18px] shadow-[0_10px_18px_rgba(0,0,0,0.18)] px-[28px] py-[26px] flex gap-[18px]"
           style={{ backgroundColor: heroBg }}
@@ -109,7 +120,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
             style={{ color: heroText, fontFamily: bodyFont }}
           >
             {slideData?.heroQuote ||
-              "Визуал строится на синтезе официальной государственной символики и образа мимозы..."}
+              "Визуальная идея оформления формируется из темы, формата, площадки и настроения события..."}
           </div>
         </div>
 
@@ -131,7 +142,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
-              {slideData?.missionContent || "Создать визуально легкое, элегантное и статусное пространство..."}
+              {slideData?.missionContent || "Сформировать цельное пространство для события..."}
             </div>
           </section>
 
@@ -151,7 +162,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
-              {slideData?.moodContent || "мимоза как символ весны, признания и благодарности..."}
+              {slideData?.moodContent || "Ключевые смыслы раскрываются через настроение, палитру, фактуры и свет..."}
             </div>
           </section>
         </div>
