@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget';
 export const Schema = z.object({
     slideNumber: z.string().max(2).describe('Slide number or index').default('1'),
     title: z.string().max(30).describe('The main heading of the slide').default('Executive Summary'),
@@ -62,6 +63,7 @@ const HeadlineDescriptionWithImageLayout = ({ data }: { data: Partial<z.infer<ty
                             style={{
                                 color: 'var(--background-text,#101828)'
                             }}
+                            {...promptTargetAttrs({ path: 'title', type: 'field' })}
                         >
                             {data.title}
                         </h1>
@@ -80,6 +82,7 @@ const HeadlineDescriptionWithImageLayout = ({ data }: { data: Partial<z.infer<ty
                             style={{
                                 color: 'var(--background-text,#000000)'
                             }}
+                            {...promptTargetAttrs({ path: 'description', type: 'field' })}
                         >
                             {data.description}
                         </p>
@@ -87,7 +90,10 @@ const HeadlineDescriptionWithImageLayout = ({ data }: { data: Partial<z.infer<ty
 
                     {/* Right Image Column */}
                     <div className="flex flex-1 justify-end items-center ">
-                        <div className="w-[380px] h-[350px] overflow-hidden rounded-[30px]">
+                        <div
+                            className="w-[380px] h-[350px] overflow-hidden rounded-[30px]"
+                            {...promptTargetAttrs({ path: 'image.__image_prompt__', type: 'image' })}
+                        >
                             <img
                                 src={data.image?.__image_url__}
                                 alt={data.image?.__image_prompt__}

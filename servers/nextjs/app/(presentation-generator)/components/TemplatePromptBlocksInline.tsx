@@ -8,14 +8,18 @@ import { Button } from "@/components/ui/button";
 
 import InlinePromptBlockEditor from "./InlinePromptBlockEditor";
 import {
+    buildPromptBlockId,
+    parsePromptBlockId,
+    PromptBlockType,
+    promptTargetMatchesBlock,
+} from "../utils/promptBlockIds";
+import {
     FieldSummary,
     LayoutPromptOverrides,
     LayoutSummary,
     TemplatePromptProfileResponse,
     useTemplatePromptProfile,
 } from "../hooks/useTemplatePromptProfile";
-
-type PromptBlockType = "layout" | "field" | "image";
 
 interface PromptBlock {
     id: string;
@@ -42,6 +46,12 @@ interface TemplatePromptBlocksInlineProps {
         path?: string,
         value?: string | null
     ) => Promise<TemplatePromptProfileResponse | void>;
+    hoveredBlockId?: string | null;
+    selectedBlockId?: string | null;
+    visualTargetIds?: Set<string>;
+    onBlockHover?: (block: PromptBlock | null) => void;
+    onBlockSelect?: (block: PromptBlock) => void;
+    onShowOnSlide?: (block: PromptBlock) => void;
 }
 
 const normalize = (value?: string | null) => (value || "").trim().toLowerCase();
@@ -129,7 +139,7 @@ function buildBlocks(
 
     const blocks: PromptBlock[] = [
         {
-            id: `${layout.layout_id}:layout`,
+            id: buildPromptBlockId(layout.layout_id, "layout"),
             type: "layout",
             label: "Layout prompt",
             sourcePrompt: layout.layout_description || null,
@@ -139,7 +149,7 @@ function buildBlocks(
 
     textFields.forEach((field) => {
         blocks.push({
-            id: `${layout.layout_id}:field:${field.path}`,
+            id: buildPromptBlockId(layout.layout_id, "field", field.path),
             type: "field",
             label: field.path,
             path: field.path,
@@ -151,7 +161,7 @@ function buildBlocks(
     imageFields.forEach((field, imageIndex) => {
         const sourcePrompt = imagePrompts[imageIndex] || (typeof field.default === "string" ? field.default : field.description);
         blocks.push({
-            id: `${layout.layout_id}:image:${field.path}`,
+            id: buildPromptBlockId(layout.layout_id, "image", field.path),
             type: "image",
             label: `Image prompt ${imageIndex + 1}`,
             path: field.path,
@@ -168,7 +178,7 @@ function buildBlocks(
     for (let slotIndex = 0; slotIndex < unmappedImageSlots; slotIndex += 1) {
         const promptIndex = imageFields.length + slotIndex;
         blocks.push({
-            id: `${layout.layout_id}:image:unmapped:${slotIndex}`,
+            id: buildPromptBlockId(layout.layout_id, "image", `unmapped.${slotIndex}`),
             type: "image",
             label: `Image prompt ${promptIndex + 1}`,
             sourcePrompt: imagePrompts[promptIndex] || null,
@@ -189,6 +199,12 @@ export default function TemplatePromptBlocksInline({
     profileData,
     profileLoading,
     onUpdateOverride,
+    hoveredBlockId,
+    selectedBlockId,
+    visualTargetIds,
+    onBlockHover,
+    onBlockSelect,
+    onShowOnSlide,
 }: TemplatePromptBlocksInlineProps) {
     const ownedProfile = useTemplatePromptProfile(profileData || onUpdateOverride ? "" : slug);
     const data = profileData ?? ownedProfile.data;
@@ -201,6 +217,21 @@ export default function TemplatePromptBlocksInline({
         [data, layoutId, layoutName, sourceFile, index]
     );
     const blocks = useMemo(() => buildBlocks(data, layout), [data, layout]);
+
+    const externalBlockMatches = React.useCallback((block: PromptBlock, externalId?: string | null) => {
+        if (!externalId) return false;
+        if (block.id === externalId) return true;
+        const blockIdentity = parsePromptBlockId(block.id);
+        const externalIdentity = parsePromptBlockId(externalId);
+        return !!blockIdentity && !!externalIdentity && promptTargetMatchesBlock(externalIdentity, blockIdentity);
+    }, []);
+
+    React.useEffect(() => {
+        if (selectedBlockId) {
+            const selectedBlock = blocks.find((block) => externalBlockMatches(block, selectedBlockId));
+            if (selectedBlock) setOpenBlockId(selectedBlock.id);
+        }
+    }, [blocks, externalBlockMatches, selectedBlockId]);
 
     if (loading) {
         return (
@@ -226,6 +257,16 @@ export default function TemplatePromptBlocksInline({
 
     const saveBlock = async (block: PromptBlock, value: string | null) => {
         await updateOverride(layout.layout_id, block.type, block.path, value);
+    };
+
+    const blockHasVisualTarget = (block: PromptBlock) => {
+        if (!visualTargetIds) return true;
+        const blockIdentity = parsePromptBlockId(block.id);
+        if (!blockIdentity) return false;
+        return Array.from(visualTargetIds).some((targetId) => {
+            const targetIdentity = parsePromptBlockId(targetId);
+            return !!targetIdentity && promptTargetMatchesBlock(targetIdentity, blockIdentity);
+        });
     };
 
     return (
@@ -255,16 +296,35 @@ export default function TemplatePromptBlocksInline({
                 {blocks.map((block) => {
                     const hasOverride = !!block.savedOverride?.trim();
                     const isOpen = openBlockId === block.id;
+                    const isHovered = externalBlockMatches(block, hoveredBlockId);
+                    const isSelected = externalBlockMatches(block, selectedBlockId);
+                    const hasVisualTarget = blockHasVisualTarget(block);
                     const activePrompt = hasOverride ? block.savedOverride : block.sourcePrompt;
                     const Icon = block.type === "image" ? ImageIcon : block.type === "field" ? FileText : Layout;
 
                     return (
                         <div
                             key={block.id}
-                            className="rounded-lg border border-gray-200 bg-gray-50/50 p-3"
+                            data-prompt-block-id={block.id}
+                            className={`rounded-lg border p-3 transition ${
+                                isSelected
+                                    ? "border-purple-400 bg-purple-50 shadow-[0_0_0_2px_rgba(122,90,248,0.12)]"
+                                    : isHovered
+                                        ? "border-cyan-300 bg-cyan-50/70"
+                                        : "border-gray-200 bg-gray-50/50"
+                            }`}
+                            onMouseEnter={() => onBlockHover?.(block)}
+                            onMouseLeave={() => onBlockHover?.(null)}
                         >
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0 flex-1">
+                                <button
+                                    type="button"
+                                    className="min-w-0 flex-1 text-left"
+                                    onClick={() => {
+                                        onBlockSelect?.(block);
+                                        setOpenBlockId(block.id);
+                                    }}
+                                >
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Icon className="h-3.5 w-3.5 text-gray-500" />
                                         <span className="truncate font-mono text-xs font-semibold text-gray-900">
@@ -285,21 +345,40 @@ export default function TemplatePromptBlocksInline({
                                                 Image prompt
                                             </Badge>
                                         )}
+                                        {!hasVisualTarget && (
+                                            <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 text-[10px] text-amber-700">
+                                                No visual target
+                                            </Badge>
+                                        )}
                                     </div>
                                     <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500">
                                         {block.disabledReason || activePrompt || "No source prompt found"}
                                     </p>
+                                </button>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 gap-1.5 border-cyan-200 bg-white text-xs text-cyan-700 hover:bg-cyan-50"
+                                        onClick={() => onShowOnSlide?.(block)}
+                                        disabled={block.disabled || !hasVisualTarget}
+                                    >
+                                        Show on slide
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 gap-1.5 border-purple-200 bg-white text-xs text-purple-700 hover:bg-purple-50"
+                                        onClick={() => {
+                                            onBlockSelect?.(block);
+                                            setOpenBlockId(isOpen ? null : block.id);
+                                        }}
+                                        disabled={block.disabled}
+                                    >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                        Edit
+                                    </Button>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 shrink-0 gap-1.5 border-purple-200 bg-white text-xs text-purple-700 hover:bg-purple-50"
-                                    onClick={() => setOpenBlockId(isOpen ? null : block.id)}
-                                    disabled={block.disabled}
-                                >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                    Edit
-                                </Button>
                             </div>
 
                             {isOpen && (

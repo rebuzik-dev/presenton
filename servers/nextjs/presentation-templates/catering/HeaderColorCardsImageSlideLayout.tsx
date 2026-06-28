@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -87,25 +88,34 @@ interface HeaderColorCardsImageSlideLayoutProps {
 
 const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ data: slideData }) => {
   const cards = slideData?.colorCards || []
-  const primary = cards.filter((c) => c.group === "primary")
-  const secondary = cards.filter((c) => c.group === "secondary")
+  const indexedCards = cards.map((card, index) => ({ card, index }))
+  const primary = indexedCards.filter(({ card }) => card.group === "primary")
+  const secondary = indexedCards.filter(({ card }) => card.group === "secondary")
   const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")
   const titleColor = resolveColor(slideData, "title", "color", "#3f3f3f", "text_primary")
   const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
   const sectionFont = resolveFontFamily(slideData, "section_title", rootFont, "heading")
   const cardFont = resolveFontFamily(slideData, "color_card", rootFont, "body")
 
-  const Card: React.FC<{ hex: string; description: string }> = ({ hex, description }) => {
+  const Card: React.FC<{ hex: string; description: string; index: number }> = ({ hex, description, index }) => {
     const isDark =
       hex.toUpperCase() === "#7F8C8D" || hex.toUpperCase() === "#4F5D63" || hex.toUpperCase() === "#1A1C23"
     const lightText = resolveColor(slideData, "color_card", "color", "#3f3f3f", "text_primary")
     const resolvedTextColor = isDark ? "#FFFFFF" : lightText
     return (
       <div className="h-[124px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>
-        <div className="text-[17px] leading-[21px] tracking-[0.4px] font-[700]" style={{ color: resolvedTextColor, fontFamily: cardFont }}>
+        <div
+          className="text-[17px] leading-[21px] tracking-[0.4px] font-[700]"
+          style={{ color: resolvedTextColor, fontFamily: cardFont }}
+          {...promptTargetAttrs({ path: `colorCards[${index}].hex`, type: "field" })}
+        >
           {hex}
         </div>
-        <div className="text-[18px] leading-[22px] font-[500]" style={{ color: resolvedTextColor, fontFamily: cardFont }}>
+        <div
+          className="text-[18px] leading-[22px] font-[500]"
+          style={{ color: resolvedTextColor, fontFamily: cardFont }}
+          {...promptTargetAttrs({ path: `colorCards[${index}].description`, type: "field" })}
+        >
           {description}
         </div>
       </div>
@@ -116,29 +126,41 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[68px] pt-10 pb-10 grid grid-cols-[1.05fr_0.95fr] gap-9">
         <div className="flex flex-col min-h-0">
-          <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
+          <div
+            className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]"
+            style={{ color: titleColor, fontFamily: titleFont }}
+            {...promptTargetAttrs({ path: "title", type: "field" })}
+          >
             {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
             <div className="min-h-0">
-              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+              <div
+                className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
+                style={{ color: titleColor, fontFamily: sectionFont }}
+                {...promptTargetAttrs({ path: "primaryTitle", type: "field" })}
+              >
                 {slideData?.primaryTitle || "Основные цвета"}
               </div>
               <div className="mt-4 grid gap-6">
-                {primary.slice(0, 3).map((c, idx) => (
-                  <Card key={`p-${idx}`} hex={c.hex} description={c.description} />
+                {primary.slice(0, 3).map(({ card, index }) => (
+                  <Card key={`p-${index}`} hex={card.hex} description={card.description} index={index} />
                 ))}
               </div>
             </div>
 
             <div className="min-h-0">
-              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+              <div
+                className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
+                style={{ color: titleColor, fontFamily: sectionFont }}
+                {...promptTargetAttrs({ path: "secondaryTitle", type: "field" })}
+              >
                 {slideData?.secondaryTitle || "Дополнительные цвета"}
               </div>
               <div className="mt-4 grid gap-6">
-                {secondary.slice(0, 3).map((c, idx) => (
-                  <Card key={`s-${idx}`} hex={c.hex} description={c.description} />
+                {secondary.slice(0, 3).map(({ card, index }) => (
+                  <Card key={`s-${index}`} hex={card.hex} description={card.description} index={index} />
                 ))}
               </div>
             </div>
@@ -146,7 +168,10 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
         </div>
 
         <div className="h-full flex items-start justify-end">
-          <div className="w-full h-[560px] overflow-hidden">
+          <div
+            className="w-full h-[560px] overflow-hidden"
+            {...promptTargetAttrs({ path: "image.__image_prompt__", type: "image" })}
+          >
             <img
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || slideData?.title || ""}
@@ -161,6 +186,5 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
 
 export { Schema, layoutId, layoutName, layoutDescription }
 export default dynamicSlideLayout
-
 
 

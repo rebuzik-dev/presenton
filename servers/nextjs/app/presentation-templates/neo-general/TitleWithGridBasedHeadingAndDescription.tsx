@@ -1,5 +1,6 @@
 import * as z from "zod";
 import React from "react";
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget';
 export const Schema = z.object({
     title: z.string().max(25).describe('The main heading of the slide').default('Key Insights & Learnings'),
 
@@ -74,7 +75,11 @@ const dynamicSlideLayout: React.FC<{ data: Partial<z.infer<typeof Schema>> }> = 
                 {/* Main Title */}
                 <div className=" w-[761.6px]  overflow-visible mb-10">
                     <div className="text-left" style={{ lineHeight: '45.2px' }}>
-                        <span className="text-[42.7px]  font-bold" style={{ letterSpacing: '-1.6px', color: 'var(--background-text,#101828)' }}>
+                        <span
+                            className="text-[42.7px]  font-bold"
+                            style={{ letterSpacing: '-1.6px', color: 'var(--background-text,#101828)' }}
+                            {...promptTargetAttrs({ path: 'title', type: 'field' })}
+                        >
                             {title}
                         </span>
                     </div>
@@ -100,7 +105,11 @@ const dynamicSlideLayout: React.FC<{ data: Partial<z.infer<typeof Schema>> }> = 
 
                                 >
                                     <div className="text-left" >
-                                        <span className="text-[21.3px]  font-bold" style={{ color: 'var(--background-text,#9234EC)' }}>
+                                        <span
+                                            className="text-[21.3px]  font-bold"
+                                            style={{ color: 'var(--background-text,#9234EC)' }}
+                                            {...promptTargetAttrs({ path: `cards[${index}].heading`, type: 'field' })}
+                                        >
                                             {card.heading}
                                         </span>
                                     </div>
@@ -112,7 +121,11 @@ const dynamicSlideLayout: React.FC<{ data: Partial<z.infer<typeof Schema>> }> = 
 
                                 >
                                     <div className="text-left" >
-                                        <span className="text-[23.1px] font-normal" style={{ color: 'var(--background-text,#000000)' }}>
+                                        <span
+                                            className="text-[23.1px] font-normal"
+                                            style={{ color: 'var(--background-text,#000000)' }}
+                                            {...promptTargetAttrs({ path: `cards[${index}].description`, type: 'field' })}
+                                        >
                                             {card.description}
                                         </span>
                                     </div>
@@ -126,4 +139,4 @@ const dynamicSlideLayout: React.FC<{ data: Partial<z.infer<typeof Schema>> }> = 
     );
 };
 
-export default dynamicSlideLayout;  
+export default dynamicSlideLayout;

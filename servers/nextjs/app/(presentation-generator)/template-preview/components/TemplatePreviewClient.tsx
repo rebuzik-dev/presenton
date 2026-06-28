@@ -1,14 +1,16 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Trash2, Pencil } from "lucide-react";
 import "../../utils/prism-languages";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
 import TemplatePromptBlocksInline from "../../components/TemplatePromptBlocksInline";
+import PromptInspectableSlideFrame from "../../components/PromptInspectableSlideFrame";
 import { useTemplatePromptProfile } from "../../hooks/useTemplatePromptProfile";
+import { buildPromptBlockId, parsePromptBlockId, PromptBlockIdentity } from "../../utils/promptBlockIds";
 
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import TemplateService from "../../services/api/template";
@@ -27,6 +29,11 @@ const GroupLayoutPreview = () => {
 
   const [promptOpen, setPromptOpen] = useState(false);
   const [focusedLayoutId, setFocusedLayoutId] = useState<string | undefined>(undefined);
+  const [inspectorEnabled, setInspectorEnabled] = useState(false);
+  const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [flashBlockId, setFlashBlockId] = useState<string | null>(null);
+  const [visualTargetIdsByLayout, setVisualTargetIdsByLayout] = useState<Map<string, Set<string>>>(() => new Map());
   const promptProfile = useTemplatePromptProfile(templateParams);
 
   const isCustom = templateParams.startsWith("custom-");
@@ -56,6 +63,58 @@ const GroupLayoutPreview = () => {
   useEffect(() => {
     const observer = setupImageUrlConverter();
     return () => observer?.disconnect();
+  }, []);
+
+  const identityToBlockId = useCallback((identity: PromptBlockIdentity) => (
+    buildPromptBlockId(identity.layoutId, identity.type, identity.path)
+  ), []);
+
+  const scrollToPromptBlock = useCallback((blockId: string) => {
+    window.setTimeout(() => {
+      const selector = `[data-prompt-block-id="${CSS.escape(blockId)}"]`;
+      document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  }, []);
+
+  const handleTargetHover = useCallback((identity: PromptBlockIdentity | null) => {
+    setHoveredBlockId(identity ? identityToBlockId(identity) : null);
+  }, [identityToBlockId]);
+
+  const handleTargetClick = useCallback((identity: PromptBlockIdentity) => {
+    const blockId = identityToBlockId(identity);
+    setInspectorEnabled(true);
+    setSelectedBlockId(blockId);
+    setFlashBlockId(blockId);
+    scrollToPromptBlock(blockId);
+    window.setTimeout(() => setFlashBlockId((current) => (current === blockId ? null : current)), 1200);
+  }, [identityToBlockId, scrollToPromptBlock]);
+
+  const handleTargetsChange = useCallback((layoutId: string, targetIds: string[]) => {
+    setVisualTargetIdsByLayout((current) => {
+      const currentIds = current.get(layoutId);
+      if (
+        currentIds &&
+        currentIds.size === targetIds.length &&
+        targetIds.every((targetId) => currentIds.has(targetId))
+      ) {
+        return current;
+      }
+      const next = new Map(current);
+      next.set(layoutId, new Set(targetIds));
+      return next;
+    });
+  }, []);
+
+  const handleShowOnSlide = useCallback((block: { id: string }) => {
+    setInspectorEnabled(true);
+    setSelectedBlockId(block.id);
+    setFlashBlockId(block.id);
+    const identity = parsePromptBlockId(block.id);
+    const slideFrame = identity
+      ? document.querySelector(`[data-prompt-slide-frame="${CSS.escape(identity.layoutId)}"]`)
+      : null;
+    slideFrame?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => setFlashBlockId((current) => (current === block.id ? null : current)), 1200);
   }, []);
 
   const handleDeleteCustomTemplate = async () => {
@@ -147,6 +206,19 @@ const GroupLayoutPreview = () => {
                 <Pencil className="w-4 h-4" />
                 Edit Prompt
               </Button>
+              <Button
+                variant={inspectorEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={() => setInspectorEnabled((enabled) => !enabled)}
+                className={`flex items-center gap-2 ${
+                  inspectorEnabled
+                    ? "bg-purple-600 text-white hover:bg-purple-700"
+                    : "text-cyan-700 hover:text-cyan-800 border-cyan-200 hover:bg-cyan-50 bg-white"
+                }`}
+              >
+                <Eye className="w-4 h-4" />
+                Prompt Inspector
+              </Button>
               {isCustom && (
                 <Button
                   variant="outline"
@@ -233,7 +305,18 @@ const GroupLayoutPreview = () => {
                       className="flex-shrink-0"
                       style={{ width: "1280px", height: "720px" }}
                     >
-                      <LayoutComponent data={template.sampleData} />
+                      <PromptInspectableSlideFrame
+                        layoutId={template.layoutId}
+                        inspectorEnabled={inspectorEnabled}
+                        activeBlockId={hoveredBlockId}
+                        selectedBlockId={selectedBlockId}
+                        flashBlockId={flashBlockId}
+                        onTargetHover={handleTargetHover}
+                        onTargetClick={handleTargetClick}
+                        onTargetsChange={handleTargetsChange}
+                      >
+                        <LayoutComponent data={template.sampleData} />
+                      </PromptInspectableSlideFrame>
                     </div>
                   </div>
                   <TemplatePromptBlocksInline
@@ -244,6 +327,12 @@ const GroupLayoutPreview = () => {
                     profileData={promptProfile.data}
                     profileLoading={promptProfile.loading}
                     onUpdateOverride={promptProfile.updateOverride}
+                    hoveredBlockId={hoveredBlockId}
+                    selectedBlockId={selectedBlockId}
+                    visualTargetIds={visualTargetIdsByLayout.get(template.layoutId)}
+                    onBlockHover={(block) => setHoveredBlockId(block?.id || null)}
+                    onBlockSelect={(block) => setSelectedBlockId(block.id)}
+                    onShowOnSlide={handleShowOnSlide}
                   />
                 </div>
               );
@@ -298,7 +387,18 @@ const GroupLayoutPreview = () => {
                       className="flex-shrink-0"
                       style={{ width: "1280px", height: "720px" }}
                     >
-                      <LayoutComponent data={layout.sampleData} />
+                      <PromptInspectableSlideFrame
+                        layoutId={layout.rawLayoutId || layout.layoutId}
+                        inspectorEnabled={inspectorEnabled}
+                        activeBlockId={hoveredBlockId}
+                        selectedBlockId={selectedBlockId}
+                        flashBlockId={flashBlockId}
+                        onTargetHover={handleTargetHover}
+                        onTargetClick={handleTargetClick}
+                        onTargetsChange={handleTargetsChange}
+                      >
+                        <LayoutComponent data={layout.sampleData} />
+                      </PromptInspectableSlideFrame>
                     </div>
                   </div>
                   <TemplatePromptBlocksInline
@@ -309,6 +409,12 @@ const GroupLayoutPreview = () => {
                     profileData={promptProfile.data}
                     profileLoading={promptProfile.loading}
                     onUpdateOverride={promptProfile.updateOverride}
+                    hoveredBlockId={hoveredBlockId}
+                    selectedBlockId={selectedBlockId}
+                    visualTargetIds={visualTargetIdsByLayout.get(layout.rawLayoutId || layout.layoutId)}
+                    onBlockHover={(block) => setHoveredBlockId(block?.id || null)}
+                    onBlockSelect={(block) => setSelectedBlockId(block.id)}
+                    onShowOnSlide={handleShowOnSlide}
                   />
                 </Card>
               );
