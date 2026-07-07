@@ -32,7 +32,7 @@ interface PromptInspectableSlideFrameProps {
     onTargetsChange?: (layoutId: string, targetIds: string[]) => void;
 }
 
-function isInspectableType(value: string | null): value is Exclude<PromptBlockType, "layout"> {
+function isInspectableType(value: string | null | undefined): value is Exclude<PromptBlockType, "layout"> {
     return value === "field" || value === "image";
 }
 
