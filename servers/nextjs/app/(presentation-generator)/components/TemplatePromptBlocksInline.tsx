@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { AlertCircle, FileText, Image as ImageIcon, Layout, Loader2, Pencil } from "lucide-react";
+import { AlertCircle, ChevronDown, FileText, Image as ImageIcon, Layout, Loader2, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 import InlinePromptBlockEditor from "./InlinePromptBlockEditor";
 import {
@@ -21,7 +26,7 @@ import {
     useTemplatePromptProfile,
 } from "../hooks/useTemplatePromptProfile";
 
-interface PromptBlock {
+export interface PromptBlock {
     id: string;
     type: PromptBlockType;
     label: string;
@@ -69,7 +74,7 @@ const fieldIsTextPrompt = (field: FieldSummary) => (
     field.special_kind !== "icon_url"
 );
 
-function matchLayout(
+export function matchTemplatePromptLayout(
     data: TemplatePromptProfileResponse | null | undefined,
     candidates: Array<string | null | undefined>,
     index?: number
@@ -126,7 +131,7 @@ function getLayoutPromptState(data: TemplatePromptProfileResponse, layout: Layou
     return {};
 }
 
-function buildBlocks(
+export function buildTemplatePromptBlocks(
     data: TemplatePromptProfileResponse | null | undefined,
     layout: LayoutSummary | null
 ): PromptBlock[] {
@@ -211,12 +216,13 @@ export default function TemplatePromptBlocksInline({
     const loading = profileLoading ?? ownedProfile.loading;
     const updateOverride = onUpdateOverride ?? ownedProfile.updateOverride;
     const [openBlockId, setOpenBlockId] = useState<string | null>(null);
+    const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
 
     const layout = useMemo(
-        () => matchLayout(data, [layoutId, layoutName, sourceFile], index),
+        () => matchTemplatePromptLayout(data, [layoutId, layoutName, sourceFile], index),
         [data, layoutId, layoutName, sourceFile, index]
     );
-    const blocks = useMemo(() => buildBlocks(data, layout), [data, layout]);
+    const blocks = useMemo(() => buildTemplatePromptBlocks(data, layout), [data, layout]);
 
     const externalBlockMatches = React.useCallback((block: PromptBlock, externalId?: string | null) => {
         if (!externalId) return false;
@@ -251,14 +257,6 @@ export default function TemplatePromptBlocksInline({
         );
     }
 
-    const textCount = blocks.filter((block) => block.type === "field").length;
-    const imageCount = blocks.filter((block) => block.type === "image").length;
-    const overriddenCount = blocks.filter((block) => block.savedOverride && block.savedOverride.trim()).length;
-
-    const saveBlock = async (block: PromptBlock, value: string | null) => {
-        await updateOverride(layout.layout_id, block.type, block.path, value);
-    };
-
     const blockHasVisualTarget = (block: PromptBlock) => {
         if (!visualTargetIds) return true;
         const blockIdentity = parsePromptBlockId(block.id);
@@ -269,12 +267,26 @@ export default function TemplatePromptBlocksInline({
         });
     };
 
+    const textCount = blocks.filter((block) => block.type === "field").length;
+    const imageCount = blocks.filter((block) => block.type === "image").length;
+    const overriddenCount = blocks.filter((block) => block.savedOverride && block.savedOverride.trim()).length;
+    const nonVisualCount = blocks.filter((block) => !block.disabled && !blockHasVisualTarget(block)).length;
+    const unmappedCount = blocks.filter((block) => block.disabled).length;
+
+    const saveBlock = async (block: PromptBlock, value: string | null) => {
+        await updateOverride(layout.layout_id, block.type, block.path, value);
+    };
+
     return (
-        <div className="border-t border-gray-100 bg-white px-4 py-4 space-y-3">
+        <Collapsible
+            open={diagnosticsOpen}
+            onOpenChange={setDiagnosticsOpen}
+            className="border-t border-gray-100 bg-white px-4 py-4"
+        >
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                     <Layout className="h-4 w-4 text-purple-600 shrink-0" />
-                    <h4 className="text-sm font-semibold text-gray-900">Prompt blocks</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">Prompt blocks diagnostics</h4>
                     <Badge variant="outline" className="rounded-full text-[10px] border-gray-200 text-gray-600">
                         {textCount} text
                     </Badge>
@@ -286,13 +298,34 @@ export default function TemplatePromptBlocksInline({
                             {overriddenCount} overridden
                         </Badge>
                     )}
+                    {nonVisualCount > 0 && (
+                        <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 text-[10px] text-amber-700">
+                            {nonVisualCount} Non-visual
+                        </Badge>
+                    )}
+                    {unmappedCount > 0 && (
+                        <Badge variant="outline" className="rounded-full border-red-200 bg-red-50 text-[10px] text-red-700">
+                            {unmappedCount} Unmapped
+                        </Badge>
+                    )}
                 </div>
-                <span className="text-[11px] text-gray-500">
-                    Overrides affect generation prompts, not slide content.
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-500">
+                        Overrides affect generation prompts, not slide content.
+                    </span>
+                    <CollapsibleTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                            {diagnosticsOpen ? "Hide diagnostics" : "Show diagnostics"}
+                            <ChevronDown
+                                data-icon="inline-end"
+                                className={diagnosticsOpen ? "rotate-180 transition-transform" : "transition-transform"}
+                            />
+                        </Button>
+                    </CollapsibleTrigger>
+                </div>
             </div>
 
-            <div className="space-y-2">
+            <CollapsibleContent className="mt-3 flex flex-col gap-2">
                 {blocks.map((block) => {
                     const hasOverride = !!block.savedOverride?.trim();
                     const isOpen = openBlockId === block.id;
@@ -345,9 +378,14 @@ export default function TemplatePromptBlocksInline({
                                                 Image prompt
                                             </Badge>
                                         )}
-                                        {!hasVisualTarget && (
+                                        {!hasVisualTarget && !block.disabled && (
                                             <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 text-[10px] text-amber-700">
-                                                No visual target
+                                                Non-visual / not mapped
+                                            </Badge>
+                                        )}
+                                        {block.disabled && (
+                                            <Badge variant="outline" className="rounded-full border-red-200 bg-red-50 text-[10px] text-red-700">
+                                                Unmapped image prompt
                                             </Badge>
                                         )}
                                     </div>
@@ -399,7 +437,7 @@ export default function TemplatePromptBlocksInline({
                         </div>
                     );
                 })}
-            </div>
-        </div>
+            </CollapsibleContent>
+        </Collapsible>
     );
 }
