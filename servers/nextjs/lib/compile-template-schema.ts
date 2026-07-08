@@ -164,14 +164,15 @@ function collectDependenciesForDeclaration(
   const dependencies = new Set<string>();
 
   const addDependency = (name: string) => {
-    if (
-      name !== "z" &&
-      name !== "undefined" &&
-      !BUILTIN_SHARED_SCHEMA_IDENTIFIERS.has(name) &&
-      name !== currentDeclaration
-    ) {
-      dependencies.add(name);
+    if (name === "z" || name === "undefined" || name === currentDeclaration) {
+      return;
     }
+
+    if (BUILTIN_SHARED_SCHEMA_IDENTIFIERS.has(name) && !declarations.has(name)) {
+      return;
+    }
+
+    dependencies.add(name);
   };
 
   const validateMemberExpression = (node: t.MemberExpression) => {

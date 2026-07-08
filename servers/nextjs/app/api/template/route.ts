@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
 
+import {
+  buildBuiltinTemplateLayoutPayload,
+  buildCustomTemplateLayoutPayloadFromApi,
+} from "@/lib/server-template-layouts";
+
+export const dynamic = "force-dynamic";
+
 function compactError(value: unknown): string {
   const text = value instanceof Error && value.stack ? value.stack : String(value);
   return text.split(/\r?\n/).slice(0, 40).join("\n").slice(0, 4000);
@@ -14,6 +21,21 @@ export async function GET(request: Request) {
 
   if (!groupName) {
     return NextResponse.json({ error: "Missing group name" }, { status: 400 });
+  }
+
+  try {
+    const serverPayload = groupName.startsWith("custom-")
+      ? await buildCustomTemplateLayoutPayloadFromApi(groupName)
+      : await buildBuiltinTemplateLayoutPayload(groupName);
+
+    if (serverPayload) {
+      return NextResponse.json(serverPayload);
+    }
+  } catch (err) {
+    console.warn("[api/template] server-side schema compilation failed, falling back to browser extraction", {
+      group: groupName,
+      error: compactError(err),
+    });
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

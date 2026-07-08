@@ -48,16 +48,23 @@ export async function buildBuiltinTemplateLayoutPayload(group: string): Promise<
   icon_weight: string;
   slides: BuiltinLayoutSlide[];
 } | null> {
-  const dir = path.join(
-    process.cwd(),
-    "app",
-    "presentation-templates",
-    group,
-  );
+  const candidateDirs = [
+    path.join(process.cwd(), "app", "presentation-templates", group),
+    path.join(process.cwd(), "presentation-templates", group),
+  ];
+  let dir: string | null = null;
 
-  try {
-    await fs.access(dir);
-  } catch {
+  for (const candidate of candidateDirs) {
+    try {
+      await fs.access(candidate);
+      dir = candidate;
+      break;
+    } catch {
+      // Try the next supported template root.
+    }
+  }
+
+  if (!dir) {
     return null;
   }
 
