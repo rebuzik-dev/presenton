@@ -137,6 +137,97 @@ def test_build_slide_block_map_merges_content_prompt_profile_and_overrides():
     assert image.prompt.text == "Profile image prompt"
 
 
+def test_build_slide_block_map_expands_array_text_and_image_prompt_paths():
+    from utils.block_map import build_slide_block_map
+
+    layout = PresentationLayoutModel(
+        name="catering",
+        ordered=False,
+        slides=[
+            SlideLayoutModel(
+                id="catering:header-three-image-cards",
+                name="Header Three Image Cards Slide",
+                description="A slide with a header and a row of image cards.",
+                json_schema={
+                    "type": "object",
+                    "properties": {
+                        "cards": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "description": "Card title. Max 3 words",
+                                    },
+                                    "image": {
+                                        "type": "object",
+                                        "properties": {
+                                            "__image_prompt__": {
+                                                "type": "string",
+                                                "description": "Card image prompt",
+                                                "default": "Decor image",
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            )
+        ],
+    )
+    presentation_id = uuid4()
+    presentation = PresentationModel(
+        id=presentation_id,
+        content="Brief",
+        n_slides=1,
+        language="Russian",
+        layout=layout.model_dump(),
+    )
+    slide = SlideModel(
+        id=uuid4(),
+        presentation=presentation_id,
+        layout_group="catering",
+        layout="catering:header-three-image-cards",
+        index=0,
+        content={
+            "cards": [
+                {
+                    "title": "Flowers",
+                    "image": {"__image_prompt__": "Flower decor"},
+                },
+                {
+                    "title": "Serving",
+                    "image": {"__image_prompt__": "Table setting"},
+                },
+            ],
+        },
+        properties=None,
+    )
+
+    blocks = build_slide_block_map(
+        presentation=presentation,
+        slide=slide,
+        layout=layout,
+        prompt_profile=None,
+    )
+    by_path = {block.schema_path: block for block in blocks}
+
+    assert "cards[0].title" in by_path
+    assert "cards[1].title" in by_path
+    assert "cards[0].image.__image_prompt__" in by_path
+    assert "cards[1].image.__image_prompt__" in by_path
+    assert "cards[].title" not in by_path
+    assert "cards[].image.__image_prompt__" not in by_path
+    assert by_path["cards[0].title"].content.text == "Flowers"
+    assert by_path["cards[1].title"].content.text == "Serving"
+    assert by_path["cards[0].image.__image_prompt__"].type == "image"
+    assert by_path["cards[0].image.__image_prompt__"].content.image_prompt == "Flower decor"
+    assert by_path["cards[1].image.__image_prompt__"].content.image_prompt == "Table setting"
+
+
 def test_apply_block_patch_updates_properties_and_text(fake_async_session):
     from models.block_map import EditableBlockPatchRequest
     from utils.block_map import apply_block_patch, build_editable_block_id
