@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
 
+function compactError(value: unknown): string {
+  const text = value instanceof Error && value.stack ? value.stack : String(value);
+  return text.split(/\r?\n/).slice(0, 40).join("\n").slice(0, 4000);
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const groupName = searchParams.get("group");
@@ -20,11 +25,12 @@ export async function GET(request: Request) {
     schemaSearchParams.set("api_key", apiKey);
   }
   const schemaPageUrl = `${baseUrl}/schema?${schemaSearchParams.toString()}`;
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
 
   let browser;
   try {
     browser = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+      executablePath,
       headless: true,
       args: [
         "--no-sandbox",
@@ -84,9 +90,20 @@ export async function GET(request: Request) {
 
     return NextResponse.json(response);
   } catch (err) {
-    console.error("Puppeteer/API Error:", err);
+    const diagnostics = {
+      group: groupName,
+      baseUrl,
+      schemaPageUrl,
+      executablePath: executablePath || null,
+      error: compactError(err),
+    };
+    console.error("Puppeteer/API Error:", diagnostics);
     return NextResponse.json(
-      { error: "Failed to fetch or parse client page", details: String(err) },
+      {
+        error: "Failed to fetch or parse client page",
+        details: diagnostics.error,
+        diagnostics,
+      },
       { status: 500 }
     );
 

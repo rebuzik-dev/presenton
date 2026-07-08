@@ -12,3 +12,8 @@ def _frontend_service_block(compose_file: str) -> str:
 def test_dokploy_frontend_points_auth_proxy_to_backend():
     frontend = _frontend_service_block("docker-compose.dokploy.yml")
     assert "      - FAST_API_INTERNAL_URL=http://backend:8000" in frontend
+
+
+def test_dokploy_frontend_sets_puppeteer_chromium_path():
+    frontend = _frontend_service_block("docker-compose.dokploy.yml")
+    assert "      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium" in frontend

@@ -78,6 +78,7 @@ services:
       - APP_DATA_DIRECTORY=/app_data
       - USER_CONFIG_PATH=/app_data/userConfig.json
       - TEMP_DIRECTORY=/tmp/presenton
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
       - NEXTJS_API_URL=http://frontend:3000
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}

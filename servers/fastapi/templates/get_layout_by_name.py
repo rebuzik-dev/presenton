@@ -77,10 +77,72 @@ def _read_builtin_template_settings(layout_name: str) -> dict[str, Any] | None:
     return None
 
 
+def _builtin_template_exists(layout_name: str) -> bool:
+    if not layout_name or layout_name.startswith("custom-"):
+        return False
+    if "/" in layout_name or "\\" in layout_name or layout_name in {".", ".."}:
+        return False
+
+    service_dir = os.path.dirname(__file__)
+    candidates = [
+        os.path.abspath(
+            os.path.join(
+                service_dir,
+                "..",
+                "..",
+                "nextjs",
+                "app",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                service_dir,
+                "..",
+                "..",
+                "nextjs",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                os.getcwd(),
+                "..",
+                "nextjs",
+                "app",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                os.getcwd(),
+                "..",
+                "nextjs",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+    ]
+    return any(os.path.isdir(candidate) for candidate in candidates)
+
+
+def _build_template_api_url(layout_name: str) -> str:
+    base_url = (
+        os.getenv("NEXTJS_API_URL")
+        or os.getenv("NEXT_PUBLIC_APP_URL")
+        or "http://localhost"
+    ).strip().rstrip("/")
+    query = urlencode({"group": layout_name})
+    return f"{base_url}/api/template?{query}"
+
+
 async def _fetch_template_fallback_payload(
     layout_name: str,
 ) -> tuple[dict[str, Any] | None, str | None]:
-    fallback_url = f"http://localhost/api/template?group={layout_name}"
+    fallback_url = _build_template_api_url(layout_name)
     LOGGER.info(
         "[template_layout] trying HTTP fallback template=%r url=%s",
         layout_name,
@@ -129,6 +191,11 @@ async def _fetch_template_fallback_payload(
 async def get_layout_by_name(layout_name: str) -> PresentationLayoutModel:
     if layout_name.startswith("custom-"):
         return await load_custom_presentation_layout(layout_name)
+    if not _builtin_template_exists(layout_name):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Template with slug '{layout_name}' not found",
+        )
 
     query = urlencode({"group": layout_name})
     url = f"http://localhost/schema?{query}"

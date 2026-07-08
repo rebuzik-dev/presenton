@@ -16,6 +16,72 @@ from services.template_prompt_profile_service import template_prompt_profile_ser
 from utils.template_prompt_overrides import apply_prompt_profile_to_layout
 
 
+def _builtin_template_exists(layout_name: str) -> bool:
+    if not layout_name or layout_name.startswith("custom-"):
+        return False
+    if "/" in layout_name or "\\" in layout_name or layout_name in {".", ".."}:
+        return False
+
+    service_dir = os.path.dirname(__file__)
+    candidates = [
+        os.path.abspath(
+            os.path.join(
+                service_dir,
+                "..",
+                "..",
+                "nextjs",
+                "app",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                service_dir,
+                "..",
+                "..",
+                "nextjs",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                os.getcwd(),
+                "..",
+                "nextjs",
+                "app",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                os.getcwd(),
+                "..",
+                "nextjs",
+                "presentation-templates",
+                layout_name,
+            )
+        ),
+    ]
+    return any(os.path.isdir(candidate) for candidate in candidates)
+
+
+def _build_template_api_url(
+    layout_name: str,
+    auth_token: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> str:
+    base_url = os.environ.get("NEXTJS_API_URL", "http://localhost:3000").strip().rstrip("/")
+    query_params = {"group": layout_name}
+    if auth_token:
+        query_params["token"] = auth_token
+    if api_key:
+        query_params["api_key"] = api_key
+    return f"{base_url}/api/template?{urlencode(query_params)}"
+
+
 async def get_layout_by_name(
     layout_name: str,
     ordered: Optional[bool] = None,
@@ -52,6 +118,11 @@ async def get_layout_by_name(
     if template:
         # System templates: fetch layout from Next.js (it has the TSX components)
         if template.is_system:
+            if not _builtin_template_exists(layout_name):
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Template with slug '{layout_name}' not found",
+                )
             # For system templates, trust Next.js settings.json as the source of truth.
             # Only apply explicit request override when `ordered` is provided.
             resolved_ordered = ordered if ordered is not None else None
@@ -83,6 +154,12 @@ async def get_layout_by_name(
         )
         return await _apply_prompt_profile(layout_name, layout)
     
+    if not _builtin_template_exists(layout_name):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Template with slug '{layout_name}' not found",
+        )
+
     # Fallback: try Next.js directly (for backwards compatibility)
     layout = await _fetch_layout_from_nextjs(
         layout_name,
@@ -100,13 +177,11 @@ async def _fetch_layout_from_nextjs(
     api_key: Optional[str] = None,
 ) -> PresentationLayoutModel:
     """Fetch layout from Next.js API."""
-    base_url = os.environ.get("NEXTJS_API_URL", "http://localhost:3000")
-    query_params = {"group": layout_name}
-    if auth_token:
-        query_params["token"] = auth_token
-    if api_key:
-        query_params["api_key"] = api_key
-    url = f"{base_url}/api/template?{urlencode(query_params)}"
+    url = _build_template_api_url(
+        layout_name,
+        auth_token=auth_token,
+        api_key=api_key,
+    )
     
     async with aiohttp.ClientSession() as session:
         async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
