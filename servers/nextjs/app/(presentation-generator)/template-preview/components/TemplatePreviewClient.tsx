@@ -7,10 +7,19 @@ import { ArrowLeft, Eye, Loader2, Trash2, Pencil } from "lucide-react";
 import "../../utils/prism-languages";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
-import TemplatePromptBlocksInline from "../../components/TemplatePromptBlocksInline";
+import TemplatePromptBlocksInline, {
+  buildTemplatePromptBlocks,
+  matchTemplatePromptLayout,
+} from "../../components/TemplatePromptBlocksInline";
 import PromptInspectableSlideFrame from "../../components/PromptInspectableSlideFrame";
 import { useTemplatePromptProfile } from "../../hooks/useTemplatePromptProfile";
-import { buildPromptBlockId, parsePromptBlockId, PromptBlockIdentity } from "../../utils/promptBlockIds";
+import {
+  buildPromptBlockId,
+  parsePromptBlockId,
+  PromptBlockIdentity,
+  promptTargetMatchesBlock,
+} from "../../utils/promptBlockIds";
+import AnchoredBlockPromptPopover from "../../presentation/components/block-editor/AnchoredBlockPromptPopover";
 
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 import TemplateService from "../../services/api/template";
@@ -46,7 +55,6 @@ const GroupLayoutPreview = () => {
     template: customTemplate,
     loading: customLoading,
     error: customError,
-    fonts: customFonts,
   } = useCustomTemplateDetails({ id: templateParams?.split("custom-")[1] || "", name: "", description: "" });
 
   useEffect(() => {
@@ -69,13 +77,6 @@ const GroupLayoutPreview = () => {
     buildPromptBlockId(identity.layoutId, identity.type, identity.path)
   ), []);
 
-  const scrollToPromptBlock = useCallback((blockId: string) => {
-    window.setTimeout(() => {
-      const selector = `[data-prompt-block-id="${CSS.escape(blockId)}"]`;
-      document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 50);
-  }, []);
-
   const handleTargetHover = useCallback((identity: PromptBlockIdentity | null) => {
     setHoveredBlockId(identity ? identityToBlockId(identity) : null);
   }, [identityToBlockId]);
@@ -85,9 +86,8 @@ const GroupLayoutPreview = () => {
     setInspectorEnabled(true);
     setSelectedBlockId(blockId);
     setFlashBlockId(blockId);
-    scrollToPromptBlock(blockId);
     window.setTimeout(() => setFlashBlockId((current) => (current === blockId ? null : current)), 1200);
-  }, [identityToBlockId, scrollToPromptBlock]);
+  }, [identityToBlockId]);
 
   const handleTargetsChange = useCallback((layoutId: string, targetIds: string[]) => {
     setVisualTargetIdsByLayout((current) => {
@@ -104,6 +104,54 @@ const GroupLayoutPreview = () => {
       return next;
     });
   }, []);
+
+  const renderTargetPopover = useCallback((
+    layoutId?: string | null,
+    layoutName?: string | null,
+    sourceFile?: string | null,
+    index?: number
+  ) => {
+    function TemplateBlockPromptPopover(identity: PromptBlockIdentity) {
+      const layout = matchTemplatePromptLayout(
+        promptProfile.data,
+        [layoutId, layoutName, sourceFile],
+        index
+      );
+      const resolvedLayoutId = layout?.layout_id || identity.layoutId;
+      const identityForMatch = { ...identity, layoutId: resolvedLayoutId };
+      const blocks = buildTemplatePromptBlocks(promptProfile.data, layout);
+      const block = blocks.find((candidate) => {
+        const candidateIdentity = parsePromptBlockId(candidate.id);
+        return !!candidateIdentity && promptTargetMatchesBlock(identityForMatch, candidateIdentity);
+      });
+
+      return (
+        <AnchoredBlockPromptPopover
+          title={block?.label || identity.path || "Layout prompt"}
+          type={identity.type}
+          path={identity.path}
+          source={block?.sourcePrompt ?? null}
+          override={block?.savedOverride ?? null}
+          disabled={!promptProfile.data || block?.disabled}
+          saving={promptProfile.saving}
+          onSave={(value) => promptProfile.updateOverride(
+            resolvedLayoutId,
+            identity.type,
+            identity.path ?? undefined,
+            value
+          )}
+          onReset={() => promptProfile.updateOverride(
+            resolvedLayoutId,
+            identity.type,
+            identity.path ?? undefined,
+            null
+          )}
+        />
+      );
+    }
+
+    return TemplateBlockPromptPopover;
+  }, [promptProfile]);
 
   const handleShowOnSlide = useCallback((block: { id: string }) => {
     setInspectorEnabled(true);
@@ -314,6 +362,12 @@ const GroupLayoutPreview = () => {
                         onTargetHover={handleTargetHover}
                         onTargetClick={handleTargetClick}
                         onTargetsChange={handleTargetsChange}
+                        renderTargetPopover={renderTargetPopover(
+                          template.layoutId,
+                          template.layoutName,
+                          null,
+                          index
+                        )}
                       >
                         <LayoutComponent data={template.sampleData} />
                       </PromptInspectableSlideFrame>
@@ -396,6 +450,12 @@ const GroupLayoutPreview = () => {
                         onTargetHover={handleTargetHover}
                         onTargetClick={handleTargetClick}
                         onTargetsChange={handleTargetsChange}
+                        renderTargetPopover={renderTargetPopover(
+                          layout.rawLayoutId || layout.layoutId,
+                          layout.rawLayoutName,
+                          null,
+                          index
+                        )}
                       >
                         <LayoutComponent data={layout.sampleData} />
                       </PromptInspectableSlideFrame>

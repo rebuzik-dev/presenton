@@ -2,6 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 import {
@@ -21,6 +26,7 @@ interface SlideBlockOverlayProps {
   children: React.ReactNode;
   onBlockSelect: (block: MeasuredEditableBlock) => void;
   onMeasuredBlocksChange?: (blocks: MeasuredEditableBlock[]) => void;
+  renderBlockPopover?: (block: MeasuredEditableBlock) => React.ReactNode;
 }
 
 function blockMatches(a: EditableSlideBlock, blockId: string, path: string, type: string) {
@@ -35,6 +41,7 @@ export default function SlideBlockOverlay({
   children,
   onBlockSelect,
   onMeasuredBlocksChange,
+  renderBlockPopover,
 }: SlideBlockOverlayProps) {
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [measuredBlocks, setMeasuredBlocks] = useState<MeasuredEditableBlock[]>([]);
@@ -141,33 +148,41 @@ export default function SlideBlockOverlay({
             const labelVisible = selected || hovered || !block.isDense;
 
             return (
-              <button
-                key={block.block_id}
-                type="button"
-                aria-label={`Редактировать блок ${block.semantic_name}`}
-                className={cn(
-                  "pointer-events-auto absolute rounded-md border-2 bg-cyan-300/10 text-left transition focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2",
-                  selected
-                    ? "border-purple-500 bg-purple-500/15 shadow-[0_0_0_3px_rgba(122,90,248,0.22)]"
-                    : "border-cyan-400/70 hover:border-purple-500 hover:bg-purple-500/10"
+              <Popover key={block.block_id}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`Edit block ${block.semantic_name}`}
+                    className={cn(
+                      "pointer-events-auto absolute rounded-md border-2 bg-cyan-300/10 text-left transition focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2",
+                      selected
+                        ? "border-purple-500 bg-purple-500/15 shadow-[0_0_0_3px_rgba(122,90,248,0.22)]"
+                        : "border-cyan-400/70 hover:border-purple-500 hover:bg-purple-500/10"
+                    )}
+                    style={{
+                      left: `${block.rect.left}%`,
+                      top: `${block.rect.top}%`,
+                      width: `${block.rect.width}%`,
+                      height: `${block.rect.height}%`,
+                    }}
+                    onMouseEnter={() => setHoveredBlockId(block.block_id)}
+                    onMouseLeave={() => setHoveredBlockId(null)}
+                    onFocus={() => setHoveredBlockId(block.block_id)}
+                    onBlur={() => setHoveredBlockId(null)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onBlockSelect(block);
+                    }}
+                  >
+                    <BlockLabel block={block} visible={labelVisible} />
+                  </button>
+                </PopoverTrigger>
+                {renderBlockPopover && (
+                  <PopoverContent align="start" side="right" sideOffset={10} className="w-auto p-3">
+                    {renderBlockPopover(block)}
+                  </PopoverContent>
                 )}
-                style={{
-                  left: `${block.rect.left}%`,
-                  top: `${block.rect.top}%`,
-                  width: `${block.rect.width}%`,
-                  height: `${block.rect.height}%`,
-                }}
-                onMouseEnter={() => setHoveredBlockId(block.block_id)}
-                onMouseLeave={() => setHoveredBlockId(null)}
-                onFocus={() => setHoveredBlockId(block.block_id)}
-                onBlur={() => setHoveredBlockId(null)}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onBlockSelect(block);
-                }}
-              >
-                <BlockLabel block={block} visible={labelVisible} />
-              </button>
+              </Popover>
             );
           })}
         </div>

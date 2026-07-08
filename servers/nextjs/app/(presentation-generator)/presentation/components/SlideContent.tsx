@@ -37,6 +37,7 @@ import {
 } from "../../types/blockMap";
 import SlideBlockOverlay from "./block-editor/SlideBlockOverlay";
 import BlockInspectorSheet from "./block-editor/BlockInspectorSheet";
+import AnchoredBlockPromptPopover from "./block-editor/AnchoredBlockPromptPopover";
 
 interface SlideContentProps {
   slide: any;
@@ -97,9 +98,7 @@ const SlideContent = ({ slide, index, presentationId, blockEditMode = false }: S
     };
   }, [blockEditMode, presentationId, slide.index]);
 
-  const handleBlockSave = async (patch: EditableBlockPatchRequest) => {
-    if (!selectedBlock) return;
-
+  const saveBlockPatch = async (targetBlock: MeasuredEditableBlock, patch: EditableBlockPatchRequest) => {
     setIsBlockSaving(true);
     try {
       if (patch.text !== undefined && patch.text !== null) {
@@ -111,19 +110,10 @@ const SlideContent = ({ slide, index, presentationId, blockEditMode = false }: S
           })
         );
       }
-      if (patch.image_prompt_override !== undefined && patch.image_prompt_override !== null) {
-        dispatch(
-          updateSlideContent({
-            slideIndex: slide.index,
-            dataPath: patch.schema_path,
-            content: patch.image_prompt_override,
-          })
-        );
-      }
       dispatch(
         updateSlideBlockOverride({
           slideIndex: slide.index,
-          blockId: selectedBlock.block_id,
+          blockId: targetBlock.block_id,
           override: {
             semantic_name: patch.semantic_name,
             description: patch.description,
@@ -138,14 +128,16 @@ const SlideContent = ({ slide, index, presentationId, blockEditMode = false }: S
       const response = await PresentationGenerationApi.patchSlideBlock(
         presentationId,
         slide.index,
-        selectedBlock.block_id,
+        targetBlock.block_id,
         patch
       );
       setBlockMap((current) => {
         const without = current.filter((block) => block.block_id !== response.block.block_id);
         return [...without, response.block];
       });
-      setSelectedBlock((current) => current ? { ...current, ...response.block } : current);
+      setSelectedBlock((current) => (
+        current?.block_id === targetBlock.block_id ? { ...current, ...response.block } : current
+      ));
       toast.success("Override блока сохранен");
     } catch (error: any) {
       console.error("Error saving block override:", error);
@@ -155,6 +147,25 @@ const SlideContent = ({ slide, index, presentationId, blockEditMode = false }: S
     } finally {
       setIsBlockSaving(false);
     }
+  };
+
+  const handleBlockSave = async (patch: EditableBlockPatchRequest) => {
+    if (!selectedBlock) return;
+    await saveBlockPatch(selectedBlock, patch);
+  };
+
+  const savePromptOverrideForBlock = async (
+    block: MeasuredEditableBlock,
+    value: string | null
+  ) => {
+    await saveBlockPatch(block, {
+      schema_path: block.schema_path,
+      semantic_name: block.semantic_name,
+      description: block.description,
+      ...(block.type === "image"
+        ? { image_prompt_override: value }
+        : { prompt_override: value }),
+    });
   };
 
   const handleSubmit = async () => {
@@ -371,8 +382,19 @@ const SlideContent = ({ slide, index, presentationId, blockEditMode = false }: S
                 selectedBlockId={selectedBlock?.block_id}
                 onBlockSelect={(block) => {
                   setSelectedBlock(block);
-                  setIsInspectorOpen(true);
                 }}
+                renderBlockPopover={(block) => (
+                  <AnchoredBlockPromptPopover
+                    title={block.semantic_name}
+                    type={block.type}
+                    path={block.schema_path}
+                    source={block.prompt.text ?? block.description ?? null}
+                    override={block.prompt.override_text ?? null}
+                    saving={isBlockSaving}
+                    onSave={(value) => savePromptOverrideForBlock(block, value)}
+                    onReset={() => savePromptOverrideForBlock(block, null)}
+                  />
+                )}
               >
                 {slideContent}
               </SlideBlockOverlay>

@@ -3,6 +3,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+
+import {
     buildPromptBlockId,
     parsePromptBlockId,
     PromptBlockIdentity,
@@ -30,6 +36,7 @@ interface PromptInspectableSlideFrameProps {
     onTargetHover?: (block: PromptBlockIdentity | null) => void;
     onTargetClick?: (block: PromptBlockIdentity) => void;
     onTargetsChange?: (layoutId: string, targetIds: string[]) => void;
+    renderTargetPopover?: (block: PromptBlockIdentity) => React.ReactNode;
 }
 
 function isInspectableType(value: string | null | undefined): value is Exclude<PromptBlockType, "layout"> {
@@ -46,6 +53,7 @@ export default function PromptInspectableSlideFrame({
     onTargetHover,
     onTargetClick,
     onTargetsChange,
+    renderTargetPopover,
 }: PromptInspectableSlideFrameProps) {
     const frameRef = useRef<HTMLDivElement | null>(null);
     const [targets, setTargets] = useState<PromptTargetBox[]>([]);
@@ -129,18 +137,27 @@ export default function PromptInspectableSlideFrame({
             {showOverlay && (
                 <div className="pointer-events-none absolute inset-0 z-[60]">
                     {(inspectorEnabled || shouldShowLayoutHighlight) && (
-                        <button
-                            type="button"
-                            aria-label="Inspect layout prompt"
-                            className={`absolute inset-0 rounded-sm border-2 transition ${
-                                shouldShowLayoutHighlight
-                                    ? "border-purple-500 bg-purple-500/10 shadow-[0_0_0_4px_rgba(122,90,248,0.18)]"
-                                    : "border-purple-300/40 bg-transparent"
-                            } ${inspectorEnabled ? "pointer-events-auto cursor-pointer" : "pointer-events-none"}`}
-                            onMouseEnter={() => onTargetHover?.({ layoutId, type: "layout" })}
-                            onFocus={() => onTargetHover?.({ layoutId, type: "layout" })}
-                            onClick={() => onTargetClick?.({ layoutId, type: "layout" })}
-                        />
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    aria-label="Inspect layout prompt"
+                                    className={`absolute inset-0 rounded-sm border-2 transition ${
+                                        shouldShowLayoutHighlight
+                                            ? "border-purple-500 bg-purple-500/10 shadow-[0_0_0_4px_rgba(122,90,248,0.18)]"
+                                            : "border-purple-300/40 bg-transparent"
+                                    } ${inspectorEnabled ? "pointer-events-auto cursor-pointer" : "pointer-events-none"}`}
+                                    onMouseEnter={() => onTargetHover?.({ layoutId, type: "layout" })}
+                                    onFocus={() => onTargetHover?.({ layoutId, type: "layout" })}
+                                    onClick={() => onTargetClick?.({ layoutId, type: "layout" })}
+                                />
+                            </PopoverTrigger>
+                            {renderTargetPopover && (
+                                <PopoverContent align="start" side="right" sideOffset={10} className="w-auto p-3">
+                                    {renderTargetPopover({ layoutId, type: "layout" })}
+                                </PopoverContent>
+                            )}
+                        </Popover>
                     )}
 
                     {targets.map((target, index) => {
@@ -152,28 +169,36 @@ export default function PromptInspectableSlideFrame({
                         if (!inspectorEnabled && !emphasized) return null;
 
                         return (
-                            <button
-                                key={`${target.id}-${index}`}
-                                type="button"
-                                aria-label={`Inspect ${target.path || target.type} prompt target`}
-                                className={`absolute rounded-md border-2 transition ${
-                                    emphasized
-                                        ? "border-purple-500 bg-purple-500/15 shadow-[0_0_0_3px_rgba(122,90,248,0.22)]"
-                                        : "border-cyan-400/70 bg-cyan-300/10 hover:border-purple-500 hover:bg-purple-500/10"
-                                } ${inspectorEnabled ? "pointer-events-auto cursor-pointer" : "pointer-events-none"}`}
-                                style={{
-                                    left: `${target.rect.left}px`,
-                                    top: `${target.rect.top}px`,
-                                    width: `${target.rect.width}px`,
-                                    height: `${target.rect.height}px`,
-                                }}
-                                onMouseEnter={() => onTargetHover?.(target)}
-                                onFocus={() => onTargetHover?.(target)}
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    onTargetClick?.(target);
-                                }}
-                            />
+                            <Popover key={`${target.id}-${index}`}>
+                                <PopoverTrigger asChild>
+                                    <button
+                                        type="button"
+                                        aria-label={`Inspect ${target.path || target.type} prompt target`}
+                                        className={`absolute rounded-md border-2 transition ${
+                                            emphasized
+                                                ? "border-purple-500 bg-purple-500/15 shadow-[0_0_0_3px_rgba(122,90,248,0.22)]"
+                                                : "border-cyan-400/70 bg-cyan-300/10 hover:border-purple-500 hover:bg-purple-500/10"
+                                        } ${inspectorEnabled ? "pointer-events-auto cursor-pointer" : "pointer-events-none"}`}
+                                        style={{
+                                            left: `${target.rect.left}px`,
+                                            top: `${target.rect.top}px`,
+                                            width: `${target.rect.width}px`,
+                                            height: `${target.rect.height}px`,
+                                        }}
+                                        onMouseEnter={() => onTargetHover?.(target)}
+                                        onFocus={() => onTargetHover?.(target)}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onTargetClick?.(target);
+                                        }}
+                                    />
+                                </PopoverTrigger>
+                                {renderTargetPopover && (
+                                    <PopoverContent align="start" side="right" sideOffset={10} className="w-auto p-3">
+                                        {renderTargetPopover(target)}
+                                    </PopoverContent>
+                                )}
+                            </Popover>
                         );
                     })}
                 </div>
