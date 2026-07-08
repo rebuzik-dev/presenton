@@ -135,7 +135,7 @@ export default function PromptInspectableSlideFrame({
             {children}
 
             {showOverlay && (
-                <div className="pointer-events-none absolute inset-0 z-[60]">
+                <div className="pointer-events-none absolute inset-0 z-[80]">
                     {(inspectorEnabled || shouldShowLayoutHighlight) && (
                         <Popover>
                             <PopoverTrigger asChild>
@@ -153,7 +153,7 @@ export default function PromptInspectableSlideFrame({
                                 />
                             </PopoverTrigger>
                             {renderTargetPopover && (
-                                <PopoverContent align="start" side="right" sideOffset={10} className="w-auto p-3">
+                                <PopoverContent align="start" side="right" sideOffset={10} className="z-[1000] w-auto p-3">
                                     {renderTargetPopover({ layoutId, type: "layout" })}
                                 </PopoverContent>
                             )}
@@ -194,7 +194,7 @@ export default function PromptInspectableSlideFrame({
                                     />
                                 </PopoverTrigger>
                                 {renderTargetPopover && (
-                                    <PopoverContent align="start" side="right" sideOffset={10} className="w-auto p-3">
+                                    <PopoverContent align="start" side="right" sideOffset={10} className="z-[1000] w-auto p-3">
                                         {renderTargetPopover(target)}
                                     </PopoverContent>
                                 )}

@@ -141,7 +141,7 @@ export default function SlideBlockOverlay({
     <div ref={frameRef} className="relative h-full w-full" data-block-edit-frame={slide.index}>
       {children}
       {enabled && (
-        <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute inset-0 z-[80]">
           {measuredBlocks.map((block) => {
             const selected = selectedBlockId === block.block_id;
             const hovered = hoveredBlockId === block.block_id;
@@ -178,7 +178,7 @@ export default function SlideBlockOverlay({
                   </button>
                 </PopoverTrigger>
                 {renderBlockPopover && (
-                  <PopoverContent align="start" side="right" sideOffset={10} className="w-auto p-3">
+                  <PopoverContent align="start" side="right" sideOffset={10} className="z-[1000] w-auto p-3">
                     {renderBlockPopover(block)}
                   </PopoverContent>
                 )}

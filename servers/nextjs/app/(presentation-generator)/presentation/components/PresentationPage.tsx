@@ -12,7 +12,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Help from "./Help";
-import ScaledSlideWrapper from "../../components/ScaledSlideWrapper";
 import {
   usePresentationStreaming,
   usePresentationData,
@@ -38,6 +37,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const [error, setError] = useState(false);
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
   const [blockEditMode, setBlockEditMode] = useState(false);
+  const [blockEditSlideIndex, setBlockEditSlideIndex] = useState<number | null>(null);
   const { getCustomTemplateFonts } = useLayout();
 
   const { presentationData, isStreaming } = useSelector(
@@ -139,7 +139,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
         presentation_id={presentation_id}
         currentSlide={selectedSlide}
         blockEditMode={blockEditMode}
-        onBlockEditModeToggle={() => setBlockEditMode((value) => !value)}
+        onBlockEditModeToggle={() => {
+          setBlockEditMode(!blockEditMode);
+          setBlockEditSlideIndex(null);
+        }}
       />
       <Help />
 
@@ -189,7 +192,14 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                       slide={slide}
                       index={index}
                       presentationId={presentation_id}
-                      blockEditMode={blockEditMode}
+                      blockEditMode={
+                        blockEditMode &&
+                        (blockEditSlideIndex === null || blockEditSlideIndex === slide.index)
+                      }
+                      onRequestBlockEdit={(slideIndex) => {
+                        setBlockEditMode(true);
+                        setBlockEditSlideIndex(slideIndex);
+                      }}
                     />
                   ))}
               </>

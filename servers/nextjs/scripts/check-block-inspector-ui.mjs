@@ -12,11 +12,15 @@ const checks = [
   },
   {
     file: "app/(presentation-generator)/components/PromptInspectableSlideFrame.tsx",
-    patterns: [/renderTargetPopover/, /PopoverContent/],
+    patterns: [/renderTargetPopover/, /PopoverContent/, /z-\[80\]/, /z-\[1000\]/],
   },
   {
     file: "app/(presentation-generator)/presentation/components/block-editor/SlideBlockOverlay.tsx",
-    patterns: [/renderBlockPopover/, /PopoverContent/],
+    patterns: [/renderBlockPopover/, /PopoverContent/, /z-\[80\]/, /z-\[1000\]/],
+  },
+  {
+    file: "app/(presentation-generator)/presentation/components/SlideContent.tsx",
+    patterns: [/onRequestBlockEdit/, /Edit block prompts/],
   },
   {
     file: "app/(presentation-generator)/components/TemplatePromptBlocksInline.tsx",
@@ -25,6 +29,10 @@ const checks = [
   {
     file: "app/(presentation-generator)/template-preview/components/TemplatePreviewClient.tsx",
     patterns: [/AnchoredBlockPromptPopover/, /renderTargetPopover/],
+  },
+  {
+    file: "app/(presentation-generator)/presentation/components/PresentationPage.tsx",
+    patterns: [/blockEditSlideIndex/, /setBlockEditSlideIndex\(null\)/],
   },
 ];
 
