@@ -37,6 +37,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState(false);
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
+  const [blockEditMode, setBlockEditMode] = useState(false);
   const { getCustomTemplateFonts } = useLayout();
 
   const { presentationData, isStreaming } = useSelector(
@@ -134,7 +135,12 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
         {isSaving && <Loader2 className="w-6 h-6 animate-spin text-blue-500" />}
       </div>
 
-      <Header presentation_id={presentation_id} currentSlide={selectedSlide} />
+      <Header
+        presentation_id={presentation_id}
+        currentSlide={selectedSlide}
+        blockEditMode={blockEditMode}
+        onBlockEditModeToggle={() => setBlockEditMode((value) => !value)}
+      />
       <Help />
 
       <div
@@ -183,6 +189,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                       slide={slide}
                       index={index}
                       presentationId={presentation_id}
+                      blockEditMode={blockEditMode}
                     />
                   ))}
               </>

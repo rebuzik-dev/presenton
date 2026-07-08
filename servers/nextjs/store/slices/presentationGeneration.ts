@@ -387,6 +387,38 @@ const presentationGenerationSlice = createSlice({
       }
     },
 
+    updateSlideBlockOverride: (
+      state,
+      action: PayloadAction<{
+        slideIndex: number;
+        blockId: string;
+        override: {
+          semantic_name?: string | null;
+          description?: string | null;
+          text?: string | null;
+          prompt_override?: string | null;
+          image_prompt_override?: string | null;
+          style_override?: Record<string, unknown> | null;
+        };
+      }>
+    ) => {
+      if (
+        state.presentationData &&
+        state.presentationData.slides &&
+        state.presentationData.slides[action.payload.slideIndex]
+      ) {
+        const slide = state.presentationData.slides[action.payload.slideIndex];
+        slide.properties = slide.properties || {};
+        slide.properties.blockOverrides = slide.properties.blockOverrides || {};
+        const existing = slide.properties.blockOverrides[action.payload.blockId] || {};
+        slide.properties.blockOverrides[action.payload.blockId] = {
+          ...existing,
+          ...action.payload.override,
+          updated_at: new Date().toISOString(),
+        };
+      }
+    },
+
     // Update slide icon at specific data path
     updateSlideIcon: (
       state,
@@ -492,6 +524,7 @@ export const {
   updateSlideImage,
   updateImageProperties,
   updateSlideLayoutValidation,
+  updateSlideBlockOverride,
   updateSlideIcon,
   addNewSlide,
   updateTheme,

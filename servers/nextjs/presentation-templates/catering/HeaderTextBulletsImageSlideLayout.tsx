@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -88,19 +89,49 @@ const dynamicSlideLayout: React.FC<HeaderTextBulletsImageSlideLayoutProps> = ({ 
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-12 pb-12">
-        <div className="text-[50px] leading-[56px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
+        <div
+          className="text-[50px] leading-[56px] font-[900] uppercase text-[var(--style-text-primary)]"
+          style={{ color: titleColor, fontFamily: titleFont }}
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Главный заголовок",
+            description: "Основное сообщение слайда",
+            role: "main_title",
+          })}
+        >
           {slideData?.title || "ОСНОВНЫЕ ПРИНЦИПЫ ФОРМИРОВАНИЯ МЕНЮ"}
         </div>
 
         <div className="mt-8 grid grid-cols-[1fr_1.35fr] gap-10 items-start">
           <div className="pt-1">
-            <div className="text-[24px] leading-[32px] font-[700] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: bodyFont }}>
+            <div
+              className="text-[24px] leading-[32px] font-[700] text-[var(--style-text-primary)]"
+              style={{ color: bodyColor, fontFamily: bodyFont }}
+              {...promptTargetAttrs({
+                path: "lead",
+                type: "field",
+                name: "Вводный текст",
+                description: "Короткое пояснение перед списком",
+                role: "lead_text",
+              })}
+            >
               {(slideData?.lead || "Меню формируется по функциональной логике.").split(" ").slice(0, 3).join(" ")}
               <br />
               {(slideData?.lead || "Меню формируется по функциональной логике.").split(" ").slice(3).join(" ")}
             </div>
 
-            <div className="mt-7 text-[24px] leading-[32px] font-[600] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: bodyFont }}>
+            <div
+              className="mt-7 text-[24px] leading-[32px] font-[600] text-[var(--style-text-primary)]"
+              style={{ color: bodyColor, fontFamily: bodyFont }}
+              {...promptTargetAttrs({
+                path: "listTitle",
+                type: "field",
+                name: "Заголовок списка",
+                description: "Подпись перед пунктами списка",
+                role: "list_title",
+              })}
+            >
               {slideData?.listTitle || "Принципы:"}
             </div>
 
@@ -108,17 +139,47 @@ const dynamicSlideLayout: React.FC<HeaderTextBulletsImageSlideLayoutProps> = ({ 
               {bullets.map((t, idx) => (
                 <li key={idx} className="flex gap-4">
                   <span className="mt-[14px] w-2.5 h-1 bg-[var(--style-accent)] flex-shrink-0" style={{ backgroundColor: accentColor }}></span>
-                  <span>{t}</span>
+                  <span
+                    {...promptTargetAttrs({
+                      path: `bullets[${idx}]`,
+                      type: "field",
+                      name: `Пункт списка ${idx + 1}`,
+                      description: "Отдельный смысловой пункт списка",
+                      role: "bullet_item",
+                    })}
+                  >
+                    {t}
+                  </span>
                 </li>
               ))}
             </ul>
 
-            <div className="mt-7 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)] max-w-[420px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
+            <div
+              className="mt-7 text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)] max-w-[420px]"
+              style={{ color: bodyColor, fontFamily: bodyFont }}
+              {...promptTargetAttrs({
+                path: "footerNote",
+                type: "field",
+                name: "Финальная ремарка",
+                description: "Короткий вывод или уточнение внизу текстового блока",
+                role: "footer_note",
+              })}
+            >
               {slideData?.footerNote || "Фокус — удобство и скорость потребления."}
             </div>
           </div>
 
-          <div className="w-full h-[470px] overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
+          <div
+            className="w-full h-[470px] overflow-hidden bg-[var(--style-surface)]"
+            style={{ backgroundColor: surfaceColor }}
+            {...promptTargetAttrs({
+              path: "image.__image_prompt__",
+              type: "image",
+              name: "Основное изображение",
+              description: "Крупный визуальный акцент справа",
+              role: "supporting_image",
+            })}
+          >
             <img
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || slideData?.title || ""}

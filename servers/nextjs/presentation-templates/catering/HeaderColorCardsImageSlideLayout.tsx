@@ -107,14 +107,26 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
         <div
           className="text-[17px] leading-[21px] tracking-[0.4px] font-[700]"
           style={{ color: resolvedTextColor, fontFamily: cardFont }}
-          {...promptTargetAttrs({ path: `colorCards[${index}].hex`, type: "field" })}
+          {...promptTargetAttrs({
+            path: `colorCards[${index}].hex`,
+            type: "field",
+            name: `Цвет карточки ${index + 1}`,
+            description: "Hex-код цветового блока",
+            role: "color_card_hex",
+          })}
         >
           {hex}
         </div>
         <div
           className="text-[18px] leading-[22px] font-[500]"
           style={{ color: resolvedTextColor, fontFamily: cardFont }}
-          {...promptTargetAttrs({ path: `colorCards[${index}].description`, type: "field" })}
+          {...promptTargetAttrs({
+            path: `colorCards[${index}].description`,
+            type: "field",
+            name: `Описание цветовой карточки ${index + 1}`,
+            description: "Назначение цвета в палитре",
+            role: "color_card_description",
+          })}
         >
           {description}
         </div>
@@ -129,7 +141,13 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
           <div
             className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]"
             style={{ color: titleColor, fontFamily: titleFont }}
-            {...promptTargetAttrs({ path: "title", type: "field" })}
+            {...promptTargetAttrs({
+              path: "title",
+              type: "field",
+              name: "Главный заголовок",
+              description: "Название слайда с палитрой",
+              role: "main_title",
+            })}
           >
             {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
           </div>
@@ -139,7 +157,13 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
               <div
                 className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
                 style={{ color: titleColor, fontFamily: sectionFont }}
-                {...promptTargetAttrs({ path: "primaryTitle", type: "field" })}
+                {...promptTargetAttrs({
+                  path: "primaryTitle",
+                  type: "field",
+                  name: "Заголовок основных цветов",
+                  description: "Название левой группы палитры",
+                  role: "primary_palette_title",
+                })}
               >
                 {slideData?.primaryTitle || "Основные цвета"}
               </div>
@@ -154,7 +178,13 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
               <div
                 className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
                 style={{ color: titleColor, fontFamily: sectionFont }}
-                {...promptTargetAttrs({ path: "secondaryTitle", type: "field" })}
+                {...promptTargetAttrs({
+                  path: "secondaryTitle",
+                  type: "field",
+                  name: "Заголовок дополнительных цветов",
+                  description: "Название правой группы палитры",
+                  role: "secondary_palette_title",
+                })}
               >
                 {slideData?.secondaryTitle || "Дополнительные цвета"}
               </div>
@@ -170,7 +200,13 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
         <div className="h-full flex items-start justify-end">
           <div
             className="w-full h-[560px] overflow-hidden"
-            {...promptTargetAttrs({ path: "image.__image_prompt__", type: "image" })}
+            {...promptTargetAttrs({
+              path: "image.__image_prompt__",
+              type: "image",
+              name: "Изображение палитры",
+              description: "Поддерживающее фото справа",
+              role: "supporting_image",
+            })}
           >
             <img
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}

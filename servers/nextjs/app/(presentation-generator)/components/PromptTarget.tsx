@@ -6,13 +6,19 @@ interface PromptTargetOptions {
     path: string;
     type: Exclude<PromptBlockType, "layout">;
     id?: string;
+    name?: string;
+    description?: string;
+    role?: string;
 }
 
-export function promptTargetAttrs({ path, type, id }: PromptTargetOptions) {
+export function promptTargetAttrs({ path, type, id, name, description, role }: PromptTargetOptions) {
     return {
         "data-prompt-path": path,
         "data-prompt-type": type,
         ...(id ? { "data-prompt-id": id } : {}),
+        ...(name ? { "data-prompt-name": name } : {}),
+        ...(description ? { "data-prompt-description": description } : {}),
+        ...(role ? { "data-prompt-role": role } : {}),
     };
 }
 

@@ -25,6 +25,11 @@ from models.presentation_outline_model import (
 from enums.tone import Tone
 from enums.verbosity import Verbosity
 from models.pptx_models import PptxPresentationModel
+from models.block_map import (
+    EditableBlockPatchRequest,
+    EditableBlockPatchResponse,
+    EditableSlideBlock,
+)
 from models.presentation_layout import PresentationLayoutModel
 from models.presentation_structure_model import PresentationStructureModel
 from models.presentation_with_slides import (
@@ -64,6 +69,12 @@ from utils.process_slides import (
 )
 import uuid
 from services.presentation_service import PresentationService
+from services.template_prompt_profile_service import template_prompt_profile_service
+from utils.block_map import (
+    apply_block_patch,
+    build_editable_block_id,
+    build_slide_block_map,
+)
 
 
 from utils.custom_logger import setup_logger
@@ -393,6 +404,103 @@ async def get_presentation(
     return PresentationWithSlides(
         **presentation.model_dump(),
         slides=slides,
+    )
+
+
+async def _get_slide_for_presentation_index(
+    sql_session: AsyncSession,
+    presentation_id: uuid.UUID,
+    slide_index: int,
+) -> SlideModel:
+    slides_result = await sql_session.scalars(
+        select(SlideModel).where(
+            SlideModel.presentation == presentation_id,
+            SlideModel.index == slide_index,
+        )
+    )
+    if hasattr(slides_result, "first"):
+        slide = slides_result.first()
+    else:
+        slide = next(iter(slides_result), None)
+    if not slide:
+        raise HTTPException(status_code=404, detail="Slide not found")
+    return slide
+
+
+@PRESENTATION_ROUTER.get(
+    "/{presentation_id}/slides/{slide_index}/blocks",
+    response_model=List[EditableSlideBlock],
+)
+async def get_presentation_slide_blocks(
+    presentation_id: uuid.UUID,
+    slide_index: int,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    presentation = await sql_session.get(PresentationModel, presentation_id)
+    if not presentation:
+        raise HTTPException(status_code=404, detail="Presentation not found")
+    slide = await _get_slide_for_presentation_index(
+        sql_session,
+        presentation_id,
+        slide_index,
+    )
+    layout = presentation.get_layout()
+    prompt_profile = await template_prompt_profile_service.get_by_slug(layout.name)
+    return build_slide_block_map(
+        presentation=presentation,
+        slide=slide,
+        layout=layout,
+        prompt_profile=prompt_profile,
+    )
+
+
+@PRESENTATION_ROUTER.patch(
+    "/{presentation_id}/slides/{slide_index}/blocks/{block_id:path}",
+    response_model=EditableBlockPatchResponse,
+)
+async def patch_presentation_slide_block(
+    presentation_id: uuid.UUID,
+    slide_index: int,
+    block_id: str,
+    request: EditableBlockPatchRequest,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    presentation = await sql_session.get(PresentationModel, presentation_id)
+    if not presentation:
+        raise HTTPException(status_code=404, detail="Presentation not found")
+    slide = await _get_slide_for_presentation_index(
+        sql_session,
+        presentation_id,
+        slide_index,
+    )
+    block_type = "image" if request.schema_path.endswith("__image_prompt__") else "text"
+    canonical_block_id = build_editable_block_id(
+        slide.layout,
+        block_type,
+        request.schema_path,
+    )
+    patched_slide = await apply_block_patch(
+        sql_session,
+        slide,
+        canonical_block_id,
+        request,
+    )
+    layout = presentation.get_layout()
+    prompt_profile = await template_prompt_profile_service.get_by_slug(layout.name)
+    blocks = build_slide_block_map(
+        presentation=presentation,
+        slide=patched_slide,
+        layout=layout,
+        prompt_profile=prompt_profile,
+    )
+    block = next((item for item in blocks if item.block_id == canonical_block_id), None)
+    if not block:
+        raise HTTPException(status_code=404, detail="Block not found")
+    return EditableBlockPatchResponse(
+        block=block,
+        block_overrides=patched_slide.properties.get("blockOverrides", {})
+        if isinstance(patched_slide.properties, dict)
+        else {},
     )
 
 

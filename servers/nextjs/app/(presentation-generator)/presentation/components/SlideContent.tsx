@@ -15,6 +15,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   deletePresentationSlide,
   updateSlide,
+  updateSlideBlockOverride,
+  updateSlideContent,
   updateSlideLayoutValidation,
 } from "@/store/slices/presentationGeneration";
 import { useTemplateLayouts } from "../../hooks/useTemplateLayouts";
@@ -28,17 +30,29 @@ import {
   computeContentHash,
   computeLayoutSignature,
 } from "../../utils/layoutValidationHash";
+import {
+  EditableBlockPatchRequest,
+  EditableSlideBlock,
+  MeasuredEditableBlock,
+} from "../../types/blockMap";
+import SlideBlockOverlay from "./block-editor/SlideBlockOverlay";
+import BlockInspectorSheet from "./block-editor/BlockInspectorSheet";
 
 interface SlideContentProps {
   slide: any;
   index: number;
   presentationId: string;
+  blockEditMode?: boolean;
 }
 
-const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
+const SlideContent = ({ slide, index, presentationId, blockEditMode = false }: SlideContentProps) => {
   const dispatch = useDispatch();
   const [isUpdating, setIsUpdating] = useState(false);
   const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
+  const [blockMap, setBlockMap] = useState<EditableSlideBlock[]>([]);
+  const [selectedBlock, setSelectedBlock] = useState<MeasuredEditableBlock | null>(null);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [isBlockSaving, setIsBlockSaving] = useState(false);
   const { presentationData, isStreaming } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
@@ -48,6 +62,100 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
   const pathname = usePathname();
   const slideWrapperRef = useRef<HTMLDivElement>(null);
   const layoutValidationSignatureRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!blockEditMode) {
+      setSelectedBlock(null);
+      setIsInspectorOpen(false);
+      return;
+    }
+
+    let cancelled = false;
+    const loadBlocks = async () => {
+      try {
+        const blocks = await PresentationGenerationApi.getSlideBlocks(
+          presentationId,
+          slide.index
+        );
+        if (!cancelled) {
+          setBlockMap(blocks);
+        }
+      } catch (error: any) {
+        console.error("Error loading slide block map:", error);
+        if (!cancelled) {
+          setBlockMap([]);
+          toast.error("Не удалось загрузить карту блоков", {
+            description: error.message || "Overlay будет использовать fallback из DOM.",
+          });
+        }
+      }
+    };
+
+    loadBlocks();
+    return () => {
+      cancelled = true;
+    };
+  }, [blockEditMode, presentationId, slide.index]);
+
+  const handleBlockSave = async (patch: EditableBlockPatchRequest) => {
+    if (!selectedBlock) return;
+
+    setIsBlockSaving(true);
+    try {
+      if (patch.text !== undefined && patch.text !== null) {
+        dispatch(
+          updateSlideContent({
+            slideIndex: slide.index,
+            dataPath: patch.schema_path,
+            content: patch.text,
+          })
+        );
+      }
+      if (patch.image_prompt_override !== undefined && patch.image_prompt_override !== null) {
+        dispatch(
+          updateSlideContent({
+            slideIndex: slide.index,
+            dataPath: patch.schema_path,
+            content: patch.image_prompt_override,
+          })
+        );
+      }
+      dispatch(
+        updateSlideBlockOverride({
+          slideIndex: slide.index,
+          blockId: selectedBlock.block_id,
+          override: {
+            semantic_name: patch.semantic_name,
+            description: patch.description,
+            text: patch.text,
+            prompt_override: patch.prompt_override,
+            image_prompt_override: patch.image_prompt_override,
+            style_override: patch.style_override,
+          },
+        })
+      );
+
+      const response = await PresentationGenerationApi.patchSlideBlock(
+        presentationId,
+        slide.index,
+        selectedBlock.block_id,
+        patch
+      );
+      setBlockMap((current) => {
+        const without = current.filter((block) => block.block_id !== response.block.block_id);
+        return [...without, response.block];
+      });
+      setSelectedBlock((current) => current ? { ...current, ...response.block } : current);
+      toast.success("Override блока сохранен");
+    } catch (error: any) {
+      console.error("Error saving block override:", error);
+      toast.error("Не удалось сохранить override блока", {
+        description: error.message || "Попробуйте еще раз.",
+      });
+    } finally {
+      setIsBlockSaving(false);
+    }
+  };
 
   const handleSubmit = async () => {
     const element = document.getElementById(
@@ -256,7 +364,18 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
             </div>
           ) : (
             <ScaledSlideWrapper>
-              {slideContent}
+              <SlideBlockOverlay
+                slide={slide}
+                enabled={blockEditMode}
+                blocks={blockMap}
+                selectedBlockId={selectedBlock?.block_id}
+                onBlockSelect={(block) => {
+                  setSelectedBlock(block);
+                  setIsInspectorOpen(true);
+                }}
+              >
+                {slideContent}
+              </SlideBlockOverlay>
             </ScaledSlideWrapper>
           )}
 
@@ -381,6 +500,13 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
           )}
         </div>
       </div>
+      <BlockInspectorSheet
+        open={isInspectorOpen}
+        block={selectedBlock}
+        saving={isBlockSaving}
+        onOpenChange={setIsInspectorOpen}
+        onSave={handleBlockSave}
+      />
     </>
   );
 };

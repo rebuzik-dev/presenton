@@ -9,12 +9,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
+from models.block_map import TemplateBlockMapResponse
 from services.template_service import template_service
 from services.template_prompt_profile_service import template_prompt_profile_service
 from api.deps import get_current_user_or_api_key
 from models.sql.user import UserModel
 from utils.get_layout_by_name import get_layout_by_name
 from utils.template_image_summary import build_layout_image_summary
+from utils.block_map import build_template_block_map
 from utils.template_prompt_overrides import (
     normalize_prompt_profile_payload,
     serialize_prompt_profile,
@@ -357,6 +359,31 @@ async def get_template_image_summary(slug: str, http_request: Request):
 
     return TemplateImageSummaryResponse(
         **build_layout_image_summary(slug, layout)
+    )
+
+
+@TEMPLATES_ROUTER.get(
+    "/{slug}/block-map",
+    response_model=TemplateBlockMapResponse,
+)
+async def get_template_block_map(slug: str, http_request: Request):
+    """
+    Get a readonly semantic block map for a template.
+
+    The v1 map is derived from layout schema, image prompts, and active prompt
+    profile metadata. Template-level block annotation persistence is intentionally
+    left out of v1.
+    """
+    auth_token, api_key = _extract_auth_context(http_request)
+    layout = await get_layout_by_name(
+        slug,
+        auth_token=auth_token,
+        api_key=api_key,
+    )
+    profile = await template_prompt_profile_service.get_by_slug(slug)
+    return TemplateBlockMapResponse(
+        template=slug,
+        blocks=build_template_block_map(slug, layout, profile),
     )
 
 

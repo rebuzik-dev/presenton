@@ -38,13 +38,18 @@ import ToolTip from "@/components/ToolTip";
 import { clearPresentationData } from "@/store/slices/presentationGeneration";
 import { clearHistory } from "@/store/slices/undoRedoSlice";
 import { getHeader } from "../../services/api/header";
+import BlockEditModeToggle from "./block-editor/BlockEditModeToggle";
 
 const Header = ({
   presentation_id,
   currentSlide,
+  blockEditMode,
+  onBlockEditModeToggle,
 }: {
   presentation_id: string;
   currentSlide?: number;
+  blockEditMode?: boolean;
+  onBlockEditModeToggle?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
@@ -227,6 +232,12 @@ const Header = ({
         </ToolTip>
 
       </div>
+
+      <BlockEditModeToggle
+        enabled={!!blockEditMode}
+        disabled={!!isStreaming || !presentationData}
+        onToggle={() => onBlockEditModeToggle?.()}
+      />
 
       {/* Present Button */}
       <Button

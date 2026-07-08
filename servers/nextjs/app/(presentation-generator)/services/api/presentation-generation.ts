@@ -1,6 +1,11 @@
 import { getHeader, getHeaderForFormData } from "./header";
 import { IconSearch, ImageGenerate, ImageSearch, PreviousGeneratedImagesResponse } from "./params";
 import { ApiResponseHandler } from "./api-error-handler";
+import {
+  EditableBlockPatchRequest,
+  EditableBlockPatchResponse,
+  EditableSlideBlock,
+} from "../../types/blockMap";
 
 export class PresentationGenerationApi {
   static async uploadDoc(documents: File[]) {
@@ -146,6 +151,51 @@ export class PresentationGenerationApi {
       return await ApiResponseHandler.handleResponse(response, "Failed to update presentation content");
     } catch (error) {
       console.error("error in presentation content update", error);
+      throw error;
+    }
+  }
+
+  static async getSlideBlocks(
+    presentationId: string,
+    slideIndex: number
+  ): Promise<EditableSlideBlock[]> {
+    try {
+      const response = await fetch(
+        `/api/v1/ppt/presentation/${presentationId}/slides/${slideIndex}/blocks`,
+        {
+          method: "GET",
+          headers: getHeader(),
+          cache: "no-cache",
+        }
+      );
+
+      return await ApiResponseHandler.handleResponse(response, "Failed to get slide blocks");
+    } catch (error) {
+      console.error("error in slide block map fetch", error);
+      throw error;
+    }
+  }
+
+  static async patchSlideBlock(
+    presentationId: string,
+    slideIndex: number,
+    blockId: string,
+    body: EditableBlockPatchRequest
+  ): Promise<EditableBlockPatchResponse> {
+    try {
+      const response = await fetch(
+        `/api/v1/ppt/presentation/${presentationId}/slides/${slideIndex}/blocks/${encodeURIComponent(blockId)}`,
+        {
+          method: "PATCH",
+          headers: getHeader(),
+          body: JSON.stringify(body),
+          cache: "no-cache",
+        }
+      );
+
+      return await ApiResponseHandler.handleResponse(response, "Failed to update slide block");
+    } catch (error) {
+      console.error("error in slide block update", error);
       throw error;
     }
   }
