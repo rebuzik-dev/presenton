@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "URL to image. Max 10 words" }),
@@ -69,11 +70,31 @@ const dynamicSlideLayout: React.FC<CoverKickerTitleSlideLayoutProps> = ({ data: 
       </div>
 
       <div className="relative h-full px-20 pt-44">
-        <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] overflow-hidden" style={{ color: titleColor, fontFamily: kickerFont }}>
+        <div
+          className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] overflow-hidden"
+          style={{ color: titleColor, fontFamily: kickerFont }}
+          {...promptTargetAttrs({
+            path: "kicker",
+            type: "field",
+            name: "Кикер",
+            description: "Малая строка над главным заголовком",
+            role: "kicker",
+          })}
+        >
           {slideData?.kicker || "Концепция кейтеринга"}
         </div>
 
-        <div className="mt-6 text-[64px] leading-[68px] tracking-[0.5px] text-[var(--style-text-primary)] font-[800] uppercase overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
+        <div
+          className="mt-6 text-[64px] leading-[68px] tracking-[0.5px] text-[var(--style-text-primary)] font-[800] uppercase overflow-hidden"
+          style={{ color: titleColor, fontFamily: titleFont }}
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Главный заголовок",
+            description: "Крупное название мероприятия",
+            role: "main_title",
+          })}
+        >
           {slideData?.title || "НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ"}
         </div>
       </div>

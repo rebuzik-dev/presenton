@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -87,20 +88,53 @@ const dynamicSlideLayout: React.FC<HeaderThreeImageCardsSlideLayoutProps> = ({ d
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-12 pb-12">
-        <div className="text-[52px] leading-[58px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
+        <div
+          className="text-[52px] leading-[58px] font-[900] uppercase text-[var(--style-text-primary)]"
+          style={{ color: titleColor, fontFamily: titleFont }}
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Главный заголовок",
+            description: "Название слайда с карточками",
+            role: "main_title",
+          })}
+        >
           {slideData?.title || "ПРЕДЛОЖЕНИЯ ПО ДЕКОРУ"}
         </div>
 
         <div className="mt-14 grid grid-cols-3 gap-7">
           {cards.slice(0, 3).map((c, idx) => (
-            <div key={idx} className="relative h-[470px] overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
+            <div
+              key={idx}
+              className="relative h-[470px] overflow-hidden bg-[var(--style-surface)]"
+              style={{ backgroundColor: surfaceColor }}
+              {...promptTargetAttrs({
+                path: `cards[${idx}].image.__image_prompt__`,
+                type: "image",
+                name: `Изображение карточки ${idx + 1}`,
+                description: "Фото внутри карточки",
+                role: "card_image",
+              })}
+            >
               <img
                 src={c.image.__image_url__}
                 alt={c.image.__image_prompt__ || c.title}
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-0 left-0 right-0 px-6 pt-8 pb-5" style={{ background: `linear-gradient(to bottom, ${overlayColor}, transparent)` }}>
-                <div className="text-white text-[22px] leading-[27px] font-[500] drop-shadow" style={{ color: cardTitleColor, fontFamily: cardTitleFont }}>{c.title}</div>
+                <div
+                  className="text-white text-[22px] leading-[27px] font-[500] drop-shadow"
+                  style={{ color: cardTitleColor, fontFamily: cardTitleFont }}
+                  {...promptTargetAttrs({
+                    path: `cards[${idx}].title`,
+                    type: "field",
+                    name: `Название карточки ${idx + 1}`,
+                    description: "Подпись поверх изображения",
+                    role: "card_title",
+                  })}
+                >
+                  {c.title}
+                </div>
               </div>
             </div>
           ))}

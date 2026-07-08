@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z
@@ -79,7 +80,17 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
 
         <div className="mt-8 grid grid-cols-[1.45fr_0.85fr] gap-10 items-start">
           {/* Image */}
-          <div className="w-full h-[472px] overflow-hidden" style={{ backgroundColor: surfaceColor }}>
+          <div
+            className="w-full h-[472px] overflow-hidden"
+            style={{ backgroundColor: surfaceColor }}
+            {...promptTargetAttrs({
+              path: "image.__image_prompt__",
+              type: "image",
+              name: "Основное изображение",
+              description: "Фото слева от информационных блоков",
+              role: "main_image",
+            })}
+          >
             <img
               src={
                 slideData?.image?.__image_url__ ||
@@ -104,6 +115,13 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                 <div
                   className="mt-3 text-[20px] leading-[28px] font-[500]"
                   style={{ color: bodyColor, fontFamily: bodyFont }}
+                  {...promptTargetAttrs({
+                    path: "factsText",
+                    type: "field",
+                    name: "Факты",
+                    description: "Текст блока с количеством и нормами",
+                    role: "facts_text",
+                  })}
                 >
                   {slideData?.factsText ||
                     "Количество человек: 200 человек. Выход еды на человека: 700 гр./человек. Выход напитков на человека: 400 гр./человек."}
@@ -120,6 +138,13 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                 <div
                   className="mt-3 text-[20px] leading-[28px] font-[500]"
                   style={{ color: bodyColor, fontFamily: bodyFont }}
+                  {...promptTargetAttrs({
+                    path: "assortmentText",
+                    type: "field",
+                    name: "Ассортимент",
+                    description: "Текст блока с ассортиментом",
+                    role: "assortment_text",
+                  })}
                 >
                   {slideData?.assortmentText ||
                     "Горячие – 2 вида. Салаты – 3 вида. Закуски – 3 вида. Десерты – 2 вида."}

@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "URL to image. Max 10 words" }),
@@ -117,12 +118,32 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-[72px] pt-10 pb-16 flex flex-col">
-        <div className="text-[48px] leading-[54px] font-[800] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
+        <div
+          className="text-[48px] leading-[54px] font-[800] uppercase text-[var(--style-text-primary)]"
+          style={{ color: titleColor, fontFamily: titleFont }}
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Главный заголовок",
+            description: "Название концепции",
+            role: "main_title",
+          })}
+        >
           {slideData?.title || "КОНЦЕПЦИЯ КЕЙТЕРИНГА"}
         </div>
 
         <div className="mt-7 rounded-[22px] bg-[#D8D6D3] shadow-[0_10px_18px_rgba(0,0,0,0.12)] px-12 py-8 flex items-center" style={{ backgroundColor: quoteBackground }}>
-          <div className="text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]" style={{ color: quoteColor, fontFamily: quoteFont }}>
+          <div
+            className="text-[24px] leading-[32px] font-[500] text-[var(--style-text-primary)]"
+            style={{ color: quoteColor, fontFamily: quoteFont }}
+            {...promptTargetAttrs({
+              path: "quote",
+              type: "field",
+              name: "Цитата",
+              description: "Текст в серой quote-карточке",
+              role: "quote",
+            })}
+          >
             {slideData?.quote ||
               "Кейтеринг рассматривается как часть сценария пребывания гостя, а не как отдельная сервисная зона."}
           </div>
@@ -130,26 +151,87 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
 
         <div className="mt-12 grid grid-cols-2 gap-12">
           <div className="flex flex-col min-h-0">
-            <div className="text-[29px] leading-[34px] font-[800] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
+            <div
+              className="text-[29px] leading-[34px] font-[800] text-[var(--style-text-primary)]"
+              style={{ color: bodyColor, fontFamily: sectionTitleFont }}
+              {...promptTargetAttrs({
+                path: "leftColumnTitle",
+                type: "field",
+                name: "Заголовок левой колонки",
+                description: "Левый смысловой блок",
+                role: "section_title",
+              })}
+            >
               {slideData?.leftColumnTitle || "Ключевые смыслы"}
             </div>
 
             <div className="mt-7 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: bodyColor, fontFamily: bodyFont }}>
-              {`${slideData?.leftStrongLine || "Поддержка делового ритма и концентрации,"} ${slideData?.leftWeakLine || "без отвлечения от содержательной части программы."}`}
+              <span
+                {...promptTargetAttrs({
+                  path: "leftStrongLine",
+                  type: "field",
+                  name: "Левая акцентная строка",
+                  description: "Первая часть текста левой колонки",
+                  role: "body_emphasis",
+                })}
+              >
+                {slideData?.leftStrongLine || "Поддержка делового ритма и концентрации,"}
+              </span>{" "}
+              <span
+                {...promptTargetAttrs({
+                  path: "leftWeakLine",
+                  type: "field",
+                  name: "Левая поддерживающая строка",
+                  description: "Вторая часть текста левой колонки",
+                  role: "body_support",
+                })}
+              >
+                {slideData?.leftWeakLine || "без отвлечения от содержательной части программы."}
+              </span>
             </div>
 
-            <div className="mt-6 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] max-w-[520px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
+            <div
+              className="mt-6 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] max-w-[520px]"
+              style={{ color: bodyColor, fontFamily: bodyFont }}
+              {...promptTargetAttrs({
+                path: "leftBody",
+                type: "field",
+                name: "Текст левой колонки",
+                description: "Основной абзац левой колонки",
+                role: "body",
+              })}
+            >
               {slideData?.leftBody ||
                 "Еда работает как фоновый, но структурирующий элемент: помогает переключаться между блоками, фиксировать паузы и выстраивать неформальное общение."}
             </div>
           </div>
 
           <div className="flex flex-col min-h-0">
-            <div className="text-[29px] leading-[34px] font-[800] text-[var(--style-text-primary)]" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
+            <div
+              className="text-[29px] leading-[34px] font-[800] text-[var(--style-text-primary)]"
+              style={{ color: bodyColor, fontFamily: sectionTitleFont }}
+              {...promptTargetAttrs({
+                path: "rightColumnTitle",
+                type: "field",
+                name: "Заголовок правой колонки",
+                description: "Правый смысловой блок",
+                role: "section_title",
+              })}
+            >
               {slideData?.rightColumnTitle || "Ключевая идея"}
             </div>
 
-            <div className="mt-7 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] max-w-[560px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
+            <div
+              className="mt-7 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] max-w-[560px]"
+              style={{ color: bodyColor, fontFamily: bodyFont }}
+              {...promptTargetAttrs({
+                path: "rightBody",
+                type: "field",
+                name: "Текст правой колонки",
+                description: "Вводный текст перед списком",
+                role: "body",
+              })}
+            >
               {slideData?.rightBody ||
                 "Концепция соответствует формату делового форума с участием управленческой и экспертной аудитории:"}
             </div>
@@ -158,7 +240,17 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
               {bullets.map((t, idx) => (
                 <li key={idx} className="flex gap-4">
                   <span className="mt-[14px] w-2.5 h-1 bg-[var(--style-accent)] flex-shrink-0" style={{ backgroundColor: accentColor }}></span>
-                  <span>{t}</span>
+                  <span
+                    {...promptTargetAttrs({
+                      path: `rightBullets[${idx}]`,
+                      type: "field",
+                      name: `Пункт списка ${idx + 1}`,
+                      description: "Пункт списка в правой колонке",
+                      role: "bullet",
+                    })}
+                  >
+                    {t}
+                  </span>
                 </li>
               ))}
             </ul>
