@@ -7,18 +7,20 @@ import { ArrowLeft, Eye, Loader2, Trash2, Pencil } from "lucide-react";
 import "../../utils/prism-languages";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
-import TemplatePromptBlocksInline, {
-  buildTemplatePromptBlocks,
-  matchTemplatePromptLayout,
-} from "../../components/TemplatePromptBlocksInline";
+import TemplatePromptBlocksInline from "../../components/TemplatePromptBlocksInline";
 import PromptInspectableSlideFrame from "../../components/PromptInspectableSlideFrame";
 import { useTemplatePromptProfile } from "../../hooks/useTemplatePromptProfile";
 import {
   buildPromptBlockId,
+  normalizePromptPath,
   parsePromptBlockId,
   PromptBlockIdentity,
   promptTargetMatchesBlock,
 } from "../../utils/promptBlockIds";
+import {
+  buildTemplatePromptBlocks,
+  matchTemplatePromptLayout,
+} from "../../utils/templatePromptBlocks";
 import AnchoredBlockPromptPopover from "../../presentation/components/block-editor/AnchoredBlockPromptPopover";
 
 import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
@@ -109,7 +111,8 @@ const GroupLayoutPreview = () => {
     layoutId?: string | null,
     layoutName?: string | null,
     sourceFile?: string | null,
-    index?: number
+    index?: number,
+    sampleData?: unknown
   ) => {
     function TemplateBlockPromptPopover(identity: PromptBlockIdentity) {
       const layout = matchTemplatePromptLayout(
@@ -119,11 +122,23 @@ const GroupLayoutPreview = () => {
       );
       const resolvedLayoutId = layout?.layout_id || identity.layoutId;
       const identityForMatch = { ...identity, layoutId: resolvedLayoutId };
-      const blocks = buildTemplatePromptBlocks(promptProfile.data, layout);
-      const block = blocks.find((candidate) => {
+      const visualTargetIds = visualTargetIdsByLayout.get(resolvedLayoutId);
+      const blocks = buildTemplatePromptBlocks(promptProfile.data, layout, {
+        sampleData,
+        visualTargetIds,
+      });
+      const exactBlock = blocks.find((candidate) => {
+        const candidateIdentity = parsePromptBlockId(candidate.id);
+        return !!candidateIdentity &&
+          candidateIdentity.layoutId === identityForMatch.layoutId &&
+          candidateIdentity.type === identityForMatch.type &&
+          normalizePromptPath(candidateIdentity.path) === normalizePromptPath(identityForMatch.path);
+      });
+      const block = exactBlock || blocks.find((candidate) => {
         const candidateIdentity = parsePromptBlockId(candidate.id);
         return !!candidateIdentity && promptTargetMatchesBlock(identityForMatch, candidateIdentity);
       });
+      const editPath = block?.path ?? identity.path ?? undefined;
 
       return (
         <AnchoredBlockPromptPopover
@@ -137,13 +152,13 @@ const GroupLayoutPreview = () => {
           onSave={(value) => promptProfile.updateOverride(
             resolvedLayoutId,
             identity.type,
-            identity.path ?? undefined,
+            editPath,
             value
           )}
           onReset={() => promptProfile.updateOverride(
             resolvedLayoutId,
             identity.type,
-            identity.path ?? undefined,
+            editPath,
             null
           )}
         />
@@ -151,7 +166,7 @@ const GroupLayoutPreview = () => {
     }
 
     return TemplateBlockPromptPopover;
-  }, [promptProfile]);
+  }, [promptProfile, visualTargetIdsByLayout]);
 
   const handleShowOnSlide = useCallback((block: { id: string }) => {
     setInspectorEnabled(true);
@@ -366,7 +381,8 @@ const GroupLayoutPreview = () => {
                           template.layoutId,
                           template.layoutName,
                           null,
-                          index
+                          index,
+                          template.sampleData
                         )}
                       >
                         <LayoutComponent data={template.sampleData} />
@@ -384,6 +400,7 @@ const GroupLayoutPreview = () => {
                     hoveredBlockId={hoveredBlockId}
                     selectedBlockId={selectedBlockId}
                     visualTargetIds={visualTargetIdsByLayout.get(template.layoutId)}
+                    sampleData={template.sampleData}
                     onBlockHover={(block) => setHoveredBlockId(block?.id || null)}
                     onBlockSelect={(block) => setSelectedBlockId(block.id)}
                     onShowOnSlide={handleShowOnSlide}
@@ -454,7 +471,8 @@ const GroupLayoutPreview = () => {
                           layout.rawLayoutId || layout.layoutId,
                           layout.rawLayoutName,
                           null,
-                          index
+                          index,
+                          layout.sampleData
                         )}
                       >
                         <LayoutComponent data={layout.sampleData} />
@@ -472,6 +490,7 @@ const GroupLayoutPreview = () => {
                     hoveredBlockId={hoveredBlockId}
                     selectedBlockId={selectedBlockId}
                     visualTargetIds={visualTargetIdsByLayout.get(layout.rawLayoutId || layout.layoutId)}
+                    sampleData={layout.sampleData}
                     onBlockHover={(block) => setHoveredBlockId(block?.id || null)}
                     onBlockSelect={(block) => setSelectedBlockId(block.id)}
                     onShowOnSlide={handleShowOnSlide}

@@ -13,29 +13,22 @@ import {
 
 import InlinePromptBlockEditor from "./InlinePromptBlockEditor";
 import {
-    buildPromptBlockId,
     parsePromptBlockId,
     PromptBlockType,
     promptTargetMatchesBlock,
 } from "../utils/promptBlockIds";
 import {
-    FieldSummary,
-    LayoutPromptOverrides,
-    LayoutSummary,
     TemplatePromptProfileResponse,
     useTemplatePromptProfile,
 } from "../hooks/useTemplatePromptProfile";
+import {
+    buildTemplatePromptBlocks,
+    matchTemplatePromptLayout,
+} from "../utils/templatePromptBlocks";
+import type { PromptBlock } from "../utils/templatePromptBlocks";
 
-export interface PromptBlock {
-    id: string;
-    type: PromptBlockType;
-    label: string;
-    path?: string;
-    sourcePrompt?: string | null;
-    savedOverride?: string | null;
-    disabled?: boolean;
-    disabledReason?: string;
-}
+export { buildTemplatePromptBlocks, matchTemplatePromptLayout };
+export type { PromptBlock };
 
 interface TemplatePromptBlocksInlineProps {
     slug: string;
@@ -54,145 +47,10 @@ interface TemplatePromptBlocksInlineProps {
     hoveredBlockId?: string | null;
     selectedBlockId?: string | null;
     visualTargetIds?: Set<string>;
+    sampleData?: unknown;
     onBlockHover?: (block: PromptBlock | null) => void;
     onBlockSelect?: (block: PromptBlock) => void;
     onShowOnSlide?: (block: PromptBlock) => void;
-}
-
-const normalize = (value?: string | null) => (value || "").trim().toLowerCase();
-
-const sourceFileStem = (value?: string | null) => {
-    if (!value) return "";
-    const fileName = value.split("/").pop() || value;
-    return fileName.replace(/\.[^.]+$/, "");
-};
-
-const fieldIsTextPrompt = (field: FieldSummary) => (
-    field.type === "string" &&
-    field.special_kind !== "image_prompt" &&
-    field.special_kind !== "image_url" &&
-    field.special_kind !== "icon_url"
-);
-
-export function matchTemplatePromptLayout(
-    data: TemplatePromptProfileResponse | null | undefined,
-    candidates: Array<string | null | undefined>,
-    index?: number
-): LayoutSummary | null {
-    const layouts = data?.schema_summary?.layouts || [];
-    if (!layouts.length) return null;
-
-    const normalizedCandidates = candidates
-        .flatMap((candidate) => {
-            if (!candidate) return [];
-            return [candidate, sourceFileStem(candidate)];
-        })
-        .map(normalize)
-        .filter(Boolean);
-
-    const matched = layouts.find((layout) => {
-        const values = [
-            layout.layout_id,
-            layout.layout_name,
-            layout.source_file,
-            sourceFileStem(layout.source_file),
-        ].map(normalize);
-        return normalizedCandidates.some((candidate) => values.includes(candidate));
-    });
-
-    if (matched) return matched;
-    if (typeof index === "number") {
-        return layouts.find((layout) => layout.index === index) || null;
-    }
-    return null;
-}
-
-function getImageSummary(data: TemplatePromptProfileResponse | null | undefined, layout: LayoutSummary) {
-    return data?.image_summary?.slides?.find((slide) => (
-        slide.layout_id === layout.layout_id ||
-        normalize(slide.layout_name) === normalize(layout.layout_name) ||
-        slide.index === layout.index
-    ));
-}
-
-function getLayoutPromptState(data: TemplatePromptProfileResponse, layout: LayoutSummary): LayoutPromptOverrides {
-    const layoutPrompts = data.prompt_profile?.layout_prompts || {};
-    const candidates = [
-        layout.layout_id,
-        layout.layout_id.includes(":") ? layout.layout_id.split(":", 2)[1] : null,
-        layout.layout_name,
-    ].filter(Boolean) as string[];
-
-    for (const candidate of candidates) {
-        const value = layoutPrompts[candidate];
-        if (value) return value;
-    }
-
-    return {};
-}
-
-export function buildTemplatePromptBlocks(
-    data: TemplatePromptProfileResponse | null | undefined,
-    layout: LayoutSummary | null
-): PromptBlock[] {
-    if (!data || !layout) return [];
-
-    const layoutPromptState = getLayoutPromptState(data, layout);
-    const textFields = (layout.fields_summary || []).filter(fieldIsTextPrompt);
-    const imageFields = (layout.fields_summary || []).filter((field) => field.special_kind === "image_prompt");
-    const imagePrompts = getImageSummary(data, layout)?.image_prompts || [];
-
-    const blocks: PromptBlock[] = [
-        {
-            id: buildPromptBlockId(layout.layout_id, "layout"),
-            type: "layout",
-            label: "Layout prompt",
-            sourcePrompt: layout.layout_description || null,
-            savedOverride: layoutPromptState.layout_prompt || null,
-        },
-    ];
-
-    textFields.forEach((field) => {
-        blocks.push({
-            id: buildPromptBlockId(layout.layout_id, "field", field.path),
-            type: "field",
-            label: field.path,
-            path: field.path,
-            sourcePrompt: field.description || null,
-            savedOverride: layoutPromptState.field_prompts?.[field.path] || null,
-        });
-    });
-
-    imageFields.forEach((field, imageIndex) => {
-        const sourcePrompt = imagePrompts[imageIndex] || (typeof field.default === "string" ? field.default : field.description);
-        blocks.push({
-            id: buildPromptBlockId(layout.layout_id, "image", field.path),
-            type: "image",
-            label: `Image prompt ${imageIndex + 1}`,
-            path: field.path,
-            sourcePrompt: sourcePrompt || null,
-            savedOverride: layoutPromptState.image_prompt_overrides?.[field.path] || null,
-        });
-    });
-
-    const imageSummary = getImageSummary(data, layout);
-    const unmappedImageSlots = Math.max(
-        0,
-        (imageSummary?.image_prompt_slots || 0) - imageFields.length
-    );
-    for (let slotIndex = 0; slotIndex < unmappedImageSlots; slotIndex += 1) {
-        const promptIndex = imageFields.length + slotIndex;
-        blocks.push({
-            id: buildPromptBlockId(layout.layout_id, "image", `unmapped.${slotIndex}`),
-            type: "image",
-            label: `Image prompt ${promptIndex + 1}`,
-            sourcePrompt: imagePrompts[promptIndex] || null,
-            disabled: true,
-            disabledReason: "Editable schema path is unknown for this image slot.",
-        });
-    }
-
-    return blocks;
 }
 
 export default function TemplatePromptBlocksInline({
@@ -207,6 +65,7 @@ export default function TemplatePromptBlocksInline({
     hoveredBlockId,
     selectedBlockId,
     visualTargetIds,
+    sampleData,
     onBlockHover,
     onBlockSelect,
     onShowOnSlide,
@@ -222,7 +81,10 @@ export default function TemplatePromptBlocksInline({
         () => matchTemplatePromptLayout(data, [layoutId, layoutName, sourceFile], index),
         [data, layoutId, layoutName, sourceFile, index]
     );
-    const blocks = useMemo(() => buildTemplatePromptBlocks(data, layout), [data, layout]);
+    const blocks = useMemo(
+        () => buildTemplatePromptBlocks(data, layout, { sampleData, visualTargetIds }),
+        [data, layout, sampleData, visualTargetIds]
+    );
 
     const externalBlockMatches = React.useCallback((block: PromptBlock, externalId?: string | null) => {
         if (!externalId) return false;

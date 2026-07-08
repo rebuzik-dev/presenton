@@ -24,11 +24,15 @@ const checks = [
   },
   {
     file: "app/(presentation-generator)/components/TemplatePromptBlocksInline.tsx",
-    patterns: [/Collapsible/, /Non-visual/, /Unmapped/],
+    patterns: [/Collapsible/, /Non-visual/, /Unmapped/, /sampleData\?: unknown/],
+  },
+  {
+    file: "app/(presentation-generator)/utils/templatePromptBlocks.ts",
+    patterns: [/BuildTemplatePromptBlocksOptions/, /visualTargetIds/, /sampleData/, /Card title/],
   },
   {
     file: "app/(presentation-generator)/template-preview/components/TemplatePreviewClient.tsx",
-    patterns: [/AnchoredBlockPromptPopover/, /renderTargetPopover/],
+    patterns: [/AnchoredBlockPromptPopover/, /renderTargetPopover/, /normalizePromptPath/, /sampleData=\{template\.sampleData\}/],
   },
   {
     file: "app/(presentation-generator)/presentation/components/PresentationPage.tsx",
