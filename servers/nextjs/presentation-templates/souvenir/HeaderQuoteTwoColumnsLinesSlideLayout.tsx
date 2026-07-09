@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -79,37 +80,91 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-12 pb-10 flex flex-col">
         <div className="text-[56px] leading-[60px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
-          {slideData?.title || "КОНЦЕПЦИЯ МЕРОПРИЯТИЯ"}
+          <span
+            {...promptTargetAttrs({
+              path: "title",
+              type: "field",
+              name: "Title",
+              description: "Concept header",
+            })}
+          >
+            {slideData?.title || "КОНЦЕПЦИЯ МЕРОПРИЯТИЯ"}
+          </span>
         </div>
 
         <div className="mt-10 rounded-[18px] bg-[#8F9499] shadow-[0_12px_18px_rgba(0,0,0,0.20)] px-14 py-10 flex gap-10 items-start" style={{ backgroundColor: quoteBackground }}>
           <div className="text-[64px] leading-[64px] font-[900] text-white -mt-2 flex-shrink-0" style={{ color: quoteTextColor, fontFamily: titleFont }}>&laquo;</div>
           <div className="text-[26px] leading-[34px] font-[500] text-white overflow-hidden max-w-[980px]" style={{ color: quoteTextColor, fontFamily: quoteFont }}>
-            {slideData?.quote ||
-              "Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта"}
+            <span
+              {...promptTargetAttrs({
+                path: "quote",
+                type: "field",
+                name: "Quote",
+                description: "Quote card text",
+              })}
+            >
+              {slideData?.quote ||
+                "Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта"}
+            </span>
           </div>
         </div>
 
         <div className="mt-14 grid grid-cols-2 gap-20 flex-1 min-h-0">
           <div className="min-h-0">
             <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
-              {slideData?.leftTitle || "Миссия"}
+              <span
+                {...promptTargetAttrs({
+                  path: "leftTitle",
+                  type: "field",
+                  name: "Left title",
+                  description: "Left column title",
+                })}
+              >
+                {slideData?.leftTitle || "Миссия"}
+              </span>
             </div>
             <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60" style={{ backgroundColor: accentColor }}></div>
             <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
-              {slideData?.leftBody ||
-                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+              <span
+                {...promptTargetAttrs({
+                  path: "leftBody",
+                  type: "field",
+                  name: "Left body",
+                  description: "Left column body",
+                })}
+              >
+                {slideData?.leftBody ||
+                  "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+              </span>
             </div>
           </div>
 
           <div className="min-h-0">
             <div className="text-[24px] leading-[28px] font-[700] text-[var(--style-text-primary)] overflow-hidden" style={{ color: bodyColor, fontFamily: sectionTitleFont }}>
-              {slideData?.rightTitle || "Ключевые смыслы"}
+              <span
+                {...promptTargetAttrs({
+                  path: "rightTitle",
+                  type: "field",
+                  name: "Right title",
+                  description: "Right column title",
+                })}
+              >
+                {slideData?.rightTitle || "Ключевые смыслы"}
+              </span>
             </div>
             <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60" style={{ backgroundColor: accentColor }}></div>
             <div className="mt-8 text-[22px] leading-[30px] font-[400] text-[var(--style-text-primary)] overflow-hidden max-w-[520px]" style={{ color: bodyColor, fontFamily: bodyFont }}>
-              {slideData?.rightBody ||
-                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+              <span
+                {...promptTargetAttrs({
+                  path: "rightBody",
+                  type: "field",
+                  name: "Right body",
+                  description: "Right column body",
+                })}
+              >
+                {slideData?.rightBody ||
+                  "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+              </span>
             </div>
           </div>
         </div>

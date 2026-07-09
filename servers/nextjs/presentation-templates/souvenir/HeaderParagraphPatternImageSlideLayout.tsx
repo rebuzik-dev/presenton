@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -60,15 +61,41 @@ const dynamicSlideLayout: React.FC<HeaderParagraphPatternImageSlideLayoutProps> 
   return (
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-12 pb-12">
-        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>{slideData?.title || "ФИРМЕННЫЙ ПАТТЕРН"}</div>
+        <div className="text-[56px] leading-[60px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
+          <span
+            {...promptTargetAttrs({
+              path: "title",
+              type: "field",
+              name: "Title",
+              description: "Pattern header",
+            })}
+          >
+            {slideData?.title || "ФИРМЕННЫЙ ПАТТЕРН"}
+          </span>
+        </div>
 
         <div className="mt-6 text-[18px] leading-[26px] text-[var(--style-text-primary)]/70 max-w-[980px] overflow-hidden" style={{ color: bodyColor, fontFamily: bodyFont }}>
-          {slideData?.description ||
-            "Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна"}
+          <span
+            {...promptTargetAttrs({
+              path: "description",
+              type: "field",
+              name: "Description",
+              description: "Pattern paragraph",
+            })}
+          >
+            {slideData?.description ||
+              "Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна"}
+          </span>
         </div>
 
         <div className="mt-10 h-[490px] overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
           <img
+            {...promptTargetAttrs({
+              path: "image.__image_prompt__",
+              type: "image",
+              name: "Pattern image prompt",
+              description: "Pattern image prompt",
+            })}
             src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
             alt={slideData?.image?.__image_prompt__ || "pattern"}
             className="w-full h-full object-cover"

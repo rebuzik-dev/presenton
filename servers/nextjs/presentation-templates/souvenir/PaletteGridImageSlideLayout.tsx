@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -84,15 +85,33 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
   const cardFont = resolveFontFamily(slideData, "color_card", rootFont, "body")
   const lightCardTextColor = resolveColor(slideData, "color_card", "color", "#3f3f3f", "text_primary")
 
-  const ColorCard: React.FC<{ hex: string; name: string }> = ({ hex, name }) => {
+  const ColorCard: React.FC<{ hex: string; name: string; pathPrefix: string; index: number }> = ({ hex, name, pathPrefix, index }) => {
     const isDark = hex.toUpperCase() === "#1A1C23" || hex.toUpperCase() === "#5D7079" || hex.toUpperCase() === "#81919E"
     const textColor = isDark ? "#FFFFFF" : lightCardTextColor
     return (
       <div className="h-[116px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>
-        <div className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`} style={{ color: textColor, fontFamily: cardFont }}>
+        <div
+          {...promptTargetAttrs({
+            path: `${pathPrefix}[${index}].hex`,
+            type: "field",
+            name: `Color ${index + 1} hex`,
+            description: "Color card hex value",
+          })}
+          className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}
+          style={{ color: textColor, fontFamily: cardFont }}
+        >
           {hex}
         </div>
-        <div className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`} style={{ color: textColor, fontFamily: cardFont }}>
+        <div
+          {...promptTargetAttrs({
+            path: `${pathPrefix}[${index}].name`,
+            type: "field",
+            name: `Color ${index + 1} name`,
+            description: "Color card name",
+          })}
+          className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}
+          style={{ color: textColor, fontFamily: cardFont }}
+        >
           {name}
         </div>
       </div>
@@ -104,28 +123,55 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
       <div className="h-full px-[68px] pt-10 pb-12 grid grid-cols-[1.05fr_0.95fr] gap-9">
         <div className="flex flex-col min-h-0">
           <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)]" style={{ color: titleColor, fontFamily: titleFont }}>
-            {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
+            <span
+              {...promptTargetAttrs({
+                path: "title",
+                type: "field",
+                name: "Title",
+                description: "Main palette header",
+              })}
+            >
+              {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
+            </span>
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-5 h-[490px] content-start min-h-0">
             <div className="min-h-0">
               <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-                {slideData?.leftHeader || "Основные цвета"}
+                <span
+                  {...promptTargetAttrs({
+                    path: "leftHeader",
+                    type: "field",
+                    name: "Left header",
+                    description: "Primary colors column header",
+                  })}
+                >
+                  {slideData?.leftHeader || "Основные цвета"}
+                </span>
               </div>
               <div className="mt-4 grid gap-5">
                 {primary.slice(0, 3).map((c, idx) => (
-                  <ColorCard key={`p-${idx}`} hex={c.hex} name={c.name} />
+                  <ColorCard key={`p-${idx}`} hex={c.hex} name={c.name} pathPrefix="primary" index={idx} />
                 ))}
               </div>
             </div>
 
             <div className="min-h-0">
               <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-                {slideData?.rightHeader || "Дополнительные цвета"}
+                <span
+                  {...promptTargetAttrs({
+                    path: "rightHeader",
+                    type: "field",
+                    name: "Right header",
+                    description: "Secondary colors column header",
+                  })}
+                >
+                  {slideData?.rightHeader || "Дополнительные цвета"}
+                </span>
               </div>
               <div className="mt-4 grid gap-5">
                 {secondary.slice(0, 3).map((c, idx) => (
-                  <ColorCard key={`s-${idx}`} hex={c.hex} name={c.name} />
+                  <ColorCard key={`s-${idx}`} hex={c.hex} name={c.name} pathPrefix="secondary" index={idx} />
                 ))}
               </div>
             </div>
@@ -136,6 +182,12 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
           <div className="h-[52px]"></div>
           <div className="mt-6 w-full h-[490px] overflow-hidden">
             <img
+              {...promptTargetAttrs({
+                path: "image.__image_prompt__",
+                type: "image",
+                name: "Palette image prompt",
+                description: "Palette supporting image prompt",
+              })}
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || "image"}
               className="w-full h-full object-cover"

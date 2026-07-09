@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -77,12 +78,40 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
         <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
-          {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"} {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
+          <span
+            {...promptTargetAttrs({
+              path: "titlePrefix",
+              type: "field",
+              name: "Title prefix",
+              description: "Header prefix",
+            })}
+          >
+            {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"}
+          </span>{" "}
+          <span
+            {...promptTargetAttrs({
+              path: "blockName",
+              type: "field",
+              name: "Block name",
+              description: "Header block name",
+            })}
+          >
+            {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
+          </span>
         </div>
 
         <div className="mt-6 flex items-center gap-10 text-[18px] leading-[22px] text-[var(--style-text-primary)]/70" style={{ color: tagColor, fontFamily: tagFont }}>
           {tags.slice(0, 2).map((t, idx) => (
-            <div key={idx} className="overflow-hidden">
+            <div
+              key={idx}
+              {...promptTargetAttrs({
+                path: `tags[${idx}]`,
+                type: "field",
+                name: `Tag ${idx + 1}`,
+                description: "Tag row item",
+              })}
+              className="overflow-hidden"
+            >
               {t}
             </div>
           ))}
@@ -92,12 +121,27 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
           {imgs.slice(0, 2).map((it, idx) => (
             <div key={idx} className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img
+                {...promptTargetAttrs({
+                  path: `images[${idx}].image.__image_prompt__`,
+                  type: "image",
+                  name: `Proposal image ${idx + 1}`,
+                  description: "Proposal image prompt",
+                })}
                 src={it.image.__image_url__}
                 alt={it.image.__image_prompt__ || it.label}
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-4 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
-                {it.label}
+                <span
+                  {...promptTargetAttrs({
+                    path: `images[${idx}].label`,
+                    type: "field",
+                    name: `Image label ${idx + 1}`,
+                    description: "Proposal image label",
+                  })}
+                >
+                  {it.label}
+                </span>
               </div>
             </div>
           ))}

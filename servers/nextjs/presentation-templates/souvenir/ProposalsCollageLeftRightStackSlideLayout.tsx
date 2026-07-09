@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -86,12 +87,37 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="h-full px-16 pt-10 pb-12">
         <div className="text-[46px] leading-[52px] font-[900] uppercase text-[var(--style-text-primary)] overflow-hidden" style={{ color: titleColor, fontFamily: titleFont }}>
-          {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"} {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
+          <span
+            {...promptTargetAttrs({
+              path: "titlePrefix",
+              type: "field",
+              name: "Title prefix",
+              description: "Header prefix",
+            })}
+          >
+            {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"}
+          </span>{" "}
+          <span
+            {...promptTargetAttrs({
+              path: "blockName",
+              type: "field",
+              name: "Block name",
+              description: "Header block name",
+            })}
+          >
+            {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
+          </span>
         </div>
 
         <div className="mt-6 grid grid-cols-[1.6fr_1fr] gap-8 h-[490px]">
           <div className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
             <img
+              {...promptTargetAttrs({
+                path: "left.image.__image_prompt__",
+                type: "image",
+                name: "Left image prompt",
+                description: "Left collage image prompt",
+              })}
               src={
                 slideData?.left?.image?.__image_url__ ||
                 "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
@@ -100,13 +126,28 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
               className="w-full h-full object-cover"
             />
             <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
-              {slideData?.left?.label || "Брошь"}
+              <span
+                {...promptTargetAttrs({
+                  path: "left.label",
+                  type: "field",
+                  name: "Left label",
+                  description: "Left collage label",
+                })}
+              >
+                {slideData?.left?.label || "Брошь"}
+              </span>
             </div>
           </div>
 
           <div className="grid grid-rows-2 gap-8 h-full">
             <div className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img
+                {...promptTargetAttrs({
+                  path: "rightTop.image.__image_prompt__",
+                  type: "image",
+                  name: "Right top image prompt",
+                  description: "Right top collage image prompt",
+                })}
                 src={
                   slideData?.rightTop?.image?.__image_url__ ||
                   "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
@@ -115,12 +156,27 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
-                {slideData?.rightTop?.label || "Набор косметики"}
+                <span
+                  {...promptTargetAttrs({
+                    path: "rightTop.label",
+                    type: "field",
+                    name: "Right top label",
+                    description: "Right top collage label",
+                  })}
+                >
+                  {slideData?.rightTop?.label || "Набор косметики"}
+                </span>
               </div>
             </div>
 
             <div className="relative overflow-hidden bg-[var(--style-surface)]" style={{ backgroundColor: surfaceColor }}>
               <img
+                {...promptTargetAttrs({
+                  path: "rightBottom.image.__image_prompt__",
+                  type: "image",
+                  name: "Right bottom image prompt",
+                  description: "Right bottom collage image prompt",
+                })}
                 src={
                   slideData?.rightBottom?.image?.__image_url__ ||
                   "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
@@ -129,7 +185,16 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-6 left-4 text-white text-[16px] leading-[18px] font-[500] drop-shadow overflow-hidden" style={{ color: labelColor, fontFamily: labelFont }}>
-                {slideData?.rightBottom?.label || "Пригласительное"}
+                <span
+                  {...promptTargetAttrs({
+                    path: "rightBottom.label",
+                    type: "field",
+                    name: "Right bottom label",
+                    description: "Right bottom collage label",
+                  })}
+                >
+                  {slideData?.rightBottom?.label || "Пригласительное"}
+                </span>
               </div>
             </div>
           </div>

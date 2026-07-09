@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"),
@@ -87,6 +88,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
 
       <div className="relative h-full px-[64px] pt-[44px] pb-[44px]">
         <div
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Title",
+            description: "Design elements title",
+          })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
         >
@@ -104,6 +111,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
               <div className="grid grid-cols-[0.36fr_0.64fr] gap-[18px] min-h-0">
                 <div className="w-full h-full overflow-hidden bg-black/5" style={{ borderColor: paperBorder }}>
                   <img
+                    {...promptTargetAttrs({
+                      path: "imageTopLeft.__image_prompt__",
+                      type: "image",
+                      name: "Top left image prompt",
+                      description: "Top left design element image prompt",
+                    })}
                     src={imgTL}
                     alt={slideData?.imageTopLeft?.__image_prompt__ || "Top left"}
                     className="w-full h-full object-cover"
@@ -111,6 +124,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                 </div>
                 <div className="w-full h-full overflow-hidden bg-black/5">
                   <img
+                    {...promptTargetAttrs({
+                      path: "imageTopRight.__image_prompt__",
+                      type: "image",
+                      name: "Top right image prompt",
+                      description: "Top right design element image prompt",
+                    })}
                     src={imgTR}
                     alt={slideData?.imageTopRight?.__image_prompt__ || "Top right"}
                     className="w-full h-full object-cover"
@@ -121,6 +140,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
               {/* bottom row: one wide image */}
               <div className="w-full h-full overflow-hidden bg-black/5 min-h-0">
                 <img
+                  {...promptTargetAttrs({
+                    path: "imageBottom.__image_prompt__",
+                    type: "image",
+                    name: "Bottom image prompt",
+                    description: "Bottom design element image prompt",
+                  })}
                   src={imgB}
                   alt={slideData?.imageBottom?.__image_prompt__ || "Bottom"}
                   className="w-full h-full object-cover"
@@ -132,6 +157,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
           {/* RIGHT: keep text blocks similar to current */}
           <div className="flex flex-col justify-start gap-7 pt-1">
             <div
+              {...promptTargetAttrs({
+                path: "topText",
+                type: "field",
+                name: "Top text",
+                description: "Top design element text",
+              })}
               className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
@@ -140,6 +171,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
             </div>
 
             <div
+              {...promptTargetAttrs({
+                path: "bottomText",
+                type: "field",
+                name: "Bottom text",
+                description: "Bottom design element text",
+              })}
               className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >

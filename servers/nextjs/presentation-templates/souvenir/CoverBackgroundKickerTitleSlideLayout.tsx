@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
@@ -59,6 +60,12 @@ const dynamicSlideLayout: React.FC<CoverBackgroundKickerTitleSlideLayoutProps> =
     <div className="relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white relative z-20 mx-auto overflow-hidden" style={resolveRootStyle(slideData, "#FFFFFF", "var(--template-font, Inter)")}>
       <div className="absolute inset-0">
         <img
+          {...promptTargetAttrs({
+            path: "background.__image_prompt__",
+            type: "image",
+            name: "Background image prompt",
+            description: "Cover background image prompt",
+          })}
           src={slideData?.background?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
           alt={slideData?.background?.__image_prompt__ || "background"}
           className="w-full h-full object-cover opacity-30"
@@ -68,10 +75,28 @@ const dynamicSlideLayout: React.FC<CoverBackgroundKickerTitleSlideLayoutProps> =
 
       <div className="relative h-full px-20 pt-[250px]">
         <div className="text-[26px] leading-[32px] text-[#5a5a5a] font-[500] overflow-hidden" style={{ color: kickerColor, fontFamily: kickerFont }}>
-          {slideData?.kicker || "Наименование типа документа"}
+          <span
+            {...promptTargetAttrs({
+              path: "kicker",
+              type: "field",
+              name: "Kicker",
+              description: "Cover kicker line",
+            })}
+          >
+            {slideData?.kicker || "Наименование типа документа"}
+          </span>
         </div>
         <div className="mt-6 text-[64px] leading-[70px] tracking-[0.5px] text-[var(--style-text-primary)] font-[900] uppercase overflow-hidden max-w-[980px]" style={{ color: titleColor, fontFamily: titleFont }}>
-          {slideData?.title || "НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ"}
+          <span
+            {...promptTargetAttrs({
+              path: "title",
+              type: "field",
+              name: "Title",
+              description: "Cover title",
+            })}
+          >
+            {slideData?.title || "НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ"}
+          </span>
         </div>
       </div>
     </div>

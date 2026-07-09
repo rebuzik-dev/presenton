@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z
@@ -74,6 +75,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
       <div className="h-full px-16 pt-10 pb-12 flex flex-col min-h-0">
         {/* Title */}
         <div
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Title",
+            description: "Design elements title",
+          })}
           className="text-[48px] leading-[54px] font-[900] uppercase"
           style={{ color: titleColor, fontFamily: titleFont }}
         >
@@ -86,6 +93,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
           <div className="flex flex-col justify-start gap-10 min-h-0 pt-2">
             <div>
               <div
+                {...promptTargetAttrs({
+                  path: "topText",
+                  type: "field",
+                  name: "Top text",
+                  description: "Top text block",
+                })}
                 className="text-[16px] leading-[22px] font-[500]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
@@ -98,6 +111,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
 
             <div>
               <div
+                {...promptTargetAttrs({
+                  path: "bottomText",
+                  type: "field",
+                  name: "Bottom text",
+                  description: "Bottom text block",
+                })}
                 className="text-[16px] leading-[22px] font-[500]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
@@ -114,6 +133,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
               style={{ backgroundColor: surfaceColor, flex: "0 0 38%" }}
             >
               <img
+                {...promptTargetAttrs({
+                  path: "topImage.__image_prompt__",
+                  type: "image",
+                  name: "Top image prompt",
+                  description: "Top image prompt",
+                })}
                 src={topImg}
                 alt={slideData?.topImage?.__image_prompt__ || "top image"}
                 className="w-full h-full object-cover"
@@ -126,6 +151,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
               style={{ backgroundColor: surfaceColor, flex: "1 1 0%" }}
             >
               <img
+                {...promptTargetAttrs({
+                  path: "bottomImage.__image_prompt__",
+                  type: "image",
+                  name: "Bottom image prompt",
+                  description: "Bottom image prompt",
+                })}
                 src={bottomImg}
                 alt={slideData?.bottomImage?.__image_prompt__ || "bottom image"}
                 className="w-full h-full object-cover"
