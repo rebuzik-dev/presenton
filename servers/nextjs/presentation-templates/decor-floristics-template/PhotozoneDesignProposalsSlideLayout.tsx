@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
@@ -84,6 +85,12 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
       <div className="h-full px-[56px] pt-[42px] pb-[42px]">
         {/* Title */}
         <div
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Title",
+            description: "Photozone proposals title",
+          })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
         >
@@ -96,6 +103,12 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
           <div className="relative w-full h-[470px] bg-black/5 overflow-hidden">
             {imgLeft ? (
               <img
+                {...promptTargetAttrs({
+                  path: `visuals[${0}].__image_prompt__`,
+                  type: "image",
+                  name: "Photozone image 1",
+                  description: "Wide photozone visual prompt",
+                })}
                 src={imgLeft}
                 alt={visuals[0]?.__image_prompt__ || "Photozone wide"}
                 className="w-full h-full object-cover"
@@ -106,6 +119,12 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
 
             {/* Overlay label */}
             <div
+              {...promptTargetAttrs({
+                path: "leftLabel",
+                type: "field",
+                name: "Left label",
+                description: "Overlay label for the left photozone image",
+              })}
               className="absolute top-[14px] left-[16px] text-[18px] leading-[22px] font-[600]"
               style={{ color: labelColor, fontFamily: labelFont }}
             >
@@ -117,6 +136,12 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
           <div className="w-full h-[470px] bg-black/5 overflow-hidden">
             {imgRight ? (
               <img
+                {...promptTargetAttrs({
+                  path: `visuals[${1}].__image_prompt__`,
+                  type: "image",
+                  name: "Photozone image 2",
+                  description: "Vertical photozone visual prompt",
+                })}
                 src={imgRight}
                 alt={visuals[1]?.__image_prompt__ || "Photozone vertical"}
                 className="w-full h-full object-cover"

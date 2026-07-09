@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
@@ -86,6 +87,12 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
       <div className="h-full px-[56px] pt-[42px] pb-[42px]">
         {/* Title */}
         <div
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Title",
+            description: "Decor elements title",
+          })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
         >
@@ -97,6 +104,12 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
           {/* Left text */}
           <div className="pt-[6px]">
             <div
+              {...promptTargetAttrs({
+                path: "descriptionTop",
+                type: "field",
+                name: "Top description",
+                description: "Main decor elements description",
+              })}
               className="text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
@@ -105,6 +118,12 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
             </div>
 
             <div
+              {...promptTargetAttrs({
+                path: "descriptionBottom",
+                type: "field",
+                name: "Bottom description",
+                description: "Secondary decor layers description",
+              })}
               className="mt-[26px] text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
@@ -117,6 +136,12 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
           <div className="w-full">
             <div className="w-full h-[460px] overflow-hidden">
               <img
+                {...promptTargetAttrs({
+                  path: "image.__image_prompt__",
+                  type: "image",
+                  name: "Decor image prompt",
+                  description: "Main decor scene image prompt",
+                })}
                 src={imgUrl}
                 alt={slideData?.image?.__image_prompt__ || "Decor floristics"}
                 className="w-full h-full object-cover"

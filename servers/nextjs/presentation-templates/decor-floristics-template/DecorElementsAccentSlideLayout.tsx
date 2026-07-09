@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
@@ -89,6 +90,12 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
       <div className="h-full px-[56px] pt-[42px] pb-[42px]">
         {/* Title */}
         <div
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Title",
+            description: "Decor accent title",
+          })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
         >
@@ -101,6 +108,12 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
           <div className="w-full">
             <div className="w-full h-[470px] overflow-hidden bg-black/5">
               <img
+                {...promptTargetAttrs({
+                  path: "image.__image_prompt__",
+                  type: "image",
+                  name: "Decor accent image prompt",
+                  description: "Wide decor reference image prompt",
+                })}
                 src={imgUrl}
                 alt={slideData?.image?.__image_prompt__ || "Decor floristics"}
                 className="w-full h-full object-cover"
@@ -111,6 +124,12 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
           {/* Right: text (2 paragraphs) */}
           <div className="pt-[10px]">
             <div
+              {...promptTargetAttrs({
+                path: "textTop",
+                type: "field",
+                name: "Top text",
+                description: "Main visual accent text",
+              })}
               className="text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
@@ -119,6 +138,12 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
             </div>
 
             <div
+              {...promptTargetAttrs({
+                path: "textBottom",
+                type: "field",
+                name: "Bottom text",
+                description: "Palette and materials text",
+              })}
               className="mt-[26px] text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
