@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const layoutId = "typography-spec-slide";
 const layoutName = "Typography Spec Slide";
@@ -181,6 +182,12 @@ const dynamicSlideLayout: React.FC<TypographySpecProps> = ({ data: slideData }) 
               {/* белая рамка + тень */}
               <div className="relative w-full bg-white p-[10px] shadow-[0_18px_30px_rgba(0,0,0,0.18)]">
                 <img
+                  {...promptTargetAttrs({
+                    path: "rightImage.__image_prompt__",
+                    type: "image",
+                    name: "Right image prompt",
+                    description: "Poster image generation prompt",
+                  })}
                   src={rightImg}
                   alt={slideData?.rightImage?.__image_prompt__ || "Poster photo"}
                   className="block w-full h-auto aspect-[43/54] object-cover"

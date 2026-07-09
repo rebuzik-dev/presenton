@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
@@ -117,6 +118,12 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
           {/* Левая колонка — текст */}
           <div className="flex flex-col">
             <div
+              {...promptTargetAttrs({
+                path: "title",
+                type: "field",
+                name: "Title",
+                description: "Main storyboard title",
+              })}
               className="uppercase font-[800] text-[44px] leading-[52px]"
               style={{ color: titleColor, fontFamily: titleFont }}
             >
@@ -127,11 +134,36 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
               className="mt-[18px] font-[800] text-[22px] leading-[28px]"
               style={{ color: titleColor, fontFamily: bodyFont }}
             >
-              {(slideData?.phase || "Точка сборки") + " (" + (slideData?.timing || "2:40–4:00") + ")"}
+              <span
+                {...promptTargetAttrs({
+                  path: "phase",
+                  type: "field",
+                  name: "Phase",
+                  description: "Storyboard phase title",
+                })}
+              >
+                {slideData?.phase || "Точка сборки"}
+              </span>{" "}
+              (<span
+                {...promptTargetAttrs({
+                  path: "timing",
+                  type: "field",
+                  name: "Timing",
+                  description: "Storyboard timing interval",
+                })}
+              >
+                {slideData?.timing || "2:40–4:00"}
+              </span>)
             </div>
 
             <div className="mt-[86px] space-y-[44px]">
               <div
+                {...promptTargetAttrs({
+                  path: "framesText",
+                  type: "field",
+                  name: "Frames text",
+                  description: "Frames description block",
+                })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
@@ -139,6 +171,12 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
               </div>
 
               <div
+                {...promptTargetAttrs({
+                  path: "graphicsTextBlock",
+                  type: "field",
+                  name: "Graphics text",
+                  description: "Graphics block",
+                })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
@@ -163,6 +201,12 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
               <div className="w-full h-[360px] bg-black/5">
                 {img1 ? (
                   <img
+                    {...promptTargetAttrs({
+                      path: `visuals[${0}].__image_prompt__`,
+                      type: "image",
+                      name: "Storyboard image 1",
+                      description: "First storyboard visual prompt",
+                    })}
                     src={img1}
                     alt={visuals[0]?.__image_prompt__ || "Storyboard image 1"}
                     className="w-full h-full object-cover"
@@ -175,6 +219,12 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
               <div className="relative w-full h-[360px] bg-black/5">
                 {img2 ? (
                   <img
+                    {...promptTargetAttrs({
+                      path: `visuals[${1}].__image_prompt__`,
+                      type: "image",
+                      name: "Storyboard image 2",
+                      description: "Second storyboard visual prompt",
+                    })}
                     src={img2}
                     alt={visuals[1]?.__image_prompt__ || "Storyboard image 2"}
                     className="w-full h-full object-cover"
@@ -185,6 +235,12 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
 
                 {/* Бейдж внизу по центру */}
                 <div
+                  {...promptTargetAttrs({
+                    path: "badgeText",
+                    type: "field",
+                    name: "Badge text",
+                    description: "Overlay metric text",
+                  })}
                   className="absolute bottom-[18px] left-1/2 -translate-x-1/2 px-[28px] py-[12px] rounded-[12px] font-[800] text-[26px] leading-[30px]"
                   style={{
                     backgroundColor: badgeBg,

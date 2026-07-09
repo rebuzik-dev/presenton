@@ -35,6 +35,10 @@ const checks = [
     patterns: [/AnchoredBlockPromptPopover/, /renderTargetPopover/, /normalizePromptPath/, /sampleData=\{template\.sampleData\}/],
   },
   {
+    file: "scripts/check-legacy-template-prompt-targets.mjs",
+    patterns: [/catering/, /video/, /decor-floristics-template/, /souvenir/, /promptTargetAttrs/],
+  },
+  {
     file: "app/(presentation-generator)/presentation/components/PresentationPage.tsx",
     patterns: [/blockEditSlideIndex/, /setBlockEditSlideIndex\(null\)/],
   },

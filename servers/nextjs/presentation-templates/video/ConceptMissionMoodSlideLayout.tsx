@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const layoutId = "concept-mission-mood-slide";
 const layoutName = "Concept Mission Mood Slide";
@@ -80,6 +81,12 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
       <div className="h-full px-[72px] pt-[48px] pb-[44px] flex flex-col">
         {/* Заголовок */}
         <div
+          {...promptTargetAttrs({
+            path: "title",
+            type: "field",
+            name: "Title",
+            description: "Main section title",
+          })}
           className="uppercase font-[800] text-[48px] leading-[56px]"
           style={{ color: titleColor, fontFamily: titleFont }}
         >
@@ -105,6 +112,12 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
           </div>
 
           <div
+            {...promptTargetAttrs({
+              path: "heroQuote",
+              type: "field",
+              name: "Hero quote",
+              description: "Main concept quote",
+            })}
             className="font-[700] text-[24px] leading-[30px]"
             style={{ color: heroText, fontFamily: bodyFont }}
           >
@@ -118,6 +131,12 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
           {/* Левая колонка */}
           <section className="flex flex-col">
             <div
+              {...promptTargetAttrs({
+                path: "missionTitle",
+                type: "field",
+                name: "Mission title",
+                description: "Mission column heading",
+              })}
               className="font-[800] text-[28px] leading-[34px]"
               style={{ color: bodyColor, fontFamily: sectionTitleFont }}
             >
@@ -128,6 +147,12 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
             <div className="mt-[12px] h-[2px] w-full opacity-70" style={{ backgroundColor: ruleColor }} />
 
             <div
+              {...promptTargetAttrs({
+                path: "missionContent",
+                type: "field",
+                name: "Mission content",
+                description: "Mission column body",
+              })}
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
@@ -138,6 +163,12 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
           {/* Правая колонка */}
           <section className="flex flex-col">
             <div
+              {...promptTargetAttrs({
+                path: "moodTitle",
+                type: "field",
+                name: "Mood title",
+                description: "Mood column heading",
+              })}
               className="font-[800] text-[28px] leading-[34px]"
               style={{ color: bodyColor, fontFamily: sectionTitleFont }}
             >
@@ -148,6 +179,12 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
             <div className="mt-[12px] h-[2px] w-full opacity-70" style={{ backgroundColor: ruleColor }} />
 
             <div
+              {...promptTargetAttrs({
+                path: "moodContent",
+                type: "field",
+                name: "Mood content",
+                description: "Mood column body",
+              })}
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >

@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
@@ -110,6 +111,12 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
           {/* Левая текстовая колонка */}
           <div className="flex flex-col">
             <div
+              {...promptTargetAttrs({
+                path: "title",
+                type: "field",
+                name: "Title",
+                description: "Main storyboard title",
+              })}
               className="uppercase font-[800] text-[44px] leading-[52px]"
               style={{ color: titleColor, fontFamily: titleFont }}
             >
@@ -121,7 +128,26 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                 className="font-[800] text-[22px] leading-[28px]"
                 style={{ color: titleColor, fontFamily: bodyFont }}
               >
-                {(slideData?.phase || "Хук") + " (" + (slideData?.timing || "0:00–0:25") + ")"}
+                <span
+                  {...promptTargetAttrs({
+                    path: "phase",
+                    type: "field",
+                    name: "Phase",
+                    description: "Storyboard phase title",
+                  })}
+                >
+                  {slideData?.phase || "Хук"}
+                </span>{" "}
+                (<span
+                  {...promptTargetAttrs({
+                    path: "timing",
+                    type: "field",
+                    name: "Timing",
+                    description: "Storyboard timing range",
+                  })}
+                >
+                  {slideData?.timing || "0:00–0:25"}
+                </span>)
               </div>
             </div>
 
@@ -131,9 +157,27 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                   className="font-[500] text-[22px] leading-[28px]"
                   style={{ color: bodyColor, fontFamily: bodyFont }}
                 >
-                  {slideData?.framesLabel || "Кадры:"}{" "}
-                  {slideData?.visualDescription ||
-                    "Темный экран. Строка кода оживает и превращается в лицо разработчика."}
+                  <span
+                    {...promptTargetAttrs({
+                      path: "framesLabel",
+                      type: "field",
+                      name: "Frames label",
+                      description: "Label for visuals description",
+                    })}
+                  >
+                    {slideData?.framesLabel || "Кадры:"}
+                  </span>{" "}
+                  <span
+                    {...promptTargetAttrs({
+                      path: "visualDescription",
+                      type: "field",
+                      name: "Visual description",
+                      description: "Description of the frame",
+                    })}
+                  >
+                    {slideData?.visualDescription ||
+                      "Темный экран. Строка кода оживает и превращается в лицо разработчика."}
+                  </span>
                 </div>
               </div>
 
@@ -142,9 +186,27 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                   className="font-[500] text-[22px] leading-[28px]"
                   style={{ color: bodyColor, fontFamily: bodyFont }}
                 >
-                  {slideData?.voiceoverLabel || "Текст для озвучки:"}{" "}
-                  {slideData?.voiceover ||
-                    "«Лучший код — тот, который не видно. Но люди, которые его пишут, заслуживают быть в центре внимания.»"}
+                  <span
+                    {...promptTargetAttrs({
+                      path: "voiceoverLabel",
+                      type: "field",
+                      name: "Voiceover label",
+                      description: "Label for voiceover block",
+                    })}
+                  >
+                    {slideData?.voiceoverLabel || "Текст для озвучки:"}
+                  </span>{" "}
+                  <span
+                    {...promptTargetAttrs({
+                      path: "voiceover",
+                      type: "field",
+                      name: "Voiceover",
+                      description: "Narrator text",
+                    })}
+                  >
+                    {slideData?.voiceover ||
+                      "«Лучший код — тот, который не видно. Но люди, которые его пишут, заслуживают быть в центре внимания.»"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -158,6 +220,12 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
             <div className="w-full grid grid-cols-2 gap-[34px]">
               <div className="w-full h-[520px]">
                 <img
+                  {...promptTargetAttrs({
+                    path: "imageLeft.__image_prompt__",
+                    type: "image",
+                    name: "Left image prompt",
+                    description: "Left storyboard image prompt",
+                  })}
                   src={leftImg}
                   alt={slideData?.imageLeft?.__image_prompt__ || "Storyboard image left"}
                   className="w-full h-full object-cover"
@@ -166,6 +234,12 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
 
               <div className="w-full h-[520px]">
                 <img
+                  {...promptTargetAttrs({
+                    path: "imageRight.__image_prompt__",
+                    type: "image",
+                    name: "Right image prompt",
+                    description: "Right storyboard image prompt",
+                  })}
                   src={rightImg}
                   alt={slideData?.imageRight?.__image_prompt__ || "Storyboard image right"}
                   className="w-full h-full object-cover"

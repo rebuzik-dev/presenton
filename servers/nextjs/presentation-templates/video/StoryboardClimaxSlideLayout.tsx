@@ -1,6 +1,7 @@
 ﻿import React from "react";
 import * as z from "zod";
 import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/style";
+import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
@@ -89,6 +90,12 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
           {/* Левая колонка — текст */}
           <div className="flex flex-col">
             <div
+              {...promptTargetAttrs({
+                path: "title",
+                type: "field",
+                name: "Title",
+                description: "Main storyboard title",
+              })}
               className="uppercase font-[800] text-[44px] leading-[52px]"
               style={{ color: titleColor, fontFamily: titleFont }}
             >
@@ -99,11 +106,36 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
               className="mt-[18px] font-[800] text-[22px] leading-[28px]"
               style={{ color: titleColor, fontFamily: bodyFont }}
             >
-              {(slideData?.phase || "Кульминация") + " (" + (slideData?.timing || "5:15–7:00") + ")"}
+              <span
+                {...promptTargetAttrs({
+                  path: "phase",
+                  type: "field",
+                  name: "Phase",
+                  description: "Storyboard phase",
+                })}
+              >
+                {slideData?.phase || "Кульминация"}
+              </span>{" "}
+              (<span
+                {...promptTargetAttrs({
+                  path: "timing",
+                  type: "field",
+                  name: "Timing",
+                  description: "Storyboard timing range",
+                })}
+              >
+                {slideData?.timing || "5:15–7:00"}
+              </span>)
             </div>
 
             <div className="mt-[86px] space-y-[44px]">
               <div
+                {...promptTargetAttrs({
+                  path: "framesText",
+                  type: "field",
+                  name: "Frames text",
+                  description: "Frames block",
+                })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
@@ -112,6 +144,12 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
               </div>
 
               <div
+                {...promptTargetAttrs({
+                  path: "graphicsTextBlock",
+                  type: "field",
+                  name: "Graphics text",
+                  description: "Graphics block",
+                })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
@@ -128,6 +166,12 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
               <div className="w-full h-[420px] bg-black/5">
                 {img1 ? (
                   <img
+                    {...promptTargetAttrs({
+                      path: `visuals[${0}].__image_prompt__`,
+                      type: "image",
+                      name: "Climax image 1",
+                      description: "First climax visual prompt",
+                    })}
                     src={img1}
                     alt={visuals[0]?.__image_prompt__ || "Climax image 1"}
                     className="w-full h-full object-cover"
@@ -140,6 +184,12 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
               <div className="w-full h-[420px] bg-black/5">
                 {img2 ? (
                   <img
+                    {...promptTargetAttrs({
+                      path: `visuals[${1}].__image_prompt__`,
+                      type: "image",
+                      name: "Climax image 2",
+                      description: "Second climax visual prompt",
+                    })}
                     src={img2}
                     alt={visuals[1]?.__image_prompt__ || "Climax image 2"}
                     className="w-full h-full object-cover"

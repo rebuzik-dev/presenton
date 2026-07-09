@@ -5,6 +5,7 @@ import {
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
+import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const layoutId = "title-event-header-slide"
 const layoutName = "Title Event Header Slide"
@@ -63,6 +64,12 @@ const dynamicSlideLayout: React.FC<TitleEventHeaderLayoutProps> = ({ data: slide
         {/* Верхний kicker */}
         <div>
           <div
+            {...promptTargetAttrs({
+              path: "documentType",
+              type: "field",
+              name: "Document type",
+              description: "Document category label",
+            })}
             className="text-[24px] leading-[32px] font-[500] uppercase tracking-[0.02em]"
             style={{ color: kickerColor, fontFamily: kickerFont }}
           >
@@ -74,6 +81,12 @@ const dynamicSlideLayout: React.FC<TitleEventHeaderLayoutProps> = ({ data: slide
         <div className="flex-1 flex items-center">
           <div>
             <div
+              {...promptTargetAttrs({
+                path: "eventName",
+                type: "field",
+                name: "Event name",
+                description: "Main event heading",
+              })}
               className="max-w-[980px] text-[64px] leading-[68px] font-[800] uppercase tracking-[0.4px] text-left"
               style={{ color: titleColor, fontFamily: titleFont }}
             >
