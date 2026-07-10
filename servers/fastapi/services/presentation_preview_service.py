@@ -122,7 +122,9 @@ async def get_presentation_preview_manifest(
 async def ensure_presentation_preview_manifest(
     sql_session: AsyncSession,
     presentation_id: uuid.UUID,
-    request: Request,
+    request: Optional[Request] = None,
+    *,
+    auth_context: Optional[dict[str, dict[str, str]]] = None,
 ) -> PresentationPreviewManifest:
     lock = _preview_locks.setdefault(presentation_id, asyncio.Lock())
     async with lock:
@@ -137,10 +139,13 @@ async def ensure_presentation_preview_manifest(
 
         try:
             rendered_paths = await _render_previews_with_nextjs(
-                request,
                 presentation_id=presentation_id,
                 revision=current.revision,
                 expected_slide_count=len(current.slides),
+                auth_context=(
+                    auth_context
+                    or extract_preview_auth_context(request)
+                ),
             )
             if set(rendered_paths) != {item.index for item in current.slides}:
                 raise RuntimeError("Preview renderer returned an incomplete slide set")
@@ -273,26 +278,15 @@ def _manifest_files_are_ready(manifest: PresentationPreviewManifest) -> bool:
 
 
 async def _render_previews_with_nextjs(
-    request: Request,
     *,
     presentation_id: uuid.UUID,
     revision: str,
     expected_slide_count: int,
+    auth_context: dict[str, dict[str, str]],
 ) -> dict[int, str]:
     base_url = os.getenv("NEXTJS_API_URL", "http://localhost:3000").rstrip("/")
-    headers: dict[str, str] = {"Content-Type": "application/json"}
-    for header_name in ("authorization", "x-api-key"):
-        header_value = request.headers.get(header_name)
-        if header_value:
-            headers[header_name] = header_value
-
-    params: dict[str, str] = {}
-    token = request.query_params.get("token") or request.cookies.get("auth_token")
-    api_key = request.query_params.get("api_key")
-    if token:
-        params["token"] = token
-    if api_key:
-        params["api_key"] = api_key
+    headers = {"Content-Type": "application/json", **auth_context["headers"]}
+    params = auth_context["params"]
 
     timeout = aiohttp.ClientTimeout(total=300)
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -319,6 +313,28 @@ async def _render_previews_with_nextjs(
         and "index" in item
         and "filesystem_path" in item
     }
+
+
+def extract_preview_auth_context(
+    request: Optional[Request],
+) -> dict[str, dict[str, str]]:
+    headers: dict[str, str] = {}
+    params: dict[str, str] = {}
+    if request is None:
+        return {"headers": headers, "params": params}
+
+    for header_name in ("authorization", "x-api-key"):
+        header_value = request.headers.get(header_name)
+        if header_value:
+            headers[header_name] = header_value
+
+    token = request.query_params.get("token") or request.cookies.get("auth_token")
+    api_key = request.query_params.get("api_key")
+    if token:
+        params["token"] = token
+    if api_key:
+        params["api_key"] = api_key
+    return {"headers": headers, "params": params}
 
 
 def _find_named_text(value: Any, target_key: str) -> Optional[str]:

@@ -6,7 +6,7 @@ First checks the database for custom templates, then falls back to Next.js for s
 import aiohttp
 import os
 import uuid
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlencode
 
 from fastapi import HTTPException
@@ -14,6 +14,9 @@ from models.presentation_layout import PresentationLayoutModel
 from services.template_service import template_service
 from services.template_prompt_profile_service import template_prompt_profile_service
 from utils.template_prompt_overrides import apply_prompt_profile_to_layout
+
+
+_PROMPT_PROFILE_UNSET = object()
 
 
 def _builtin_template_exists(layout_name: str) -> bool:
@@ -87,6 +90,7 @@ async def get_layout_by_name(
     ordered: Optional[bool] = None,
     auth_token: Optional[str] = None,
     api_key: Optional[str] = None,
+    prompt_profile: Any = _PROMPT_PROFILE_UNSET,
 ) -> PresentationLayoutModel:
     """
     Get a presentation layout by template slug.
@@ -132,14 +136,14 @@ async def get_layout_by_name(
                 auth_token=auth_token,
                 api_key=api_key,
             )
-            return await _apply_prompt_profile(layout_name, layout)
+            return await _apply_prompt_profile(layout_name, layout, prompt_profile)
         
         # Custom templates: prefer DB-backed layouts when available
         if template.layouts:
             layout = _build_layout_from_db(template)
             if ordered is not None:
                 layout.ordered = ordered
-            return await _apply_prompt_profile(layout_name, layout)
+            return await _apply_prompt_profile(layout_name, layout, prompt_profile)
 
         # Legacy custom templates store raw layout code in presentation_layout_codes and
         # must be resolved through Next.js schema extraction.
@@ -152,7 +156,7 @@ async def get_layout_by_name(
             auth_token=auth_token,
             api_key=api_key,
         )
-        return await _apply_prompt_profile(layout_name, layout)
+        return await _apply_prompt_profile(layout_name, layout, prompt_profile)
     
     if not _builtin_template_exists(layout_name):
         raise HTTPException(
@@ -167,7 +171,7 @@ async def get_layout_by_name(
         auth_token=auth_token,
         api_key=api_key,
     )
-    return await _apply_prompt_profile(layout_name, layout)
+    return await _apply_prompt_profile(layout_name, layout, prompt_profile)
 
 
 async def _fetch_layout_from_nextjs(
@@ -234,6 +238,9 @@ def _build_layout_from_db(template) -> PresentationLayoutModel:
 async def _apply_prompt_profile(
     template_slug: str,
     layout: PresentationLayoutModel,
+    prompt_profile: Any = _PROMPT_PROFILE_UNSET,
 ) -> PresentationLayoutModel:
-    profile = await template_prompt_profile_service.get_by_slug(template_slug)
+    profile = prompt_profile
+    if profile is _PROMPT_PROFILE_UNSET:
+        profile = await template_prompt_profile_service.get_by_slug(template_slug)
     return apply_prompt_profile_to_layout(layout, profile)

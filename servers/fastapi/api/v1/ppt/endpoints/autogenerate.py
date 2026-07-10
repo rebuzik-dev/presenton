@@ -172,6 +172,7 @@ async def autogenerate_presentation(
                     ordered=request.ordered,
                     auth_token=auth_token,
                     api_key=api_key,
+                    prompt_profile=prompt_profile,
                 )
                 await PresentationService.prepare_structure(
                     session,

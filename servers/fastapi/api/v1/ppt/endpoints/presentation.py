@@ -18,6 +18,10 @@ from constants.presentation import DEFAULT_TEMPLATES
 from models.api_error_model import APIErrorModel
 from models.presentation_and_path import PresentationPathAndEditPath
 from models.presentation_from_template import EditPresentationRequest
+from models.derive_regenerate import (
+    DeriveRegenerateRequest,
+    DeriveRegenerateResponse,
+)
 from models.presentation_outline_model import (
     PresentationOutlineModel,
     SlideOutlineModel,
@@ -72,7 +76,12 @@ import uuid
 from services.presentation_service import PresentationService
 from services.presentation_preview_service import (
     ensure_presentation_preview_manifest,
+    extract_preview_auth_context,
     get_presentation_preview_manifest,
+)
+from services.selective_regeneration_service import (
+    prepare_derived_regeneration,
+    run_derived_regeneration,
 )
 from services.template_prompt_profile_service import template_prompt_profile_service
 from utils.block_map import (
@@ -445,6 +454,49 @@ async def create_or_update_presentation_previews(
         sql_session,
         id,
         http_request,
+    )
+
+
+@PRESENTATION_ROUTER.post(
+    "/{source_id}/derive-regenerate",
+    response_model=DeriveRegenerateResponse,
+)
+async def derive_and_regenerate_selected_slides(
+    source_id: uuid.UUID,
+    data: DeriveRegenerateRequest,
+    http_request: Request,
+    background_tasks: BackgroundTasks,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    status, created = await prepare_derived_regeneration(
+        sql_session,
+        source_id=source_id,
+        request_id=data.request_id,
+        slide_indices=data.slide_indices,
+    )
+    if created:
+        auth_token, api_key = _extract_auth_context(http_request)
+        preview_auth_context = extract_preview_auth_context(http_request)
+
+        async def run_regeneration():
+            async for session in get_async_session():
+                await run_derived_regeneration(
+                    session,
+                    presentation_id=data.request_id,
+                    source_id=source_id,
+                    slide_indices=data.slide_indices,
+                    auth_token=auth_token,
+                    api_key=api_key,
+                    preview_auth_context=preview_auth_context,
+                )
+
+        background_tasks.add_task(run_regeneration)
+
+    return DeriveRegenerateResponse(
+        presentation_id=data.request_id,
+        status=status.status,
+        message=status.message,
+        poll_url=f"/api/v1/ppt/presentation/status/{data.request_id}",
     )
 
 
