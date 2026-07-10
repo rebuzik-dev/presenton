@@ -18,27 +18,32 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
     const dispatch = useDispatch();
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-
-    const customTemplateId = slide.layout_group.startsWith("custom-") ? slide.layout_group.split("custom-")[1] : slide.layout_group;
-    const isCustomTemplate = uuidValidate(customTemplateId) || slide.layout_group.startsWith("custom-");
+    const layoutGroup = typeof slide?.layout_group === "string" ? slide.layout_group : "";
+    const layoutId = typeof slide?.layout === "string" ? slide.layout : "";
+    const slideContent = slide?.content && typeof slide.content === "object" ? slide.content : {};
+    const customTemplateId = layoutGroup.startsWith("custom-") ? layoutGroup.split("custom-")[1] : layoutGroup;
+    const isCustomTemplate = Boolean(layoutGroup) && (uuidValidate(customTemplateId) || layoutGroup.startsWith("custom-"));
 
     // Always call the hook (React hooks rule), but with empty id when not a custom template
     const { template: customTemplate, loading: customLoading } = useCustomTemplateDetails({
         id: isCustomTemplate ? customTemplateId : "",
-        name: isCustomTemplate ? slide.layout_group : "",
+        name: isCustomTemplate ? layoutGroup : "",
         description: ""
     });
 
 
     // Memoize layout resolution to prevent unnecessary recalculations
     const Layout = useMemo(() => {
+        if (!layoutGroup || !layoutId) {
+            return null;
+        }
         if (isCustomTemplate) {
             if (customTemplate) {
-                const layoutId = slide.layout.startsWith("custom-") ? slide.layout.split(":")[1] : slide.layout;
+                const customLayoutId = layoutId.startsWith("custom-") ? layoutId.split(":")[1] : layoutId;
 
 
                 const compiledLayout = customTemplate.layouts.find(
-                    (layout) => layout.layoutId === layoutId
+                    (layout) => layout.layoutId === customLayoutId
                 );
 
 
@@ -46,10 +51,18 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
             }
             return null;
         } else {
-            const template = getLayoutByLayoutId(slide.layout, slide.layout_group);
+            const template = getLayoutByLayoutId(layoutId, layoutGroup);
             return template?.component ?? null;
         }
-    }, [isCustomTemplate, customTemplate, slide.layout]);
+    }, [isCustomTemplate, customTemplate, layoutGroup, layoutId]);
+
+    if (!slide || !layoutGroup || !layoutId) {
+        return (
+            <div className="flex h-full aspect-video flex-col items-center justify-center rounded-lg bg-gray-100">
+                <p className="text-center text-base text-gray-600">Slide preview unavailable</p>
+            </div>
+        );
+    }
 
     // Show loading state for custom templates
     if (isCustomTemplate && customLoading) {
@@ -62,7 +75,7 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
 
 
     if (!Layout) {
-        if (Object.keys(slide.content).length === 0) {
+        if (Object.keys(slideContent).length === 0) {
             return (
                 <div className="flex flex-col items-center cursor-pointer justify-center aspect-video h-full bg-gray-100 rounded-lg">
                     <p className="text-gray-600 text-center text-base">Blank Slide</p>
@@ -88,12 +101,12 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
 
                     <EditableLayoutWrapper
                         slideIndex={slide.index}
-                        slideData={slide.content}
+                        slideData={slideContent}
                         properties={slide.properties}
                     >
                         <TiptapTextReplacer
                             key={slide.id}
-                            slideData={slide.content}
+                            slideData={slideContent}
                             slideIndex={slide.index}
                             onContentChange={(
                                 content: string,
@@ -112,7 +125,7 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
                             }}
                         >
                             <LayoutComp data={{
-                                ...slide.content,
+                                ...slideContent,
                                 _logo_url__: theme ? theme.logo_url : null,
                                 __companyName__: (theme && theme.company_name) ? theme.company_name : null,
                             }} />
@@ -131,12 +144,12 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
             <div ref={containerRef}>
                 <TiptapTextReplacer
                     key={slide.id}
-                    slideData={slide.content}
+                    slideData={slideContent}
                     slideIndex={slide.index}
                     readOnly
                 >
                     <LayoutComp data={{
-                        ...slide.content,
+                        ...slideContent,
                         _logo_url__: theme ? theme.logo_url : null,
                         __companyName__: (theme && theme.company_name) ? theme.company_name : null,
                     }} />

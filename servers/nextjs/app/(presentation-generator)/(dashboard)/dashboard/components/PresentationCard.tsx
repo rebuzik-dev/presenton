@@ -107,6 +107,15 @@ export const PresentationCard = ({
     setIsDeleting(false);
   };
   const firstSlide = presentation?.slides?.[0];
+  const canRenderFirstSlide = Boolean(
+    firstSlide &&
+    typeof firstSlide.layout_group === "string" &&
+    firstSlide.layout_group.length > 0 &&
+    typeof firstSlide.layout === "string" &&
+    firstSlide.layout.length > 0 &&
+    firstSlide.content &&
+    typeof firstSlide.content === "object"
+  );
   return (
     <Card
       suppressHydrationWarning={true}
@@ -122,9 +131,24 @@ export const PresentationCard = ({
         </p> */}
 
         <img src="/card_bg.svg" alt="" className="absolute top-0 left-0 w-full h-full object-cover" />
-        <div className="scale-[0.75] mt-4  border border-gray-300 rounded-lg overflow-hidden">
-
-          <SlideScale slide={firstSlide} isClickable={false} />
+        <div className="scale-[0.75] mt-4 border border-gray-300 rounded-lg overflow-hidden">
+          {canRenderFirstSlide ? (
+            <SlideScale
+              slide={firstSlide}
+              isClickable={false}
+              isEditMode={false}
+            />
+          ) : (
+            <div
+              className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-gray-50 text-center"
+              data-testid="presentation-card-empty-preview"
+            >
+              <div className="h-10 w-10 rounded-full bg-gray-200" />
+              <p className="text-sm font-medium text-gray-500">
+                Slides are being prepared
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="w-full py-3 px-5 mt-auto z-40 relative bg-white  border-t border-[#EDEEEF]">
