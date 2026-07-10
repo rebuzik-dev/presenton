@@ -38,6 +38,7 @@ from services.concurrent_service import CONCURRENT_SERVICE
 from services.documents_loader import DocumentsLoader
 from services.image_generation_service import ImageGenerationService
 from services.temp_file_service import TEMP_FILE_SERVICE
+from services.template_prompt_profile_service import template_prompt_profile_service
 from services.webhook_service import WebhookService
 from utils.asset_directory_utils import get_exports_directory, get_images_directory
 from utils.export_utils import export_presentation
@@ -57,6 +58,10 @@ from utils.ppt_utils import (
 from utils.process_slides import (
     process_slide_add_placeholder_assets,
     process_slide_and_fetch_assets,
+)
+from utils.template_prompt_overrides import (
+    get_active_template_prompt,
+    merge_generation_instructions,
 )
 from utils.custom_logger import setup_logger
 
@@ -115,6 +120,7 @@ class PresentationService:
         presentation_id: uuid.UUID,
         slides_markdown: Optional[List[SlideOutlineModel]] = None,
         global_reference_image_source: Optional[str] = None,
+        template_prompt: Optional[str] = None,
     ) -> PresentationModel:
         logger.info(f"Generating outlines for presentation: {presentation_id}")
         presentation = await sql_session.get(PresentationModel, presentation_id)
@@ -179,7 +185,10 @@ class PresentationService:
             additional_context,
             presentation.tone,
             presentation.verbosity,
-            presentation.instructions,
+            merge_generation_instructions(
+                presentation.instructions,
+                template_prompt,
+            ),
             presentation.include_title_slide,
             presentation.web_search,
         ):
@@ -229,6 +238,7 @@ class PresentationService:
         outlines: Optional[List[SlideOutlineModel]] = None,
         title: Optional[str] = None,
         using_slides_markdown: bool = False,
+        template_prompt: Optional[str] = None,
     ) -> PresentationModel:
         logger.info(f"Preparing structure for presentation: {presentation_id}")
         presentation = await sql_session.get(PresentationModel, presentation_id)
@@ -256,7 +266,10 @@ class PresentationService:
                 await generate_presentation_structure(
                     presentation_outline=presentation_outline_model,
                     presentation_layout=layout,
-                    instructions=presentation.instructions,
+                    instructions=merge_generation_instructions(
+                        presentation.instructions,
+                        template_prompt,
+                    ),
                     using_slides_markdown=using_slides_markdown,
                 )
             )
@@ -323,6 +336,7 @@ class PresentationService:
         presentation_id: uuid.UUID,
         async_status: Optional[AsyncPresentationGenerationTaskModel] = None,
         export_as: Optional[str] = "pptx",
+        template_prompt: Optional[str] = None,
     ):
         logger.info(f"Starting full generation pipeline for: {presentation_id}")
         try:
@@ -335,6 +349,15 @@ class PresentationService:
             structure = presentation.get_structure()
             layout = presentation.get_layout()
             outline = presentation.get_presentation_outline()
+            if template_prompt is None:
+                prompt_profile = await template_prompt_profile_service.get_by_slug(
+                    layout.name
+                )
+                template_prompt = get_active_template_prompt(prompt_profile)
+            generation_instructions = merge_generation_instructions(
+                presentation.instructions,
+                template_prompt,
+            )
 
             # Schedule slide content generation and asset fetching in batches of 10
             slide_layout_indices = structure.slides
@@ -360,7 +383,7 @@ class PresentationService:
                         presentation.language,
                         presentation.tone,
                         presentation.verbosity,
-                        presentation.instructions,
+                        generation_instructions,
                     )
                     for i in range(start, end)
                 ]

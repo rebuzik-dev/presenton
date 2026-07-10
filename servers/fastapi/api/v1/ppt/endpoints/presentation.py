@@ -75,6 +75,10 @@ from utils.block_map import (
     build_editable_block_id,
     build_slide_block_map,
 )
+from utils.template_prompt_overrides import (
+    get_active_template_prompt,
+    merge_generation_instructions,
+)
 
 
 from utils.custom_logger import setup_logger
@@ -160,6 +164,11 @@ async def run_stream_generation_worker(
             structure = presentation.get_structure()
             layout = presentation.get_layout()
             outline = presentation.get_presentation_outline()
+            prompt_profile = await template_prompt_profile_service.get_by_slug(layout.name)
+            generation_instructions = merge_generation_instructions(
+                presentation.instructions,
+                get_active_template_prompt(prompt_profile),
+            )
 
             async_assets_generation_tasks = []
             slides: List[SlideModel] = []
@@ -227,7 +236,7 @@ async def run_stream_generation_worker(
                             presentation.language,
                             presentation.tone,
                             presentation.verbosity,
-                            presentation.instructions,
+                            generation_instructions,
                         )
                     )
 

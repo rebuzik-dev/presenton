@@ -14,8 +14,10 @@ from models.sql.async_presentation_generation_status import (
 )
 from services.database import get_async_session
 from services.presentation_service import PresentationService
+from services.template_prompt_profile_service import template_prompt_profile_service
 from utils.custom_logger import setup_logger
 from utils.get_layout_by_name import get_layout_by_name
+from utils.template_prompt_overrides import get_active_template_prompt
 
 AUTOGENERATE_ROUTER = APIRouter(prefix="/presentation", tags=["Autogenerate"])
 logger = setup_logger(__name__)
@@ -141,6 +143,10 @@ async def autogenerate_presentation(
             try:
                 # Re-fetch status to attach to new session
                 status = await session.get(AsyncPresentationGenerationTaskModel, presentation.id)
+                prompt_profile = await template_prompt_profile_service.get_by_slug(
+                    request.template
+                )
+                template_prompt = get_active_template_prompt(prompt_profile)
                 
                 # A. Generate Outlines
                 status.message = "Generating outlines..."
@@ -153,6 +159,7 @@ async def autogenerate_presentation(
                     presentation.id,
                     slides_markdown=slide_outline_inputs,
                     global_reference_image_source=request.global_reference_image_source,
+                    template_prompt=template_prompt,
                 )
                 
                 # B. Prepare Structure
@@ -171,6 +178,7 @@ async def autogenerate_presentation(
                     presentation.id,
                     layout_model,
                     using_slides_markdown=slide_outline_inputs is not None,
+                    template_prompt=template_prompt,
                 )
                 
                 # C. Run Full Pipeline (Content + Assets + Export)
@@ -182,7 +190,8 @@ async def autogenerate_presentation(
                     session, 
                     presentation.id, 
                     async_status=status,
-                    export_as=None
+                    export_as=None,
+                    template_prompt=template_prompt,
                 )
 
             except Exception as e:

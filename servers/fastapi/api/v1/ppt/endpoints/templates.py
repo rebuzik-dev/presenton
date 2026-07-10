@@ -18,6 +18,7 @@ from utils.get_layout_by_name import get_layout_by_name
 from utils.template_image_summary import build_layout_image_summary
 from utils.block_map import build_template_block_map
 from utils.template_prompt_overrides import (
+    build_prompt_profile_revision,
     normalize_prompt_profile_payload,
     serialize_prompt_profile,
 )
@@ -189,12 +190,18 @@ class TemplatePromptProfileOverridesResponse(BaseModel):
     updated_at: Optional[str] = None
 
 
+class TemplatePromptProfileRevisionResponse(BaseModel):
+    fingerprint: str
+    updated_at: Optional[str] = None
+
+
 class TemplatePromptProfileResponse(BaseModel):
     template: str
     template_id: Optional[UUID] = None
     template_name: Optional[str] = None
     template_type: str
     source_prompt: Optional[str] = None
+    revision: TemplatePromptProfileRevisionResponse
     prompt_profile: TemplatePromptProfileOverridesResponse
     schema_summary: TemplateSchemaSummaryResponse
     image_summary: TemplateImageSummaryResponse
@@ -270,6 +277,9 @@ async def _build_prompt_profile_response(
         template_name=template.name if template else layout.name,
         template_type=_template_type(template, slug),
         source_prompt=template.description if template else None,
+        revision=TemplatePromptProfileRevisionResponse(
+            **build_prompt_profile_revision(profile)
+        ),
         prompt_profile=TemplatePromptProfileOverridesResponse(
             **serialize_prompt_profile(profile)
         ),

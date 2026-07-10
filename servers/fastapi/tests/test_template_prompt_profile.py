@@ -9,7 +9,12 @@ from api.deps import get_current_user_or_api_key
 from api.v1.ppt.endpoints.templates import TEMPLATES_ROUTER
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from utils.template_image_summary import build_layout_image_summary
-from utils.template_prompt_overrides import apply_prompt_profile_to_layout
+from utils.template_prompt_overrides import (
+    apply_prompt_profile_to_layout,
+    build_prompt_profile_revision,
+    get_active_template_prompt,
+    merge_generation_instructions,
+)
 from utils.template_schema_summary import build_template_schema_summary
 
 
@@ -155,6 +160,8 @@ def test_get_template_prompt_profile_returns_current_overrides():
     assert payload["template_id"] == str(template_id)
     assert payload["template_type"] == "built-in"
     assert payload["source_prompt"] == "Source template description"
+    assert len(payload["revision"]["fingerprint"]) == 64
+    assert payload["revision"]["updated_at"] is None
     assert payload["prompt_profile"]["template_prompt"] == "Template prompt"
     assert (
         payload["schema_summary"]["layouts"][0]["layout_description"]
@@ -231,3 +238,45 @@ def test_patch_template_prompt_profile_supports_custom_legacy_slug():
         "hero-slide": {"layout_prompt": "Saved layout prompt"}
     }
     assert response.json()["template_type"] == "custom"
+
+
+def test_prompt_revision_is_stable_for_equivalent_payloads_and_changes_with_prompt():
+    first = _profile(
+        layout_prompts={
+            "second": {"layout_prompt": "B"},
+            "first": {"layout_prompt": "A"},
+        }
+    )
+    reordered = _profile(
+        layout_prompts={
+            "first": {"layout_prompt": "A"},
+            "second": {"layout_prompt": "B"},
+        }
+    )
+    changed = _profile(
+        template_prompt="Changed template prompt",
+        layout_prompts=reordered.layout_prompts,
+    )
+
+    assert (
+        build_prompt_profile_revision(first)["fingerprint"]
+        == build_prompt_profile_revision(reordered)["fingerprint"]
+    )
+    assert (
+        build_prompt_profile_revision(first)["fingerprint"]
+        != build_prompt_profile_revision(changed)["fingerprint"]
+    )
+
+
+def test_template_prompt_is_added_to_generation_instructions_only_when_active():
+    profile = _profile(template_prompt="Keep the story concise")
+
+    assert get_active_template_prompt(profile) == "Keep the story concise"
+    assert merge_generation_instructions(
+        "Use the supplied facts",
+        get_active_template_prompt(profile),
+    ) == (
+        "Use the supplied facts\n\n"
+        "Template-level instructions:\nKeep the story concise"
+    )
+    assert get_active_template_prompt(_profile(is_active=False)) is None

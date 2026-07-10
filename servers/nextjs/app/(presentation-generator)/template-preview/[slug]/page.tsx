@@ -106,6 +106,13 @@ const GroupLayoutPreview = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    if (searchParams.get("panel") === "prompts") {
+      setFocusedLayoutId(undefined);
+      setPromptOpen(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (previewFontUrl) {
       useFontLoader([previewFontUrl]);
     }

@@ -48,6 +48,10 @@ export interface TemplatePromptProfileResponse {
     template_name: string | null;
     template_type: "built-in" | "custom" | "legacy";
     source_prompt: string | null;
+    revision: {
+        fingerprint: string;
+        updated_at: string | null;
+    };
     prompt_profile: PromptProfile | null;
     schema_summary: {
         template: string;

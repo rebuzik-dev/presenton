@@ -1,9 +1,49 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
+import json
 from typing import Any, Optional
 
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
+
+
+def build_prompt_profile_revision(profile: Any | None) -> dict[str, Optional[str]]:
+    payload = {
+        "is_active": bool(getattr(profile, "is_active", True)),
+        "template_prompt": getattr(profile, "template_prompt", None),
+        "layout_prompts": getattr(profile, "layout_prompts", None) or {},
+    }
+    canonical = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    updated_at = getattr(profile, "updated_at", None)
+    return {
+        "fingerprint": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "updated_at": updated_at.isoformat() if updated_at else None,
+    }
+
+
+def get_active_template_prompt(profile: Any | None) -> Optional[str]:
+    if not profile or not getattr(profile, "is_active", True):
+        return None
+    return _clean_optional_text(getattr(profile, "template_prompt", None))
+
+
+def merge_generation_instructions(
+    instructions: Optional[str],
+    template_prompt: Optional[str],
+) -> Optional[str]:
+    instructions = _clean_optional_text(instructions)
+    template_prompt = _clean_optional_text(template_prompt)
+    if not template_prompt:
+        return instructions
+    if not instructions:
+        return template_prompt
+    return f"{instructions}\n\nTemplate-level instructions:\n{template_prompt}"
 
 
 def serialize_prompt_profile(profile: Any | None) -> dict[str, Any]:

@@ -76,6 +76,15 @@ def mock_get_layout_by_name():
         mock.return_value = layout
         yield mock
 
+
+@pytest.fixture(autouse=True)
+def mock_prompt_profile_service():
+    with patch(
+        "api.v1.ppt.endpoints.autogenerate.template_prompt_profile_service.get_by_slug",
+        new=AsyncMock(return_value=None),
+    ):
+        yield
+
 class TestAutogenerationAPI:
     def test_autogenerate_success(
         self, client, mock_presentation_service, mock_get_layout_by_name
