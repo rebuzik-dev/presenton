@@ -31,6 +31,7 @@ from models.block_map import (
     EditableSlideBlock,
 )
 from models.presentation_layout import PresentationLayoutModel
+from models.presentation_preview import PresentationPreviewManifest
 from models.presentation_structure_model import PresentationStructureModel
 from models.presentation_with_slides import (
     PresentationWithSlides,
@@ -69,6 +70,10 @@ from utils.process_slides import (
 )
 import uuid
 from services.presentation_service import PresentationService
+from services.presentation_preview_service import (
+    ensure_presentation_preview_manifest,
+    get_presentation_preview_manifest,
+)
 from services.template_prompt_profile_service import template_prompt_profile_service
 from utils.block_map import (
     apply_block_patch,
@@ -413,6 +418,33 @@ async def get_presentation(
     return PresentationWithSlides(
         **presentation.model_dump(),
         slides=slides,
+    )
+
+
+@PRESENTATION_ROUTER.get(
+    "/{id}/previews",
+    response_model=PresentationPreviewManifest,
+)
+async def get_presentation_previews(
+    id: uuid.UUID,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    return await get_presentation_preview_manifest(sql_session, id)
+
+
+@PRESENTATION_ROUTER.post(
+    "/{id}/previews",
+    response_model=PresentationPreviewManifest,
+)
+async def create_or_update_presentation_previews(
+    id: uuid.UUID,
+    http_request: Request,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    return await ensure_presentation_preview_manifest(
+        sql_session,
+        id,
+        http_request,
     )
 
 
