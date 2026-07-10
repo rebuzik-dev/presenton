@@ -1,19 +1,56 @@
 
-from unittest.mock import patch, AsyncMock, MagicMock
+import asyncio
+from unittest.mock import patch, AsyncMock
 import pytest
 from fastapi.testclient import TestClient
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlmodel import SQLModel
 from api.v1.ppt.endpoints.autogenerate import AUTOGENERATE_ROUTER
+from models.sql.async_presentation_generation_status import (
+    AsyncPresentationGenerationTaskModel,
+)
 from models.presentation_layout import PresentationLayoutModel
-from models.presentation_structure_model import PresentationStructureModel
 from models.sql.presentation import PresentationModel
+from services.database import get_async_session
 import uuid
 
+
 @pytest.fixture
-def app():
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.fixture
+def app(tmp_path):
     app = FastAPI()
     app.include_router(AUTOGENERATE_ROUTER, prefix="/api/v1/ppt")
-    return app
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'autogenerate.db'}")
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def prepare_database():
+        async with engine.begin() as connection:
+            await connection.run_sync(
+                lambda sync_connection: SQLModel.metadata.create_all(
+                    sync_connection,
+                    tables=[AsyncPresentationGenerationTaskModel.__table__],
+                )
+            )
+
+    async def session_override():
+        async with session_maker() as session:
+            yield session
+
+    asyncio.run(prepare_database())
+    app.dependency_overrides[get_async_session] = session_override
+
+    with patch(
+        "api.v1.ppt.endpoints.autogenerate.get_async_session",
+        session_override,
+    ):
+        yield app
+
+    asyncio.run(engine.dispose())
 
 @pytest.fixture
 def client(app):
@@ -39,16 +76,9 @@ def mock_get_layout_by_name():
         mock.return_value = layout
         yield mock
 
-@pytest.fixture
-def mock_db_session():
-    with patch("api.v1.ppt.endpoints.autogenerate.get_async_session") as mock:
-        session = AsyncMock()
-        mock.return_value = session
-        yield session
-
 class TestAutogenerationAPI:
     def test_autogenerate_success(
-        self, client, mock_presentation_service, mock_db_session, mock_get_layout_by_name
+        self, client, mock_presentation_service, mock_get_layout_by_name
     ):
         # Setup mocks
         presentation_id = uuid.uuid4()
@@ -93,7 +123,7 @@ class TestAutogenerationAPI:
         # validation error likely from Pydantic or our explicit check
         assert response.status_code in [400, 422]
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_background_task_execution_logic(self, mock_presentation_service):
         # This test verifies the logic inside the background task function 
         # (which is harder to reach via TestClient).

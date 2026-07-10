@@ -3,78 +3,62 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException, Request
 from pydantic import ValidationError
 
-from api.v1.ppt.endpoints.presentation import generate_presentation_sync
+from api.v1.ppt.endpoints.autogenerate import autogenerate_presentation
 from models.generate_presentation_request import GeneratePresentationRequest
-from models.presentation_and_path import PresentationPathAndEditPath
+from models.sql.presentation import PresentationModel
 
 
 class FakeAsyncSession:
-    async def get(self, *_args, **_kwargs):
-        return None
-
     def add(self, *_args, **_kwargs):
-        return None
-
-    def add_all(self, *_args, **_kwargs):
         return None
 
     async def commit(self):
         return None
 
 
+def _request() -> Request:
+    return Request({"type": "http", "headers": [], "query_string": b""})
+
+
 class TestPresentationGenerationAPI:
-    def test_generate_presentation_export_as_pdf(self):
+    @pytest.mark.parametrize("export_as", ["pdf", "pptx"])
+    def test_generate_presentation_accepts_supported_export_types(self, export_as):
         request = GeneratePresentationRequest(
             content="Create a presentation about artificial intelligence and machine learning",
             n_slides=5,
             language="English",
-            export_as="pdf",
+            export_as=export_as,
             template="general",
         )
-        response_payload = PresentationPathAndEditPath(
-            presentation_id=uuid.uuid4(),
-            path="/tmp/exports/test.pdf",
-            edit_path="/presentation?id=test",
-        )
+        presentation_id = uuid.uuid4()
+        background_tasks = BackgroundTasks()
 
         with patch(
-            "api.v1.ppt.endpoints.presentation.generate_presentation_handler",
-            new=AsyncMock(return_value=response_payload),
-        ) as mock_handler:
+            "api.v1.ppt.endpoints.autogenerate.PresentationService.create_presentation",
+            new=AsyncMock(
+                return_value=PresentationModel(
+                    id=presentation_id,
+                    content=request.content,
+                    n_slides=request.n_slides,
+                )
+            ),
+        ) as mock_create:
             response = asyncio.run(
-                generate_presentation_sync(request, sql_session=FakeAsyncSession())
+                autogenerate_presentation(
+                    request,
+                    _request(),
+                    background_tasks,
+                    sql_session=FakeAsyncSession(),
+                )
             )
 
-        assert response == response_payload
-        mock_handler.assert_awaited_once()
-
-    def test_generate_presentation_export_as_pptx(self):
-        request = GeneratePresentationRequest(
-            content="Create a presentation about artificial intelligence and machine learning",
-            n_slides=5,
-            language="English",
-            export_as="pptx",
-            template="general",
-        )
-        response_payload = PresentationPathAndEditPath(
-            presentation_id=uuid.uuid4(),
-            path="/tmp/exports/test.pptx",
-            edit_path="/presentation?id=test",
-        )
-
-        with patch(
-            "api.v1.ppt.endpoints.presentation.generate_presentation_handler",
-            new=AsyncMock(return_value=response_payload),
-        ) as mock_handler:
-            response = asyncio.run(
-                generate_presentation_sync(request, sql_session=FakeAsyncSession())
-            )
-
-        assert response == response_payload
-        mock_handler.assert_awaited_once()
+        assert response["presentation_id"] == str(presentation_id)
+        assert response["status"] == "pending"
+        assert len(background_tasks.tasks) == 1
+        mock_create.assert_awaited_once()
 
     def test_generate_presentation_with_no_content(self):
         with pytest.raises(ValidationError):
@@ -98,11 +82,16 @@ class TestPresentationGenerationAPI:
 
         with pytest.raises(HTTPException) as exc:
             asyncio.run(
-                generate_presentation_sync(request, sql_session=FakeAsyncSession())
+                autogenerate_presentation(
+                    request,
+                    _request(),
+                    BackgroundTasks(),
+                    sql_session=FakeAsyncSession(),
+                )
             )
 
         assert exc.value.status_code == 400
-        assert exc.value.detail == "Number of slides must be greater than 0"
+        assert exc.value.detail == "n_slides must be at least 1"
 
     def test_generate_presentation_with_invalid_export_type(self):
         with pytest.raises(ValidationError):
