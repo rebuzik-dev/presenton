@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel, select
 
 from models.derive_regenerate import DeriveRegenerateRequest
+from models.selected_generation import IndexedSlideMarkdownInput
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from models.presentation_preview import PresentationPreviewManifest
 from models.sql.async_presentation_generation_status import (
@@ -153,6 +154,30 @@ async def test_prepare_derive_is_idempotent_and_clones_full_deck(session):
 
 
 @pytest.mark.anyio
+async def test_prepare_derive_applies_outline_override_without_mutating_source(session):
+    source = await _seed_source(session)
+    request_id = uuid4()
+    await prepare_derived_regeneration(
+        session,
+        source_id=source.id,
+        request_id=request_id,
+        slide_indices=[1],
+        outline_overrides=[
+            IndexedSlideMarkdownInput(
+                index=1,
+                content="Updated copy",
+                image_prompt="New image",
+            )
+        ],
+    )
+    await session.refresh(source)
+    derived = await session.get(PresentationModel, request_id)
+    assert source.get_presentation_outline().slides[1].content == "Second outline"
+    assert derived.get_presentation_outline().slides[1].content == "Updated copy"
+    assert derived.get_presentation_outline().slides[1].image_prompt == "New image"
+
+
+@pytest.mark.anyio
 async def test_regeneration_changes_only_selected_slide_and_records_metadata(
     session,
     tmp_path,
@@ -179,21 +204,21 @@ async def test_regeneration_changes_only_selected_slide_and_records_metadata(
     )
 
     with patch(
-        "services.selective_regeneration_service.template_prompt_profile_service.get_by_slug",
+        "services.partial_deck_service.template_prompt_profile_service.get_by_slug",
         new=AsyncMock(return_value=profile),
     ), patch(
-        "services.selective_regeneration_service.get_layout_by_name",
+        "services.partial_deck_service.get_layout_by_name",
         new=AsyncMock(return_value=_layout()),
     ), patch(
-        "services.selective_regeneration_service.get_slide_content_from_type_and_outline",
+        "services.partial_deck_service._generate_slide_content",
         new=AsyncMock(return_value={"title": "Regenerated"}),
     ) as generate_content, patch(
-        "services.selective_regeneration_service.process_slide_add_placeholder_assets"
+        "services.partial_deck_service.process_slide_add_placeholder_assets"
     ), patch(
-        "services.selective_regeneration_service.process_slide_and_fetch_assets",
+        "services.partial_deck_service.process_slide_and_fetch_assets",
         new=AsyncMock(return_value=[]),
     ), patch(
-        "services.selective_regeneration_service.get_images_directory",
+        "services.partial_deck_service.get_images_directory",
         return_value=str(tmp_path / "images"),
     ), patch(
         "services.selective_regeneration_service.ensure_presentation_preview_manifest",
@@ -229,7 +254,7 @@ async def test_regeneration_changes_only_selected_slide_and_records_metadata(
     assert derived_slides[0].content == source_slides[0].content
     assert derived_slides[0].properties == source_slides[0].properties
     assert derived_slides[1].content == {"title": "Regenerated"}
-    assert derived_slides[1].properties is None
+    assert derived_slides[1].properties["generationState"] == "generated"
     assert derived_slides[1].layout == "general:content"
     assert generate_content.await_args.args[5].endswith(
         "Use the approved template voice"

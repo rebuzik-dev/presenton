@@ -519,6 +519,7 @@ async def derive_and_regenerate_selected_slides(
         source_id=source_id,
         request_id=data.request_id,
         slide_indices=data.slide_indices,
+        outline_overrides=data.outline_overrides,
     )
     if created:
         auth_token, api_key = _extract_auth_context(http_request)

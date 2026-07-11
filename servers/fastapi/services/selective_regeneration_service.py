@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from copy import deepcopy
 from datetime import datetime
 from typing import Optional
@@ -11,31 +10,23 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
+from models.presentation_outline_model import PresentationOutlineModel, SlideOutlineModel
+from models.selected_generation import IndexedSlideMarkdownInput
 from models.sql.async_presentation_generation_status import (
     AsyncPresentationGenerationTaskModel,
 )
 from models.sql.presentation import PresentationModel
 from models.sql.slide import SlideModel
-from services.image_generation_service import ImageGenerationService
+from services.partial_deck_service import (
+    build_outline_hashes,
+    build_partial_deck_metadata,
+    canonical_hash,
+    generate_selected_slides,
+    get_generated_slide_indices,
+)
 from services.presentation_preview_service import (
     ensure_presentation_preview_manifest,
     get_presentation_preview_manifest,
-)
-from services.template_prompt_profile_service import template_prompt_profile_service
-from utils.asset_directory_utils import get_images_directory
-from utils.get_layout_by_name import get_layout_by_name
-from utils.llm_calls.generate_slide_content import (
-    get_slide_content_from_type_and_outline,
-)
-from utils.process_slides import (
-    process_slide_add_placeholder_assets,
-    process_slide_and_fetch_assets,
-)
-from utils.template_prompt_overrides import (
-    build_prompt_profile_revision,
-    get_active_template_prompt,
-    merge_generation_instructions,
 )
 
 
@@ -45,10 +36,19 @@ async def prepare_derived_regeneration(
     source_id: uuid.UUID,
     request_id: uuid.UUID,
     slide_indices: list[int],
+    outline_overrides: Optional[list[IndexedSlideMarkdownInput]] = None,
 ) -> tuple[AsyncPresentationGenerationTaskModel, bool]:
     if source_id == request_id:
         raise HTTPException(status_code=409, detail="request_id collides with source")
 
+    overrides = outline_overrides or []
+    request_fingerprint = canonical_hash(
+        {
+            "source_id": str(source_id),
+            "slide_indices": slide_indices,
+            "outline_overrides": [item.model_dump(mode="json") for item in overrides],
+        }
+    )
     existing_presentation = await sql_session.get(PresentationModel, request_id)
     existing_status = await sql_session.get(
         AsyncPresentationGenerationTaskModel,
@@ -60,8 +60,7 @@ async def prepare_derived_regeneration(
             existing_presentation
             and existing_status
             and stored_data
-            and stored_data.get("source_presentation_id") == str(source_id)
-            and stored_data.get("slide_indices") == slide_indices
+            and stored_data.get("request_fingerprint") == request_fingerprint
         ):
             return existing_status, False
         raise HTTPException(status_code=409, detail="request_id is already in use")
@@ -82,23 +81,23 @@ async def prepare_derived_regeneration(
             detail="slide_indices must be within the source presentation",
         )
 
-    presentation_data = source.model_dump(
-        exclude={"id", "created_at", "updated_at"}
-    )
-    derived = PresentationModel(
-        **deepcopy(presentation_data),
-        id=request_id,
-    )
+    presentation_data = source.model_dump(exclude={"id", "created_at", "updated_at"})
+    derived = PresentationModel(**deepcopy(presentation_data), id=request_id)
+    _apply_outline_overrides(derived, overrides)
     derived_slides = [
         SlideModel(
-            **deepcopy(
-                slide.model_dump(exclude={"id", "presentation"})
-            ),
+            **deepcopy(slide.model_dump(exclude={"id", "presentation"})),
             id=uuid.uuid4(),
             presentation=request_id,
         )
         for slide in source_slides
     ]
+    inherited_indices = await get_generated_slide_indices(
+        sql_session,
+        source_id,
+        source_slides,
+    )
+    outline = derived.get_presentation_outline()
     status = AsyncPresentationGenerationTaskModel(
         id=request_id,
         presentation_id=request_id,
@@ -108,7 +107,10 @@ async def prepare_derived_regeneration(
             "presentation_id": str(request_id),
             "source_presentation_id": str(source_id),
             "slide_indices": slide_indices,
+            "generated_slide_indices": inherited_indices,
+            "request_fingerprint": request_fingerprint,
             "prompt_revision": None,
+            "outline_hashes": build_outline_hashes(outline) if outline else [],
             "preview_manifest": None,
             "warnings": [],
         },
@@ -130,10 +132,7 @@ async def run_derived_regeneration(
     api_key: Optional[str],
     preview_auth_context: dict[str, dict[str, str]],
 ) -> None:
-    status = await sql_session.get(
-        AsyncPresentationGenerationTaskModel,
-        presentation_id,
-    )
+    status = await sql_session.get(AsyncPresentationGenerationTaskModel, presentation_id)
     presentation = await sql_session.get(PresentationModel, presentation_id)
     if not status or not presentation:
         raise HTTPException(status_code=404, detail="Derived presentation not found")
@@ -145,75 +144,19 @@ async def run_derived_regeneration(
         sql_session.add(status)
         await sql_session.commit()
 
-        stored_layout = presentation.get_layout()
-        prompt_profile = await template_prompt_profile_service.get_by_slug(
-            stored_layout.name
-        )
-        prompt_revision = build_prompt_profile_revision(prompt_profile)
-        latest_layout = await get_layout_by_name(
-            stored_layout.name,
+        generation = await generate_selected_slides(
+            sql_session,
+            presentation=presentation,
+            slide_indices=slide_indices,
             auth_token=auth_token,
             api_key=api_key,
-            prompt_profile=prompt_profile,
         )
-        outline = presentation.get_presentation_outline()
-        if not outline:
-            raise HTTPException(status_code=400, detail="Presentation outlines not found")
-
-        slides_result = await sql_session.scalars(
-            select(SlideModel)
-            .where(SlideModel.presentation == presentation_id)
-            .order_by(SlideModel.index)
+        inherited = status.data.get("generated_slide_indices", []) if status.data else []
+        generated_indices = sorted(set(inherited) | set(slide_indices))
+        pending_indices, deck_state = build_partial_deck_metadata(
+            slide_count=presentation.n_slides,
+            generated_indices=generated_indices,
         )
-        slides = list(slides_result)
-        slides_by_index = {slide.index: slide for slide in slides}
-        generation_instructions = merge_generation_instructions(
-            presentation.instructions,
-            get_active_template_prompt(prompt_profile),
-        )
-
-        selected = []
-        content_tasks = []
-        for index in slide_indices:
-            slide = slides_by_index.get(index)
-            if not slide or index >= len(outline.slides):
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"Slide {index} is missing from the derived deck or outlines",
-                )
-            slide_layout = _find_preserved_layout(latest_layout, slide.layout)
-            selected.append((slide, slide_layout))
-            content_tasks.append(
-                get_slide_content_from_type_and_outline(
-                    slide_layout,
-                    outline.slides[index],
-                    presentation.language,
-                    presentation.tone,
-                    presentation.verbosity,
-                    generation_instructions,
-                )
-            )
-
-        generated_contents = await asyncio.gather(*content_tasks)
-        image_service = ImageGenerationService(get_images_directory())
-        asset_tasks = []
-        for (slide, _slide_layout), content in zip(selected, generated_contents):
-            slide.content = content
-            slide.speaker_note = content.get("__speaker_note__", "")
-            slide.properties = None
-            slide.html_content = None
-            process_slide_add_placeholder_assets(slide)
-            asset_tasks.append(process_slide_and_fetch_assets(image_service, slide))
-
-        generated_assets_lists = await asyncio.gather(*asset_tasks)
-        generated_assets = [
-            asset
-            for assets in generated_assets_lists
-            for asset in assets
-        ]
-        sql_session.add_all([slide for slide, _layout in selected])
-        sql_session.add_all(generated_assets)
-        await sql_session.commit()
 
         warnings: list[str] = []
         try:
@@ -239,12 +182,17 @@ async def run_derived_regeneration(
         status.updated_at = datetime.now()
         status.error = None
         status.data = {
+            **(status.data or {}),
             "presentation_id": str(presentation_id),
             "path": None,
             "edit_path": edit_path,
             "source_presentation_id": str(source_id),
             "slide_indices": slide_indices,
-            "prompt_revision": prompt_revision,
+            "generated_slide_indices": generated_indices,
+            "pending_slide_indices": pending_indices,
+            "deck_state": deck_state,
+            "prompt_revision": generation["prompt_revision"],
+            "outline_hashes": generation["outline_hashes"],
             "preview_manifest": preview_manifest.model_dump(mode="json"),
             "warnings": warnings,
         }
@@ -260,26 +208,24 @@ async def run_derived_regeneration(
         raise
 
 
-def _find_preserved_layout(
-    latest_layout: PresentationLayoutModel,
-    source_layout_id: str,
-) -> SlideLayoutModel:
-    exact = next(
-        (slide for slide in latest_layout.slides if slide.id == source_layout_id),
-        None,
-    )
-    if exact:
-        return exact
-
-    normalized_id = source_layout_id.split(":", 1)[-1]
-    candidates = [
-        slide
-        for slide in latest_layout.slides
-        if slide.id.split(":", 1)[-1] == normalized_id
-    ]
-    if len(candidates) == 1:
-        return candidates[0]
-    raise HTTPException(
-        status_code=409,
-        detail=f"Layout '{source_layout_id}' is no longer available",
+def _apply_outline_overrides(
+    presentation: PresentationModel,
+    overrides: list[IndexedSlideMarkdownInput],
+) -> None:
+    if not overrides:
+        return
+    outline = presentation.get_presentation_outline()
+    if not outline:
+        raise HTTPException(status_code=400, detail="Presentation outlines not found")
+    for override in overrides:
+        if override.index >= len(outline.slides):
+            raise HTTPException(
+                status_code=422,
+                detail="outline_overrides must be within the source presentation",
+            )
+        outline.slides[override.index] = SlideOutlineModel(
+            **override.model_dump(exclude={"index"})
+        )
+    presentation.outlines = PresentationOutlineModel(slides=outline.slides).model_dump(
+        mode="json"
     )
