@@ -22,6 +22,10 @@ from models.derive_regenerate import (
     DeriveRegenerateRequest,
     DeriveRegenerateResponse,
 )
+from models.selected_generation import (
+    GenerateSelectedSlidesRequest,
+    GenerateSelectedSlidesResponse,
+)
 from models.presentation_outline_model import (
     PresentationOutlineModel,
     SlideOutlineModel,
@@ -82,6 +86,10 @@ from services.presentation_preview_service import (
 from services.selective_regeneration_service import (
     prepare_derived_regeneration,
     run_derived_regeneration,
+)
+from services.selected_generation_service import (
+    prepare_selected_generation,
+    run_selected_generation,
 )
 from services.template_prompt_profile_service import template_prompt_profile_service
 from utils.block_map import (
@@ -410,6 +418,44 @@ async def get_all_presentations(sql_session: AsyncSession = Depends(get_async_se
         for presentation, first_slide in rows
     ]
     return presentations_with_slides
+
+
+@PRESENTATION_ROUTER.post(
+    "/generate-selected",
+    response_model=GenerateSelectedSlidesResponse,
+)
+async def generate_selected_slides_from_outline(
+    data: GenerateSelectedSlidesRequest,
+    http_request: Request,
+    background_tasks: BackgroundTasks,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    status, created = await prepare_selected_generation(
+        sql_session,
+        request=data,
+    )
+    if created:
+        auth_token, api_key = _extract_auth_context(http_request)
+        preview_auth_context = extract_preview_auth_context(http_request)
+
+        async def run_generation():
+            async for session in get_async_session():
+                await run_selected_generation(
+                    session,
+                    request=data,
+                    auth_token=auth_token,
+                    api_key=api_key,
+                    preview_auth_context=preview_auth_context,
+                )
+
+        background_tasks.add_task(run_generation)
+
+    return GenerateSelectedSlidesResponse(
+        presentation_id=data.request_id,
+        status=status.status,
+        message=status.message,
+        poll_url=f"/api/v1/ppt/presentation/status/{data.request_id}",
+    )
 
 
 @PRESENTATION_ROUTER.get("/{id}", response_model=PresentationWithSlides)

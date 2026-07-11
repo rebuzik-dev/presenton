@@ -277,7 +277,7 @@ class PresentationService:
         presentation_structure.slides = presentation_structure.slides[: len(outlines)]
         for index in range(total_outlines):
             random_slide_index = random.randint(0, total_slide_layouts - 1)
-            if index >= total_outlines:
+            if index >= len(presentation_structure.slides):
                 presentation_structure.slides.append(random_slide_index)
                 continue
             if presentation_structure.slides[index] >= total_slide_layouts:

@@ -28,6 +28,15 @@ API_V1_PPT_ROUTER = APIRouter(
     dependencies=[Depends(enforce_ppt_access)],
 )
 
+
+@API_V1_PPT_ROUTER.get("/capabilities")
+async def get_presentation_capabilities():
+    return {
+        "selected_initial_generation": True,
+        "outline_overrides": True,
+        "partial_deck_status": True,
+    }
+
 API_V1_PPT_ROUTER.include_router(FILES_ROUTER)
 API_V1_PPT_ROUTER.include_router(FONTS_ROUTER)
 API_V1_PPT_ROUTER.include_router(OUTLINES_ROUTER)

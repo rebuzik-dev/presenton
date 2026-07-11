@@ -56,6 +56,19 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
         }
     }, [isCustomTemplate, customTemplate, layoutGroup, layoutId]);
 
+    if (slide?.properties?.generationState === "not_generated") {
+        return (
+            <div className="flex h-full aspect-video flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50">
+                <p className="text-center text-base font-medium text-gray-700">
+                    Слайд ещё не сгенерирован
+                </p>
+                <p className="mt-1 text-center text-sm text-gray-500">
+                    Выберите его в Brief, когда будете готовы создать визуал.
+                </p>
+            </div>
+        );
+    }
+
     if (!slide || !layoutGroup || !layoutId) {
         return (
             <div className="flex h-full aspect-video flex-col items-center justify-center rounded-lg bg-gray-100">
