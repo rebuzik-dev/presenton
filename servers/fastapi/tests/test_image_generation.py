@@ -12,6 +12,7 @@ from models.image_prompt import ImagePrompt
 from services.image_generation_service import ImageGenerationService
 from models.sql.image_asset import ImageAsset
 from io import BytesIO
+from services.database import create_db_and_tables
 
 
 def _make_image_bytes(fmt: str) -> bytes:
@@ -121,7 +122,7 @@ class TestImageGenerationService:
                     with patch('services.image_generation_service.is_dalle3_selected', return_value=True):
                         with patch.dict(os.environ, {"IMAGE_PROVIDER": "dall-e-3"}):
                             service = ImageGenerationService(mock_images_directory)
-                            assert service.image_gen_func == service.generate_image_openai
+                            assert service.image_gen_func == service.generate_image_openai_dalle3
     
     def test_is_stock_provider_selected(self, mock_images_directory):
         """
@@ -489,6 +490,7 @@ class TestImageGenerationEndpoint:
     @pytest.fixture
     def client(self, app):
         """Create test client"""
+        asyncio.run(create_db_and_tables())
         return TestClient(app)
     
     @pytest.fixture

@@ -312,3 +312,7 @@ def set_image_gen_base_url_env(value):
 
 def set_image_gen_model_env(value):
     os.environ["IMAGE_GEN_MODEL"] = value
+
+
+def set_polza_image_options_env(value):
+    os.environ["POLZA_IMAGE_OPTIONS"] = value
