@@ -1,6 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { notify } from "@/components/ui/sonner";
 import {
   LLMConfig,
@@ -9,7 +16,6 @@ import {
 } from "@/types/llm_config";
 import {
   CONFIGURED_SECRET_MARKER,
-  MODEL_PROFILE_PURPOSES,
   TEXT_PROVIDER_TYPES,
   migrateLegacyLLMConfig,
   resolveActiveProfileToLegacyConfig,
@@ -86,6 +92,8 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
     useState<ConnectionDraft>(DEFAULT_CONNECTION);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(DEFAULT_PROFILE);
   const [refreshingConnectionId, setRefreshingConnectionId] = useState("");
+  const [connectionSheetOpen, setConnectionSheetOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   useEffect(() => {
     setLlmConfig((prev) => {
@@ -118,13 +126,14 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
     }
 
     const id = connectionDraft.id || createId("conn");
+    const existingConnection = connections.find((connection) => connection.id === id);
     const nextConnection: LLMProviderConnection = {
       ...connectionDraft,
       id,
       name,
       provider_type: connectionDraft.provider_type || "openai_compatible",
       base_url: connectionDraft.base_url?.trim() || "",
-      api_key: connectionDraft.api_key || "",
+      api_key: connectionDraft.api_key || existingConnection?.api_key || "",
       models_cache: connectionDraft.models_cache || [],
       is_active: connectionDraft.is_active !== false,
       updated_at: nowIso(),
@@ -139,10 +148,12 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
         : [...connections, nextConnection],
     });
     setConnectionDraft(DEFAULT_CONNECTION);
+    setConnectionSheetOpen(false);
   };
 
   const editConnection = (connection: LLMProviderConnection) => {
     setConnectionDraft({ ...connection, api_key: "" });
+    setConnectionSheetOpen(true);
   };
 
   const deleteConnection = (connectionId: string) => {
@@ -160,29 +171,39 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
     });
   };
 
-  const refreshModels = async (connectionId: string) => {
+  const refreshModels = async (connection: LLMProviderConnection) => {
+    const connectionId = connection.id || "draft";
     setRefreshingConnectionId(connectionId);
     try {
       const response = await fetch("/api/llm/provider-connections/models", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ connection_id: connectionId }),
+        body: JSON.stringify({ connection: { ...connection, id: connectionId } }),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data?.error || "Could not refresh models");
       }
-      const nextConnections = connections.map((connection) =>
-        connection.id === connectionId
+      const nextConnections = connections.map((candidate) =>
+        candidate.id === connectionId
           ? {
-              ...connection,
+              ...candidate,
               models_cache: data.models || [],
               models_cache_updated_at: new Date().toISOString(),
               models_cache_error: "",
             }
           : connection
       );
-      patchConfig({ LLM_PROVIDER_CONNECTIONS: nextConnections });
+      if (connectionId === "draft") {
+        setConnectionDraft((draft) => ({
+          ...draft,
+          models_cache: data.models || [],
+          models_cache_updated_at: new Date().toISOString(),
+          models_cache_error: "",
+        }));
+      } else {
+        patchConfig({ LLM_PROVIDER_CONNECTIONS: nextConnections });
+      }
       notify.success("Models refreshed", `${data.models?.length || 0} models cached.`);
     } catch (error) {
       const message =
@@ -238,10 +259,12 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
       ACTIVE_LLM_MODEL_PROFILE_ID: shouldBeDefault ? id : activeProfileId || id,
     });
     setProfileDraft(DEFAULT_PROFILE);
+    setProfileSheetOpen(false);
   };
 
   const editProfile = (profile: LLMModelProfile) => {
     setProfileDraft({ ...profile });
+    setProfileSheetOpen(true);
   };
 
   const setDefaultProfile = (profileId: string) => {
@@ -279,11 +302,19 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               Save endpoint and key once, then reuse it across model profiles.
             </p>
           </div>
-          {activeProfile ? (
-            <span className="rounded-full border border-[#EDEEEF] px-3 py-1 text-xs text-[#494A4D]">
-              Active: {activeProfile.name}
-            </span>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {activeProfile ? (
+              <span className="rounded-full border border-[#EDEEEF] px-3 py-1 text-xs text-[#494A4D]">
+                Active: {activeProfile.name}
+              </span>
+            ) : null}
+            <Button type="button" variant="outline" onClick={() => {
+              setConnectionDraft(DEFAULT_CONNECTION);
+              setConnectionSheetOpen(true);
+            }}>
+              <Plus className="mr-2 h-4 w-4" />Add connection
+            </Button>
+          </div>
         </div>
 
         <div className="mt-5 grid gap-3">
@@ -339,7 +370,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
                     type="button"
                     variant="outline"
                     className="rounded-lg"
-                    onClick={() => refreshModels(connection.id)}
+                    onClick={() => refreshModels(connection)}
                     disabled={refreshingConnectionId === connection.id}
                   >
                     {refreshingConnectionId === connection.id ? (
@@ -363,7 +394,15 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
           )}
         </div>
 
-        <div className="mt-5 grid min-w-0 gap-3 rounded-lg border border-[#EDEEEF] p-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Sheet open={connectionSheetOpen} onOpenChange={setConnectionSheetOpen}>
+          <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+            <SheetHeader>
+              <SheetTitle>{connectionDraft.id ? "Edit connection" : "Add connection"}</SheetTitle>
+              <SheetDescription>
+                Endpoint and key are saved only after you press Save Configuration.
+              </SheetDescription>
+            </SheetHeader>
+        <div className="mt-5 grid min-w-0 gap-4 p-4 sm:grid-cols-2">
           <label className="text-sm font-medium text-gray-700">
             Connection name
             <input
@@ -401,7 +440,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               ))}
             </select>
           </label>
-          <label className="text-sm font-medium text-gray-700 xl:col-span-2">
+          <label className="text-sm font-medium text-gray-700 sm:col-span-2">
             Base URL
             <input
               value={connectionDraft.base_url || ""}
@@ -437,7 +476,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               </span>
             ) : null}
           </label>
-          <div className="sm:col-span-2 xl:col-span-4">
+          <div className="sm:col-span-2">
             <Button
               type="button"
               className="rounded-lg"
@@ -446,15 +485,41 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               <Plus className="mr-2 h-4 w-4" />
               {connectionDraft.id ? "Update connection" : "Add connection"}
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="ml-2 rounded-lg"
+              onClick={() => refreshModels(connectionDraft)}
+              disabled={refreshingConnectionId === (connectionDraft.id || "draft")}
+            >
+              {refreshingConnectionId === (connectionDraft.id || "draft") ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Check draft
+            </Button>
           </div>
         </div>
+          </SheetContent>
+        </Sheet>
       </section>
 
       <section className="min-w-0 rounded-[12px] bg-white p-4 sm:p-5">
-        <h3 className="text-xl font-normal text-[#191919]">Model Profiles</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Choose a saved connection and model. Profiles never store API keys.
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-xl font-normal text-[#191919]">Model Profiles</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Choose a saved connection and model. Profiles never store API keys.
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => {
+            setProfileDraft(DEFAULT_PROFILE);
+            setProfileSheetOpen(true);
+          }} disabled={connections.length === 0}>
+            <Plus className="mr-2 h-4 w-4" />Add profile
+          </Button>
+        </div>
 
         <div className="mt-5 grid gap-3">
           {profiles.length === 0 ? (
@@ -490,13 +555,6 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
                     <p className="mt-1 truncate text-sm text-gray-600">
                       {connection?.name || "Missing connection"} · {profile.model_id}
                     </p>
-                    <p className="mt-1 break-words text-xs text-gray-500">
-                      Purpose: {profile.purpose || "default"}
-                      {profile.temperature !== undefined
-                        ? ` · temperature ${profile.temperature}`
-                        : ""}
-                      {profile.max_tokens ? ` · max tokens ${profile.max_tokens}` : ""}
-                    </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 md:justify-end">
                     <Button
@@ -518,7 +576,7 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
                       ) : (
                         <Star className="mr-2 h-4 w-4" />
                       )}
-                      Set default
+                      {isActive ? "Active" : "Make active"}
                     </Button>
                     <Button
                       type="button"
@@ -535,7 +593,15 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
           )}
         </div>
 
-        <div className="mt-5 grid min-w-0 gap-3 rounded-lg border border-[#EDEEEF] p-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
+          <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+            <SheetHeader>
+              <SheetTitle>{profileDraft.id ? "Edit model profile" : "Add model profile"}</SheetTitle>
+              <SheetDescription>
+                Choose one saved connection and a global text model.
+              </SheetDescription>
+            </SheetHeader>
+        <div className="mt-5 grid min-w-0 gap-4 p-4 sm:grid-cols-2">
           <label className="text-sm font-medium text-gray-700">
             Profile name
             <input
@@ -572,32 +638,9 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
             </select>
           </label>
           <label className="text-sm font-medium text-gray-700">
-            Cached model
-            <select
-              value={
-                selectedConnectionModels.includes(profileDraft.model_id)
-                  ? profileDraft.model_id
-                  : ""
-              }
-              onChange={(event) =>
-                setProfileDraft((draft) => ({
-                  ...draft,
-                  model_id: event.target.value,
-                }))
-              }
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
-            >
-              <option value="">Manual model ID</option>
-              {selectedConnectionModels.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-gray-700">
-            Manual model ID
+            Model
             <input
+              list="text-model-options"
               value={profileDraft.model_id}
               onChange={(event) =>
                 setProfileDraft((draft) => ({
@@ -608,63 +651,11 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
               className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
               placeholder="openai/gpt-5.4"
             />
-          </label>
-          <label className="text-sm font-medium text-gray-700">
-            Purpose
-            <select
-              value={profileDraft.purpose || "default"}
-              onChange={(event) =>
-                setProfileDraft((draft) => ({
-                  ...draft,
-                  purpose: event.target.value,
-                }))
-              }
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
-            >
-              {MODEL_PROFILE_PURPOSES.map((purpose) => (
-                <option key={purpose} value={purpose}>
-                  {purpose}
-                </option>
+            <datalist id="text-model-options">
+              {selectedConnectionModels.map((model) => (
+                <option key={model} value={model} />
               ))}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-gray-700">
-            Temperature
-            <input
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
-              value={profileDraft.temperature ?? ""}
-              onChange={(event) =>
-                setProfileDraft((draft) => ({
-                  ...draft,
-                  temperature:
-                    event.target.value === ""
-                      ? undefined
-                      : Number(event.target.value),
-                }))
-              }
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
-              placeholder="0.2"
-            />
-          </label>
-          <label className="text-sm font-medium text-gray-700">
-            Max tokens
-            <input
-              type="number"
-              min="1"
-              value={profileDraft.max_tokens ?? ""}
-              onChange={(event) =>
-                setProfileDraft((draft) => ({
-                  ...draft,
-                  max_tokens:
-                    event.target.value === "" ? null : Number(event.target.value),
-                }))
-              }
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
-              placeholder="Optional"
-            />
+            </datalist>
           </label>
           <label className="flex items-center gap-2 pt-8 text-sm font-medium text-gray-700">
             <input
@@ -677,15 +668,17 @@ const TextProvider = ({ llmConfig, setLlmConfig }: TextProviderProps) => {
                 }))
               }
             />
-            Set as default
+            Make active
           </label>
-          <div className="sm:col-span-2 xl:col-span-4">
+          <div className="sm:col-span-2">
             <Button type="button" className="rounded-lg" onClick={upsertProfile}>
               <Plus className="mr-2 h-4 w-4" />
               {profileDraft.id ? "Update profile" : "Add profile"}
             </Button>
           </div>
         </div>
+          </SheetContent>
+        </Sheet>
       </section>
 
       <section className="min-w-0 rounded-[12px] bg-white p-4 sm:p-5">

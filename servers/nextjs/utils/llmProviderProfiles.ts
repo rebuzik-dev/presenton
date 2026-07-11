@@ -218,7 +218,15 @@ export function resolveActiveProfileToLegacyConfig(config: LLMConfig): LLMConfig
   }
 
   const legacyProvider = providerTypeToLegacyProvider(connection.provider_type);
-  const nextConfig: LLMConfig = { ...migrated, LLM: legacyProvider };
+  const nextConfig: LLMConfig = {
+    ...migrated,
+    LLM: legacyProvider,
+    ACTIVE_LLM_MODEL_PROFILE_ID: activeProfile.id,
+    LLM_MODEL_PROFILES: profiles.map((profile) => ({
+      ...profile,
+      is_default: profile.id === activeProfile.id,
+    })),
+  };
   const keyField = getProviderKeyField(connection.provider_type);
   const modelField = getProviderModelField(connection.provider_type);
   const baseUrlField = getProviderBaseUrlField(connection.provider_type);
