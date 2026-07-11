@@ -164,7 +164,8 @@ const SettingsPage = () => {
         text: "Saving Configuration...",
       }));
       trackEvent(MixpanelEvent.Settings_SaveConfiguration_API_Call);
-      await handleSaveLLMConfig(llmConfig);
+      const savedConfig = await handleSaveLLMConfig(llmConfig);
+      setLlmConfig(savedConfig);
       let ollamaModelDownloaded = false;
       if (llmConfig.LLM === "ollama" && llmConfig.OLLAMA_MODEL) {
         trackEvent(MixpanelEvent.Settings_CheckOllamaModelPulled_API_Call);
@@ -410,16 +411,16 @@ const SettingsPage = () => {
 
 
   return (
-    <div className="h-screen font-syne flex flex-col overflow-hidden relative">
-      <main className="w-full mx-auto gap-6   overflow-hidden flex ">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden font-syne">
+      <main className="mx-auto flex min-h-0 w-full flex-1 gap-3 overflow-hidden sm:gap-6">
         <SettingSideBar
           mode={mode}
           setMode={setMode}
           selectedProvider={selectedProvider}
           setSelectedProvider={setSelectedProvider}
         />
-        <div className="w-full min-w-0 pb-28">
-          <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-6 sm:px-0 sm:pr-4">
+          <div className="sticky right-0 top-0 z-30 mb-4 bg-white/90 py-5 backdrop-blur sm:py-[28px]">
             <div className="flex  gap-3 items-center ">
               <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-black flex items-center gap-2">
                 Settings
@@ -459,7 +460,7 @@ const SettingsPage = () => {
 
       {/* Fixed Bottom Button — hidden on Sign out; nothing to save there */}
       {selectedProvider !== "session" ? (
-        <div className="fixed bottom-5 right-5 z-40 mx-auto sm:bottom-8">
+        <div className="z-40 flex shrink-0 justify-end border-t border-[#EDEEEF] bg-white/95 p-3 backdrop-blur sm:px-8 sm:py-4">
           <button
             onClick={handleSaveConfig}
             disabled={buttonState.isDisabled}

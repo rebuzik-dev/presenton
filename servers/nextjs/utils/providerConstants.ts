@@ -126,6 +126,16 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderOption> = {
     apiKeyField: "IMAGE_GEN_API_KEY",
     apiKeyFieldLabel: "API Key",
   },
+  polza: {
+    value: "polza",
+    label: "Polza AI",
+    description: "Catalog-driven image generation through Polza Media API",
+    icon: "/providers/custom.svg",
+    requiresApiKey: true,
+    apiKeyField: "IMAGE_GEN_API_KEY",
+    apiKeyFieldLabel: "Polza API Key",
+    getApiKeyUrl: "https://polza.ai",
+  },
   vsellm: {
     value: "vsellm",
     label: "vSellm",

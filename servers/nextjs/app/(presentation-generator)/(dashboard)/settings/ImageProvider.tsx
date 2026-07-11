@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { LLMConfig } from '@/types/llm_config'
 import OpenAICompatibleImageFields from '@/components/OpenAICompatibleImageFields'
+import PolzaImageFields from '@/components/PolzaImageFields'
 import { DALLE_3_QUALITY_OPTIONS, GPT_IMAGE_1_5_QUALITY_OPTIONS, IMAGE_PROVIDERS } from '@/utils/providerConstants'
 import { Check, ChevronUp, Eye, EyeOff } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
@@ -24,6 +25,14 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
             setOpenaiCompatListMeta({ modelsChecked: false, modelCount: 0 })
         }
     }, [llmConfig.IMAGE_PROVIDER])
+    useEffect(() => {
+        if (
+            llmConfig.IMAGE_PROVIDER === 'custom_openai' &&
+            (llmConfig.IMAGE_GEN_BASE_URL || '').includes('polza.ai')
+        ) {
+            setLlmConfig((prev: LLMConfig) => ({ ...prev, IMAGE_PROVIDER: 'polza' }))
+        }
+    }, [llmConfig.IMAGE_PROVIDER, llmConfig.IMAGE_GEN_BASE_URL, setLlmConfig])
     const isImageGenerationDisabled = llmConfig.DISABLE_IMAGE_GENERATION ?? false;
     const handleChangeImageGenerationDisabled = (value: boolean) => {
         setLlmConfig((prev: any) => ({
@@ -113,9 +122,9 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
 
 
     return (
-        <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
+        <div className="space-y-6 rounded-[12px] bg-[#F9F8F8] p-4 sm:p-7">
             {/* API Key Input */}
-            <div className="mb-4  bg-white p-10 pt-5 rounded-[12px]">
+            <div className="mb-4 rounded-[12px] bg-white p-4 sm:p-6 lg:p-10 lg:pt-5">
                 <ToolTip content="Enable/Disable Image Generation" className='flex justify-end items-center'>
                     <div className='flex justify-end items-center'>
                         <Switch
@@ -126,7 +135,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                     </div>
 
                 </ToolTip>
-                <div className='flex items-center justify-between'>
+                <div className='flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between'>
 
 
                     <div className=" max-w-[290px] pb-[50px]">
@@ -142,7 +151,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                     </div>
                     <div className=' '>
 
-                        <div className='flex items-center justify-end gap-4'>
+                        <div className='flex flex-wrap items-end justify-start gap-4 lg:justify-end'>
 
                             {!isImageGenerationDisabled && (
                                 <>
@@ -254,6 +263,26 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                         onModelListMetaChange={setOpenaiCompatListMeta}
                                                     />
                                                 );
+                                            }
+
+                                            if (provider.value === "polza") {
+                                                return (
+                                                    <PolzaImageFields
+                                                        baseUrl={llmConfig.IMAGE_GEN_BASE_URL || "https://polza.ai/api/v1"}
+                                                        apiKey={llmConfig.IMAGE_GEN_API_KEY || ""}
+                                                        model={llmConfig.IMAGE_GEN_MODEL || ""}
+                                                        options={llmConfig.POLZA_IMAGE_OPTIONS || {}}
+                                                        onChange={(patch) => {
+                                                            setLlmConfig((prev: LLMConfig) => ({
+                                                                ...prev,
+                                                                ...(patch.baseUrl !== undefined ? { IMAGE_GEN_BASE_URL: patch.baseUrl } : {}),
+                                                                ...(patch.apiKey !== undefined ? { IMAGE_GEN_API_KEY: patch.apiKey } : {}),
+                                                                ...(patch.model !== undefined ? { IMAGE_GEN_MODEL: patch.model } : {}),
+                                                                ...(patch.options !== undefined ? { POLZA_IMAGE_OPTIONS: patch.options } : {}),
+                                                            }))
+                                                        }}
+                                                    />
+                                                )
                                             }
 
                                             if (provider.value === "custom_openai" || provider.value === "vsellm") {
