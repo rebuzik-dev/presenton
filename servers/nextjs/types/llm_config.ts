@@ -132,6 +132,7 @@ export interface LLMConfig {
   IMAGE_GEN_API_KEY?: string;
   IMAGE_GEN_BASE_URL?: string;
   IMAGE_GEN_MODEL?: string;
+  POLZA_IMAGE_OPTIONS?: Record<string, string | number | boolean>;
 
   // Other Configs
   TOOL_CALLS?: boolean;

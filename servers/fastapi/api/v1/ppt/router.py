@@ -21,6 +21,8 @@ from api.v1.ppt.endpoints.autogenerate import AUTOGENERATE_ROUTER
 from api.v1.ppt.endpoints.templates import TEMPLATES_ROUTER
 from api.v1.ppt.endpoints.theme import THEMES_ROUTER
 from api.v1.ppt.endpoints.theme_generate import THEME_ROUTER
+from api.v1.ppt.endpoints.config import CONFIG_ROUTER
+from api.v1.ppt.endpoints.image_providers import IMAGE_PROVIDERS_ROUTER
 
 
 API_V1_PPT_ROUTER = APIRouter(
@@ -59,4 +61,6 @@ API_V1_PPT_ROUTER.include_router(AUTOGENERATE_ROUTER)
 API_V1_PPT_ROUTER.include_router(TEMPLATES_ROUTER)
 API_V1_PPT_ROUTER.include_router(THEMES_ROUTER)
 API_V1_PPT_ROUTER.include_router(THEME_ROUTER)
+API_V1_PPT_ROUTER.include_router(CONFIG_ROUTER)
+API_V1_PPT_ROUTER.include_router(IMAGE_PROVIDERS_ROUTER)
 

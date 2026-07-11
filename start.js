@@ -42,6 +42,16 @@ const parseOptionalBool = (value) => {
   return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
 };
 
+const parseOptionalJson = (value) => {
+  if (!value || !String(value).trim()) return undefined;
+  try {
+    return JSON.parse(value);
+  } catch {
+    console.warn("Ignoring invalid POLZA_IMAGE_OPTIONS JSON from environment");
+    return undefined;
+  }
+};
+
 const fastapiPort = 8000;
 const nextjsPort = 3000;
 const appmcpPort = 8001;
@@ -99,6 +109,7 @@ const setupUserConfigFromEnv = () => {
   }
 
   const userConfig = {
+    ...existingConfig,
     LLM: process.env.LLM || existingConfig.LLM,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || existingConfig.OPENAI_API_KEY,
     OPENAI_MODEL: process.env.OPENAI_MODEL || existingConfig.OPENAI_MODEL,
@@ -120,6 +131,9 @@ const setupUserConfigFromEnv = () => {
     IMAGE_GEN_API_KEY: process.env.IMAGE_GEN_API_KEY || existingConfig.IMAGE_GEN_API_KEY,
     IMAGE_GEN_BASE_URL: process.env.IMAGE_GEN_BASE_URL || existingConfig.IMAGE_GEN_BASE_URL,
     IMAGE_GEN_MODEL: process.env.IMAGE_GEN_MODEL || existingConfig.IMAGE_GEN_MODEL,
+    POLZA_IMAGE_OPTIONS:
+      parseOptionalJson(process.env.POLZA_IMAGE_OPTIONS) ||
+      existingConfig.POLZA_IMAGE_OPTIONS,
     IMAGE_PROVIDER: process.env.IMAGE_PROVIDER || existingConfig.IMAGE_PROVIDER,
     DISABLE_IMAGE_GENERATION:
       disableImageGeneration === undefined
