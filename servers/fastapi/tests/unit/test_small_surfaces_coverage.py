@@ -347,11 +347,6 @@ def test_presentation_language_invalid_code_fallback(monkeypatch):
 
 
 def test_handle_llm_client_exceptions(monkeypatch):
-    monkeypatch.setattr(
-        handle_llm_client_exceptions.__globals__["traceback"],
-        "print_exc",
-        lambda: None,
-    )
     assert (
         handle_llm_client_exceptions(HTTPException(status_code=401, detail="auth")).detail
         == "auth"
@@ -363,13 +358,13 @@ def test_handle_llm_client_exceptions(monkeypatch):
     llmai_err = LLMAIBaseError(status_code=429, message="busy")
     assert handle_llm_client_exceptions(llmai_err).detail == "busy"
 
-    assert "OpenAI API error" in handle_llm_client_exceptions(
+    assert handle_llm_client_exceptions(
         OpenAIAPIError(
             message="boom",
             request=httpx.Request("POST", "https://x"),
             body=None,
         )
-    ).detail
+    ).detail == "The text model request failed."
 
     assert "Google API error" in handle_llm_client_exceptions(
         GoogleAPIError(503, {})

@@ -28,6 +28,7 @@ from services.presentation_preview_service import (
     ensure_presentation_preview_manifest,
     get_presentation_preview_manifest,
 )
+from utils.llm_failure import status_error_from_exception
 
 
 async def prepare_derived_regeneration(
@@ -202,7 +203,7 @@ async def run_derived_regeneration(
         status.status = "error"
         status.message = "Selected slide regeneration failed"
         status.updated_at = datetime.now()
-        status.error = {"detail": str(getattr(exc, "detail", exc))}
+        status.error = status_error_from_exception(exc)
         sql_session.add(status)
         await sql_session.commit()
         raise

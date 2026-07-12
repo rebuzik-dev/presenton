@@ -101,11 +101,31 @@ from utils.template_prompt_overrides import (
     get_active_template_prompt,
     merge_generation_instructions,
 )
+from utils.llm_failure import status_error_from_exception
 
 
 from utils.custom_logger import setup_logger
 
 logger = setup_logger(__name__)
+
+
+async def _run_background_job_safely(
+    awaitable,
+    *,
+    job_name: str,
+    presentation_id: uuid.UUID,
+) -> None:
+    try:
+        await awaitable
+    except Exception as exc:
+        failure = status_error_from_exception(exc)
+        logger.error(
+            "%s background job failed presentation_id=%s code=%s status=%s",
+            job_name,
+            presentation_id,
+            failure["code"],
+            failure["http_status"],
+        )
 
 PRESENTATION_ROUTER = APIRouter(prefix="/presentation", tags=["Presentation"])
 
@@ -440,12 +460,16 @@ async def generate_selected_slides_from_outline(
 
         async def run_generation():
             async for session in get_async_session():
-                await run_selected_generation(
-                    session,
-                    request=data,
-                    auth_token=auth_token,
-                    api_key=api_key,
-                    preview_auth_context=preview_auth_context,
+                await _run_background_job_safely(
+                    run_selected_generation(
+                        session,
+                        request=data,
+                        auth_token=auth_token,
+                        api_key=api_key,
+                        preview_auth_context=preview_auth_context,
+                    ),
+                    job_name="Selected generation",
+                    presentation_id=data.request_id,
                 )
 
         background_tasks.add_task(run_generation)
@@ -527,14 +551,18 @@ async def derive_and_regenerate_selected_slides(
 
         async def run_regeneration():
             async for session in get_async_session():
-                await run_derived_regeneration(
-                    session,
+                await _run_background_job_safely(
+                    run_derived_regeneration(
+                        session,
+                        presentation_id=data.request_id,
+                        source_id=source_id,
+                        slide_indices=data.slide_indices,
+                        auth_token=auth_token,
+                        api_key=api_key,
+                        preview_auth_context=preview_auth_context,
+                    ),
+                    job_name="Selective regeneration",
                     presentation_id=data.request_id,
-                    source_id=source_id,
-                    slide_indices=data.slide_indices,
-                    auth_token=auth_token,
-                    api_key=api_key,
-                    preview_auth_context=preview_auth_context,
                 )
 
         background_tasks.add_task(run_regeneration)

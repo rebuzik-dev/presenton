@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
+from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel, select
@@ -108,6 +109,45 @@ async def _seed_source(session):
     session.add_all(slides)
     await session.commit()
     return source
+
+
+@pytest.mark.anyio
+async def test_derived_regeneration_records_structured_llm_error(session):
+    source = await _seed_source(session)
+    request_id = uuid4()
+    await prepare_derived_regeneration(
+        session,
+        source_id=source.id,
+        request_id=request_id,
+        slide_indices=[1],
+    )
+    failure = {
+        "code": "llm_budget_exceeded",
+        "detail": "The active text model has exhausted its provider budget.",
+        "http_status": 429,
+        "retryable": False,
+        "provider": "custom",
+        "model": "gpt-5-mini",
+        "action": "top_up_or_change_model",
+    }
+    with patch(
+        "services.selective_regeneration_service.generate_selected_slides",
+        new=AsyncMock(side_effect=HTTPException(status_code=429, detail=failure)),
+    ):
+        with pytest.raises(HTTPException):
+            await run_derived_regeneration(
+                session,
+                presentation_id=request_id,
+                source_id=source.id,
+                slide_indices=[1],
+                auth_token=None,
+                api_key=None,
+                preview_auth_context={"headers": {}, "params": {}},
+            )
+
+    status = await session.get(AsyncPresentationGenerationTaskModel, request_id)
+    assert status.status == "error"
+    assert status.error == failure
 
 
 def test_derive_request_rejects_duplicate_indices():
