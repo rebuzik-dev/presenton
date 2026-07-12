@@ -121,7 +121,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                 path: "title",
                 type: "field",
                 name: "Title",
-                description: "Main storyboard title",
+                description: "Заголовок раздела с раскадровкой",
               })}
               className="uppercase font-[800] text-[44px] leading-[52px]"
               style={{ color: titleColor, fontFamily: titleFont }}
@@ -138,7 +138,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                   path: "phase",
                   type: "field",
                   name: "Phase",
-                  description: "Storyboard phase title",
+                  description: "Название ключевого драматургического этапа",
                 })}
               >
                 {slideData?.phase || "Ключевой момент"}
@@ -148,7 +148,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                   path: "timing",
                   type: "field",
                   name: "Timing",
-                  description: "Storyboard timing interval",
+                  description: "Интервал этапа при наличии длительности",
                 })}
               >
                 {slideData?.timing || "Без таймкода"}
@@ -161,7 +161,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                   path: "framesText",
                   type: "field",
                   name: "Frames text",
-                  description: "Frames description block",
+                  description: "Описание действия и композиции кадров",
                 })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -174,7 +174,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                   path: "graphicsTextBlock",
                   type: "field",
                   name: "Graphics text",
-                  description: "Graphics block",
+                  description: "Описание графики и экранных элементов",
                 })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -204,7 +204,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                       path: `visuals[${0}].__image_prompt__`,
                       type: "image",
                       name: "Storyboard image 1",
-                      description: "First storyboard visual prompt",
+                      description: "ТЗ главного плана ключевого эпизода",
                     })}
                     src={img1}
                     alt={visuals[0]?.__image_prompt__ || "Storyboard image 1"}
@@ -222,7 +222,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                       path: `visuals[${1}].__image_prompt__`,
                       type: "image",
                       name: "Storyboard image 2",
-                      description: "Second storyboard visual prompt",
+                      description: "ТЗ отдельного детального или эмоционального плана",
                     })}
                     src={img2}
                     alt={visuals[1]?.__image_prompt__ || "Storyboard image 2"}
@@ -238,7 +238,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                     path: "badgeText",
                     type: "field",
                     name: "Badge text",
-                    description: "Overlay metric text",
+                    description: "Короткая подпись ключевого этапа",
                   })}
                   className="absolute bottom-[18px] left-1/2 -translate-x-1/2 px-[28px] py-[12px] rounded-[12px] font-[800] text-[26px] leading-[30px]"
                   style={{

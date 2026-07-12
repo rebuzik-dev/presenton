@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
@@ -20,8 +20,8 @@ const ImageSchema = z.object({
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
+  __icon_prompt__: z.string().min(1).max(60).default("нейтральная иконка").meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "palette-grid-image-slide"
@@ -67,7 +67,7 @@ const Schema = z.object({
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
     __image_prompt__: "Сувенирные изделия, материалы или упаковка из концепции, на которых заметно применение выбранной палитры",
-  }).meta({ description: "Изображение демонстрирует палитру на сувенирной продукции, а не на декоре или сервировке." }),
+  }).meta({ description: "Изображение демонстрирует палитру на сувенирной продукции, материале или упаковке из выбранной линейки." }),
 })
 
 type PaletteGridImageSlideData = z.infer<typeof Schema>
@@ -96,7 +96,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
             path: `${pathPrefix}[${index}].hex`,
             type: "field",
             name: `Color ${index + 1} hex`,
-            description: "Color card hex value",
+            description: "HEX-код цветового образца",
           })}
           className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}
           style={{ color: textColor, fontFamily: cardFont }}
@@ -108,7 +108,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
             path: `${pathPrefix}[${index}].name`,
             type: "field",
             name: `Color ${index + 1} name`,
-            description: "Color card name",
+            description: "Название или роль цвета",
           })}
           className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}
           style={{ color: textColor, fontFamily: cardFont }}
@@ -129,7 +129,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
                 path: "title",
                 type: "field",
                 name: "Title",
-                description: "Main palette header",
+                description: "Главный заголовок палитры",
               })}
             >
               {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
@@ -144,7 +144,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
                     path: "leftHeader",
                     type: "field",
                     name: "Left header",
-                    description: "Primary colors column header",
+                    description: "Заголовок основных цветов",
                   })}
                 >
                   {slideData?.leftHeader || "Основные цвета"}
@@ -164,7 +164,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
                     path: "rightHeader",
                     type: "field",
                     name: "Right header",
-                    description: "Secondary colors column header",
+                    description: "Заголовок дополнительных цветов",
                   })}
                 >
                   {slideData?.rightHeader || "Дополнительные цвета"}
@@ -187,7 +187,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
                 path: "image.__image_prompt__",
                 type: "image",
                 name: "Palette image prompt",
-                description: "Palette supporting image prompt",
+                description: "ТЗ изображения с применением палитры",
               })}
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || "image"}

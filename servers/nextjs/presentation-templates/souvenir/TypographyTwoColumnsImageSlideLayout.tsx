@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
@@ -20,8 +20,8 @@ const ImageSchema = z.object({
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
+  __icon_prompt__: z.string().min(1).max(60).default("нейтральная иконка").meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "typography-two-columns-image-slide"
@@ -50,7 +50,7 @@ const Schema = z.object({
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
     __image_prompt__: "Крупный кадр сувенирного изделия, упаковки или карточки с аккуратным применением выбранной типографики",
-  }).meta({ description: "Носитель типографики должен относиться к сувенирной линейке, а не к декору или сервировке." }),
+  }).meta({ description: "Носитель типографики должен относиться к сувенирной линейке и соответствовать её назначению." }),
 })
 
 type TypographyTwoColumnsImageSlideData = z.infer<typeof Schema>
@@ -82,7 +82,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                 path: "title",
                 type: "field",
                 name: "Title",
-                description: "Typography slide header",
+                description: "Заголовок раздела о типографике",
               })}
             >
               {slideData?.title || "ТИПОГРАФИКА"}
@@ -100,7 +100,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                       path: "leftTitle",
                       type: "field",
                       name: "Left title",
-                      description: "Left typography title",
+                      description: "Название основной гарнитуры",
                     })}
                   >
                     {slideData?.leftTitle || "Inter Bold"}
@@ -115,7 +115,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                           path: `leftBullets[${idx}]`,
                           type: "field",
                           name: `Bullet ${idx + 1}`,
-                          description: "Left typography bullet",
+                          description: "Свойство основной гарнитуры",
                         })}
                         className="overflow-hidden"
                       >
@@ -130,7 +130,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                       path: "leftSample",
                       type: "field",
                       name: "Left sample",
-                      description: "Left sample text",
+                      description: "Образец основной гарнитуры",
                     })}
                   >
                     {slideData?.leftSample || "Aa Bb Cc 123"}
@@ -146,7 +146,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                       path: "rightTitle",
                       type: "field",
                       name: "Right title",
-                      description: "Right typography title",
+                      description: "Название дополнительной гарнитуры",
                     })}
                   >
                     {slideData?.rightTitle || "Inter Regular"}
@@ -158,7 +158,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                       path: "rightBody",
                       type: "field",
                       name: "Right body",
-                      description: "Right paragraph",
+                      description: "Описание применения дополнительной гарнитуры",
                     })}
                   >
                     {slideData?.rightBody ||
@@ -171,7 +171,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                       path: "rightSample",
                       type: "field",
                       name: "Right sample",
-                      description: "Right sample text",
+                      description: "Образец дополнительной гарнитуры",
                     })}
                   >
                     {slideData?.rightSample || "Aa Bb Cc 123 AbCbZzAa"}
@@ -188,7 +188,7 @@ const dynamicSlideLayout: React.FC<TypographyTwoColumnsImageSlideLayoutProps> = 
                 path: "image.__image_prompt__",
                 type: "image",
                 name: "Typography image prompt",
-                description: "Supporting image prompt",
+                description: "ТЗ поддерживающего изображения с носителем типографики",
               })}
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || "typography image"}

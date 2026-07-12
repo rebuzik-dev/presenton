@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()

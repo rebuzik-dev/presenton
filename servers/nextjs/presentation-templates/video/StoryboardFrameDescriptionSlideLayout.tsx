@@ -115,7 +115,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                 path: "title",
                 type: "field",
                 name: "Title",
-                description: "Main storyboard title",
+                description: "Заголовок раздела с раскадровкой",
               })}
               className="uppercase font-[800] text-[44px] leading-[52px]"
               style={{ color: titleColor, fontFamily: titleFont }}
@@ -133,7 +133,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                     path: "phase",
                     type: "field",
                     name: "Phase",
-                    description: "Storyboard phase title",
+                    description: "Название драматургического этапа",
                   })}
                 >
                   {slideData?.phase || "Хук"}
@@ -143,7 +143,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                     path: "timing",
                     type: "field",
                     name: "Timing",
-                    description: "Storyboard timing range",
+                    description: "Интервал этапа при наличии длительности",
                   })}
                 >
                   {slideData?.timing || "Без таймкода"}
@@ -162,7 +162,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                       path: "framesLabel",
                       type: "field",
                       name: "Frames label",
-                      description: "Label for visuals description",
+                      description: "Подпись блока с описанием кадра",
                     })}
                   >
                     {slideData?.framesLabel || "Кадры:"}
@@ -172,7 +172,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                       path: "visualDescription",
                       type: "field",
                       name: "Visual description",
-                      description: "Description of the frame",
+                      description: "Описание действия и композиции кадра",
                     })}
                   >
                     {slideData?.visualDescription ||
@@ -191,7 +191,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                       path: "voiceoverLabel",
                       type: "field",
                       name: "Voiceover label",
-                      description: "Label for voiceover block",
+                      description: "Подпись блока с дикторским текстом",
                     })}
                   >
                     {slideData?.voiceoverLabel || "Текст для озвучки:"}
@@ -201,7 +201,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                       path: "voiceover",
                       type: "field",
                       name: "Voiceover",
-                      description: "Narrator text",
+                      description: "Текст диктора или звуковая задача",
                     })}
                   >
                     {slideData?.voiceover ||
@@ -224,7 +224,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                     path: "imageLeft.__image_prompt__",
                     type: "image",
                     name: "Left image prompt",
-                    description: "Left storyboard image prompt",
+                    description: "ТЗ общего плана эпизода",
                   })}
                   src={leftImg}
                   alt={slideData?.imageLeft?.__image_prompt__ || "Storyboard image left"}
@@ -238,7 +238,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                     path: "imageRight.__image_prompt__",
                     type: "image",
                     name: "Right image prompt",
-                    description: "Right storyboard image prompt",
+                    description: "ТЗ детального или эмоционального плана эпизода",
                   })}
                   src={rightImg}
                   alt={slideData?.imageRight?.__image_prompt__ || "Storyboard image right"}

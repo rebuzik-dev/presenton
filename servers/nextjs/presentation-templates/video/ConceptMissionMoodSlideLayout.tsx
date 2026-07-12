@@ -86,7 +86,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
             path: "title",
             type: "field",
             name: "Title",
-            description: "Main section title",
+            description: "Заголовок раздела с концепцией",
           })}
           className="uppercase font-[800] text-[48px] leading-[56px]"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -117,7 +117,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
               path: "heroQuote",
               type: "field",
               name: "Hero quote",
-              description: "Main concept quote",
+              description: "Главная формулировка концепции",
             })}
             className="font-[700] text-[24px] leading-[30px]"
             style={{ color: heroText, fontFamily: bodyFont }}
@@ -136,7 +136,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "missionTitle",
                 type: "field",
                 name: "Mission title",
-                description: "Mission column heading",
+                description: "Заголовок колонки с задачей ролика",
               })}
               className="font-[800] text-[28px] leading-[34px]"
               style={{ color: bodyColor, fontFamily: sectionTitleFont }}
@@ -152,7 +152,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "missionContent",
                 type: "field",
                 name: "Mission content",
-                description: "Mission column body",
+                description: "Описание задачи ролика",
               })}
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -168,7 +168,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "moodTitle",
                 type: "field",
                 name: "Mood title",
-                description: "Mood column heading",
+                description: "Заголовок колонки с тональностью",
               })}
               className="font-[800] text-[28px] leading-[34px]"
               style={{ color: bodyColor, fontFamily: sectionTitleFont }}
@@ -184,7 +184,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "moodContent",
                 type: "field",
                 name: "Mood content",
-                description: "Mood column body",
+                description: "Описание тональности ролика",
               })}
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}

@@ -9,19 +9,19 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
     .default("Supporting image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .meta({ description: "Короткое ТЗ изображения, если оно требуется layout." }),
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
+  __icon_prompt__: z.string().min(1).max(60).default("нейтральная иконка").meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "header-quote-two-columns-lines-slide"
@@ -86,7 +86,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
               path: "title",
               type: "field",
               name: "Title",
-              description: "Concept header",
+              description: "Заголовок концепции линейки",
             })}
           >
             {slideData?.title || "КОНЦЕПЦИЯ ЛИНЕЙКИ"}
@@ -101,7 +101,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                 path: "quote",
                 type: "field",
                 name: "Quote",
-                description: "Quote card text",
+                description: "Главная идея линейки",
               })}
             >
               {slideData?.quote ||
@@ -118,7 +118,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                   path: "leftTitle",
                   type: "field",
                   name: "Left title",
-                  description: "Left column title",
+                  description: "Заголовок левой колонки",
                 })}
               >
                 {slideData?.leftTitle || "Задача"}
@@ -131,7 +131,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                   path: "leftBody",
                   type: "field",
                   name: "Left body",
-                  description: "Left column body",
+                  description: "Текст левой колонки",
                 })}
               >
                 {slideData?.leftBody ||
@@ -147,7 +147,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                   path: "rightTitle",
                   type: "field",
                   name: "Right title",
-                  description: "Right column title",
+                  description: "Заголовок правой колонки",
                 })}
               >
                 {slideData?.rightTitle || "Принципы выбора"}
@@ -160,7 +160,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                   path: "rightBody",
                   type: "field",
                   name: "Right body",
-                  description: "Right column body",
+                  description: "Текст правой колонки",
                 })}
               >
                 {slideData?.rightBody ||

@@ -186,7 +186,7 @@ const dynamicSlideLayout: React.FC<TypographySpecProps> = ({ data: slideData }) 
                     path: "rightImage.__image_prompt__",
                     type: "image",
                     name: "Right image prompt",
-                    description: "Poster image generation prompt",
+                    description: "ТЗ изображения с применением типографики на подходящем носителе",
                   })}
                   src={rightImg}
                   alt={slideData?.rightImage?.__image_prompt__ || "Poster photo"}

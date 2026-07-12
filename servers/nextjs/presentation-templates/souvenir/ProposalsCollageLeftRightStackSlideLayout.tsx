@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
@@ -20,8 +20,8 @@ const ImageSchema = z.object({
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
+  __icon_prompt__: z.string().min(1).max(60).default("нейтральная иконка").meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "proposals-collage-left-right-stack-slide"
@@ -38,10 +38,10 @@ const LabeledImageSchema = z.object({
 })
 
 const Schema = z.object({
-  titlePrefix: z.string().min(10).max(30).default("ПРЕДЛОЖЕНИЯ ПО").meta({ description: "Header prefix. Max 2 words" }),
+  titlePrefix: z.string().min(10).max(30).default("ПРЕДЛОЖЕНИЯ ПО").meta({ description: "Короткая строка перед названием категории. До 2 слов." }),
   blockName: z.string().min(3).max(20).default("ЛИНЕЙКЕ").meta({ description: "Короткое название категории или набора из брифа." }),
   tags: z
-    .array(z.string().min(2).max(22).meta({ description: "Tag text. Max 2 words" }))
+    .array(z.string().min(2).max(22).meta({ description: "Короткая характеристика предложения. До 2 слов." }))
     .min(2)
     .max(3)
     .default(["Линейка", "Деталь", "Вручение"])
@@ -92,7 +92,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
               path: "titlePrefix",
               type: "field",
               name: "Title prefix",
-              description: "Header prefix",
+              description: "Короткая строка перед названием категории",
             })}
           >
             {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"}
@@ -102,7 +102,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
               path: "blockName",
               type: "field",
               name: "Block name",
-              description: "Header block name",
+              description: "Название категории предложений",
             })}
           >
             {slideData?.blockName || "ЛИНЕЙКЕ"}
@@ -116,7 +116,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                 path: "left.image.__image_prompt__",
                 type: "image",
                 name: "Left image prompt",
-                description: "Left collage image prompt",
+                description: "ТЗ главного изображения предложения",
               })}
               src={
                 slideData?.left?.image?.__image_url__ ||
@@ -131,7 +131,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                   path: "left.label",
                   type: "field",
                   name: "Left label",
-                  description: "Left collage label",
+                  description: "Подпись главного изображения",
                 })}
               >
                 {slideData?.left?.label || "Линейка"}
@@ -146,7 +146,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                   path: "rightTop.image.__image_prompt__",
                   type: "image",
                   name: "Right top image prompt",
-                  description: "Right top collage image prompt",
+                  description: "ТЗ верхнего изображения с отдельным ракурсом",
                 })}
                 src={
                   slideData?.rightTop?.image?.__image_url__ ||
@@ -161,7 +161,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                     path: "rightTop.label",
                     type: "field",
                     name: "Right top label",
-                    description: "Right top collage label",
+                    description: "Подпись верхнего изображения",
                   })}
                 >
                   {slideData?.rightTop?.label || "Деталь"}
@@ -175,7 +175,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                   path: "rightBottom.image.__image_prompt__",
                   type: "image",
                   name: "Right bottom image prompt",
-                  description: "Right bottom collage image prompt",
+                  description: "ТЗ нижнего изображения с отдельной деталью",
                 })}
                 src={
                   slideData?.rightBottom?.image?.__image_url__ ||
@@ -190,7 +190,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                     path: "rightBottom.label",
                     type: "field",
                     name: "Right bottom label",
-                    description: "Right bottom collage label",
+                    description: "Подпись нижнего изображения",
                   })}
                 >
                   {slideData?.rightBottom?.label || "Вручение"}

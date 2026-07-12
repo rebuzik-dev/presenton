@@ -7,6 +7,9 @@ from sqlalchemy import create_engine, text
 import migrations
 
 
+EXPECTED_HEAD = "8b2f1d6c4e9a"
+
+
 def _alembic_config(database_url: str) -> Config:
     config = Config()
     config.set_main_option(
@@ -70,7 +73,7 @@ def test_upgrade_from_baseline_stamp_skips_existing_theme_column(tmp_path):
                 for row in connection.execute(text("PRAGMA table_info(presentations)"))
             }
 
-        assert version == "c7b70d0f31b1"
+        assert version == EXPECTED_HEAD
         assert "theme" in columns
     finally:
         engine.dispose()
@@ -120,7 +123,7 @@ def test_upgrade_from_theme_stamp_skips_existing_template_create_infos_table(tmp
                 )
             }
 
-        assert version == "c7b70d0f31b1"
+        assert version == EXPECTED_HEAD
         assert "template_create_infos" in tables
     finally:
         engine.dispose()
@@ -170,7 +173,7 @@ def test_upgrade_from_template_stamp_skips_existing_chat_history_table(tmp_path)
                 )
             }
 
-        assert version == "c7b70d0f31b1"
+        assert version == EXPECTED_HEAD
         assert {
             "ix_chat_history_messages_conversation_id",
             "ix_chat_history_messages_position",

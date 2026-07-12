@@ -20,13 +20,13 @@ const ImageSchema = z.object({
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
   __icon_prompt__: z
     .string()
     .min(1)
     .max(60)
     .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
+    .meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "cover-background-kicker-title-slide"

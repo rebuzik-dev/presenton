@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
@@ -20,8 +20,8 @@ const ImageSchema = z.object({
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
+  __icon_prompt__: z.string().min(1).max(60).default("нейтральная иконка").meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "proposals-three-images-slide"
@@ -38,10 +38,10 @@ const LabeledImageSchema = z.object({
 })
 
 const Schema = z.object({
-  titlePrefix: z.string().min(10).max(30).default("ПРЕДЛОЖЕНИЯ ПО").meta({ description: "Header prefix. Max 2 words" }),
+  titlePrefix: z.string().min(10).max(30).default("ПРЕДЛОЖЕНИЯ ПО").meta({ description: "Короткая строка перед названием категории. До 2 слов." }),
   blockName: z.string().min(3).max(20).default("ЛИНЕЙКЕ").meta({ description: "Короткое название категории или набора из брифа." }),
   tags: z
-    .array(z.string().min(2).max(22).meta({ description: "Tag text. Max 2 words" }))
+    .array(z.string().min(2).max(22).meta({ description: "Короткая характеристика предложения. До 2 слов." }))
     .min(3)
     .max(4)
     .default(["Основной предмет", "Дополнение", "Упаковка"])
@@ -82,7 +82,7 @@ const dynamicSlideLayout: React.FC<ProposalsThreeImagesSlideLayoutProps> = ({ da
               path: "titlePrefix",
               type: "field",
               name: "Title prefix",
-              description: "Header prefix",
+              description: "Короткая строка перед названием категории",
             })}
           >
             {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"}
@@ -92,7 +92,7 @@ const dynamicSlideLayout: React.FC<ProposalsThreeImagesSlideLayoutProps> = ({ da
               path: "blockName",
               type: "field",
               name: "Block name",
-              description: "Header block name",
+              description: "Название категории предложений",
             })}
           >
             {slideData?.blockName || "ЛИНЕЙКЕ"}

@@ -4,7 +4,7 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Image URL" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
   __image_prompt__: z.string().min(10).max(320).meta({
     description:
       "Главная сцена декора по брифу: тип события, площадка, палитра, материалы, флористика, свет и настроение. Не придумывать объекты, людей, символы и логотипы.",

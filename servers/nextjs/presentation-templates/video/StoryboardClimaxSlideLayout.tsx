@@ -94,7 +94,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                 path: "title",
                 type: "field",
                 name: "Title",
-                description: "Main storyboard title",
+                description: "Заголовок раздела с раскадровкой",
               })}
               className="uppercase font-[800] text-[44px] leading-[52px]"
               style={{ color: titleColor, fontFamily: titleFont }}
@@ -111,7 +111,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                   path: "phase",
                   type: "field",
                   name: "Phase",
-                  description: "Storyboard phase",
+                  description: "Название кульминационного или финального этапа",
                 })}
               >
                 {slideData?.phase || "Кульминация"}
@@ -121,7 +121,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                   path: "timing",
                   type: "field",
                   name: "Timing",
-                  description: "Storyboard timing range",
+                  description: "Интервал этапа при наличии длительности",
                 })}
               >
                 {slideData?.timing || "Без таймкода"}
@@ -134,7 +134,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                   path: "framesText",
                   type: "field",
                   name: "Frames text",
-                  description: "Frames block",
+                  description: "Описание кульминационных и финальных кадров",
                 })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -148,7 +148,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                   path: "graphicsTextBlock",
                   type: "field",
                   name: "Graphics text",
-                  description: "Graphics block",
+                  description: "Описание финальной графики или сообщения",
                 })}
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -170,7 +170,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                       path: `visuals[${0}].__image_prompt__`,
                       type: "image",
                       name: "Climax image 1",
-                      description: "First climax visual prompt",
+                      description: "ТЗ главного действия кульминации",
                     })}
                     src={img1}
                     alt={visuals[0]?.__image_prompt__ || "Climax image 1"}
@@ -188,7 +188,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                       path: `visuals[${1}].__image_prompt__`,
                       type: "image",
                       name: "Climax image 2",
-                      description: "Second climax visual prompt",
+                      description: "ТЗ эмоционального или смыслового финального кадра",
                     })}
                     src={img2}
                     alt={visuals[1]?.__image_prompt__ || "Climax image 2"}

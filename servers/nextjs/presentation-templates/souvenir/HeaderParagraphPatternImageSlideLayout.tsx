@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
@@ -20,8 +20,8 @@ const ImageSchema = z.object({
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
+  __icon_prompt__: z.string().min(1).max(60).default("нейтральная иконка").meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "header-paragraph-pattern-image-slide"
@@ -68,7 +68,7 @@ const dynamicSlideLayout: React.FC<HeaderParagraphPatternImageSlideLayoutProps> 
               path: "title",
               type: "field",
               name: "Title",
-              description: "Pattern header",
+              description: "Заголовок раздела о паттерне",
             })}
           >
             {slideData?.title || "ФИРМЕННЫЙ ПАТТЕРН"}
@@ -81,7 +81,7 @@ const dynamicSlideLayout: React.FC<HeaderParagraphPatternImageSlideLayoutProps> 
               path: "description",
               type: "field",
               name: "Description",
-              description: "Pattern paragraph",
+              description: "Описание логики и применения паттерна",
             })}
           >
             {slideData?.description ||
@@ -95,7 +95,7 @@ const dynamicSlideLayout: React.FC<HeaderParagraphPatternImageSlideLayoutProps> 
               path: "image.__image_prompt__",
               type: "image",
               name: "Pattern image prompt",
-              description: "Pattern image prompt",
+              description: "ТЗ изображения паттерна на подходящем носителе",
             })}
             src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
             alt={slideData?.image?.__image_prompt__ || "pattern"}

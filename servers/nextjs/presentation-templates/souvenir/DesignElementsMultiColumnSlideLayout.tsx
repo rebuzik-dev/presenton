@@ -96,7 +96,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
             path: "title",
             type: "field",
             name: "Title",
-            description: "Design elements title",
+            description: "Заголовок раздела о материалах и отделке",
           })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -119,7 +119,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                       path: "imageTopLeft.__image_prompt__",
                       type: "image",
                       name: "Top left image prompt",
-                      description: "Top left design element image prompt",
+                      description: "ТЗ верхнего левого кадра с отдельным материалом или деталью",
                     })}
                     src={imgTL}
                     alt={slideData?.imageTopLeft?.__image_prompt__ || "Top left"}
@@ -132,7 +132,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                       path: "imageTopRight.__image_prompt__",
                       type: "image",
                       name: "Top right image prompt",
-                      description: "Top right design element image prompt",
+                      description: "ТЗ верхнего правого кадра с другим материалом или отделкой",
                     })}
                     src={imgTR}
                     alt={slideData?.imageTopRight?.__image_prompt__ || "Top right"}
@@ -148,7 +148,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                     path: "imageBottom.__image_prompt__",
                     type: "image",
                     name: "Bottom image prompt",
-                    description: "Bottom design element image prompt",
+                    description: "ТЗ нижнего кадра со сценарием применения",
                   })}
                   src={imgB}
                   alt={slideData?.imageBottom?.__image_prompt__ || "Bottom"}
@@ -165,7 +165,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                 path: "topText",
                 type: "field",
                 name: "Top text",
-                description: "Top design element text",
+                description: "Описание материалов и технологии",
               })}
               className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70"
               style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -179,7 +179,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                 path: "bottomText",
                 type: "field",
                 name: "Bottom text",
-                description: "Bottom design element text",
+                description: "Описание отделки и применения",
               })}
               className="text-[16px] leading-[22px] text-[var(--style-text-primary)]/70"
               style={{ color: bodyColor, fontFamily: bodyFont }}

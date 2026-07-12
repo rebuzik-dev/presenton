@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
@@ -20,8 +20,8 @@ const ImageSchema = z.object({
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
-  __icon_prompt__: z.string().min(1).max(60).default("generic icon").meta({ description: "Prompt for icon. Max 6 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
+  __icon_prompt__: z.string().min(1).max(60).default("нейтральная иконка").meta({ description: "Короткое описание иконки, если она требуется layout." }),
 })
 
 const layoutId = "proposals-two-images-slide"
@@ -84,7 +84,7 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
               path: "titlePrefix",
               type: "field",
               name: "Title prefix",
-              description: "Header prefix",
+              description: "Короткая строка перед названием категории",
             })}
           >
             {slideData?.titlePrefix || "ПРЕДЛОЖЕНИЯ ПО"}
@@ -94,7 +94,7 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
               path: "blockName",
               type: "field",
               name: "Block name",
-              description: "Header block name",
+              description: "Название категории предложений",
             })}
           >
             {slideData?.blockName || "ЛИНЕЙКЕ"}
@@ -109,7 +109,7 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
                 path: `tags[${idx}]`,
                 type: "field",
                 name: `Tag ${idx + 1}`,
-                description: "Tag row item",
+                description: "Короткая характеристика предложения",
               })}
               className="overflow-hidden"
             >

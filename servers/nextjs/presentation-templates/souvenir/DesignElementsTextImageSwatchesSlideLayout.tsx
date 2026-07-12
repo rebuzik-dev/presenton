@@ -84,7 +84,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
             path: "title",
             type: "field",
             name: "Title",
-            description: "Design elements title",
+            description: "Заголовок раздела о носителях и материалах",
           })}
           className="text-[48px] leading-[54px] font-[900] uppercase"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -102,7 +102,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                   path: "topText",
                   type: "field",
                   name: "Top text",
-                  description: "Top text block",
+                  description: "Верхний смысловой блок",
                 })}
                 className="text-[16px] leading-[22px] font-[500]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -120,7 +120,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                   path: "bottomText",
                   type: "field",
                   name: "Bottom text",
-                  description: "Bottom text block",
+                  description: "Нижний смысловой блок",
                 })}
                 className="text-[16px] leading-[22px] font-[500]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -142,7 +142,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                   path: "topImage.__image_prompt__",
                   type: "image",
                   name: "Top image prompt",
-                  description: "Top image prompt",
+                  description: "ТЗ верхнего изображения с отдельным носителем",
                 })}
                 src={topImg}
                 alt={slideData?.topImage?.__image_prompt__ || "top image"}
@@ -160,7 +160,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                   path: "bottomImage.__image_prompt__",
                   type: "image",
                   name: "Bottom image prompt",
-                  description: "Bottom image prompt",
+                  description: "ТЗ нижнего изображения с другой деталью или материалом",
                 })}
                 src={bottomImg}
                 alt={slideData?.bottomImage?.__image_prompt__ || "bottom image"}

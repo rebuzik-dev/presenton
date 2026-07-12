@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
@@ -134,7 +134,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
             path: `${pathPrefix}[${index}].hex`,
             type: "field",
             name: `Color ${index + 1} hex`,
-            description: "Color swatch hex value",
+            description: "HEX-код цветового образца",
           })}
           className="text-[17px] leading-[21px] tracking-[0.4px] font-[700]"
           style={{ color: resolvedTextColor, fontFamily: cardFont }}
@@ -146,7 +146,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
             path: `${pathPrefix}[${index}].label`,
             type: "field",
             name: `Color ${index + 1} label`,
-            description: "Color swatch label",
+            description: "Название или роль цвета",
           })}
           className="text-[18px] leading-[22px] font-[500]"
           style={{ color: resolvedTextColor, fontFamily: cardFont }}
@@ -170,7 +170,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                 path: "title",
                 type: "field",
                 name: "Title",
-                description: "Main palette header",
+                description: "Главный заголовок палитры",
               })}
             >
               {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
@@ -185,7 +185,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                     path: "primaryTitle",
                     type: "field",
                     name: "Primary title",
-                    description: "Primary colors section title",
+                    description: "Заголовок основных цветов",
                   })}
                 >
                   {slideData?.primaryTitle || "Основные цвета"}
@@ -205,7 +205,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                     path: "secondaryTitle",
                     type: "field",
                     name: "Secondary title",
-                    description: "Secondary colors section title",
+                    description: "Заголовок дополнительных цветов",
                   })}
                 >
                   {slideData?.secondaryTitle || "Дополнительные цвета"}
@@ -227,7 +227,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                 path: "image.__image_prompt__",
                 type: "image",
                 name: "Palette image prompt",
-                description: "Supporting moodboard image prompt",
+                description: "ТЗ кадра с применением палитры и визуальной тональности",
               })}
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || slideData?.title || ""}
