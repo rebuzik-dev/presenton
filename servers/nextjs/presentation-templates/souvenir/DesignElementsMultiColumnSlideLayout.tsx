@@ -5,31 +5,35 @@ import { promptTargetAttrs } from "@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"),
-  __image_prompt__: z.string().min(3).max(180).default("Design element photo"),
+  __image_prompt__: z.string().min(3).max(180).default("Отдельный визуальный элемент сувенирной линейки").meta({
+    description: "Самостоятельный кадр материала, графики или изделия; не повторять соседние слоты и не добавлять случайный текст.",
+  }),
 });
 
 const layoutId = "design-elements-multi-column-slide";
 const layoutName = "Design Elements Multi Column Slide";
 const layoutDescription =
-  "Simplified: left collage (3 images: small+big on top, wide bottom) + right two text blocks.";
+  "Основные элементы дизайна сувенирной линейки: три разных кадра материалов, графики и коллекции плюс два кратких смысловых блока.";
 
 const Schema = z.object({
-  title: z.string().min(3).max(60).default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"),
+  title: z.string().min(3).max(60).default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА").meta({
+    description: "Заголовок раздела о визуальной системе сувенирной линейки.",
+  }),
 
   // ✅ 3 изображения слева
   imageTopLeft: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Close-up decor detail, candles and soft bokeh, premium editorial photo",
+    __image_prompt__: "Крупный план материала, фактуры, печати или отделки сувенирного изделия из концепции",
   }),
 
   imageTopRight: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Abstract arc texture / backdrop fragment, muted tones, paper-like texture",
+    __image_prompt__: "Отдельный графический мотив, паттерн или элемент айдентики, применимый к сувенирной продукции",
   }),
 
   imageBottom: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Main decor scene with flowers and candles, soft light, elegant table setup",
+    __image_prompt__: "Общий вид согласованной сувенирной линейки или набора в контексте упаковки и комплектации",
   }),
 
   // ✅ текст справа оставляем как сейчас (2 блока)
@@ -37,15 +41,15 @@ const Schema = z.object({
     .string()
     .min(20)
     .max(260)
-    .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Top text block" }),
+    .default("Форма, материал и отделка изделий выбираются с учётом назначения, аудитории и производственных ограничений из брифа.")
+    .meta({ description: "Первый блок: форма, материалы, технология и тактильные свойства. Фактические ограничения не придумывать." }),
 
   bottomText: z
     .string()
     .min(20)
     .max(260)
-    .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Bottom text block" }),
+    .default("Графика и брендинг объединяют позиции в одну линейку и масштабируются на разные носители без потери узнаваемости.")
+    .meta({ description: "Второй блок: графика, брендинг, паттерн и согласованность коллекции. Логотипы использовать только из брифа." }),
 });
 
 type Data = z.infer<typeof Schema>;
@@ -167,7 +171,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
               {slideData?.topText ||
-                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+                "Форма, материал и отделка изделий выбираются с учётом назначения, аудитории и производственных ограничений из брифа."}
             </div>
 
             <div
@@ -181,7 +185,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
               {slideData?.bottomText ||
-                "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+                "Графика и брендинг объединяют позиции в одну линейку и масштабируются на разные носители без потери узнаваемости."}
             </div>
           </div>
         </div>

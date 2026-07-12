@@ -15,8 +15,8 @@ const ImageSchema = z.object({
     .string()
     .min(3)
     .max(180)
-    .default("Moodboard image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Кадр сувенирной концепции на основе брифа")
+    .meta({ description: "Один самостоятельный кадр сувенирного moodboard; соседние слоты не должны повторяться." }),
 })
 
 const IconSchema = z.object({
@@ -26,21 +26,22 @@ const IconSchema = z.object({
 
 const layoutId = "moodboard-collage-4-slide"
 const layoutName = "Moodboard Collage 4 Slide"
-const layoutDescription = "A slide with a header and a four-image collage."
+const layoutDescription =
+  "Четырёхкадровый moodboard сувенирной линейки: общий вид, материал и отделка, упаковка, использование или вручение."
 
 const Schema = z.object({
-  title: z.string().min(3).max(20).default("МУДБОРД").meta({ description: "Header. Max 1 word" }),
+  title: z.string().min(3).max(20).default("МУДБОРД").meta({ description: "Короткий заголовок сувенирного moodboard." }),
   images: z
     .array(ImageSchema)
     .min(4)
     .max(4)
     .default([
-      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Moodboard left large" },
-      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Moodboard middle tall" },
-      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Moodboard right top" },
-      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Moodboard right bottom" },
+      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Общий вид цельной сувенирной линейки для аудитории и повода из брифа" },
+      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Крупный план материала, фактуры, печати или отделки одного изделия" },
+      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Упаковка и комплектование сувенирной линейки в общей визуальной системе" },
+      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Естественный сценарий использования или вручения сувенира целевой аудитории" },
     ])
-    .meta({ description: "Collage images. Max 4 items" }),
+    .meta({ description: "Ровно четыре разных кадра; общая палитра и стиль приходят отдельно через image_style." }),
 })
 
 type MoodboardCollage4SlideData = z.infer<typeof Schema>
@@ -82,11 +83,11 @@ const dynamicSlideLayout: React.FC<MoodboardCollage4SlideLayoutProps> = ({ data:
               {...promptTargetAttrs({
                 path: `images[${0}].__image_prompt__`,
                 type: "image",
-                name: "Moodboard image 1",
-                description: "First moodboard image prompt",
+                name: "Общий вид линейки",
+                description: "Цельная сувенирная линейка",
               })}
               src={i0}
-              alt={imgs[0]?.__image_prompt__ || "moodboard 1"}
+              alt={imgs[0]?.__image_prompt__ || "Общий вид сувенирной линейки"}
               className="w-full h-full object-cover"
             />
           </div>
@@ -96,11 +97,11 @@ const dynamicSlideLayout: React.FC<MoodboardCollage4SlideLayoutProps> = ({ data:
               {...promptTargetAttrs({
                 path: `images[${1}].__image_prompt__`,
                 type: "image",
-                name: "Moodboard image 2",
-                description: "Second moodboard image prompt",
+                name: "Материал и отделка",
+                description: "Деталь материала, фактуры или печати",
               })}
               src={i1}
-              alt={imgs[1]?.__image_prompt__ || "moodboard 2"}
+              alt={imgs[1]?.__image_prompt__ || "Материал и отделка сувенира"}
               className="w-full h-full object-cover"
             />
           </div>
@@ -111,11 +112,11 @@ const dynamicSlideLayout: React.FC<MoodboardCollage4SlideLayoutProps> = ({ data:
                 {...promptTargetAttrs({
                   path: `images[${2}].__image_prompt__`,
                   type: "image",
-                  name: "Moodboard image 3",
-                  description: "Third moodboard image prompt",
+                  name: "Упаковка",
+                  description: "Упаковка и комплектование линейки",
                 })}
                 src={i2}
-                alt={imgs[2]?.__image_prompt__ || "moodboard 3"}
+                alt={imgs[2]?.__image_prompt__ || "Упаковка сувенирной линейки"}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -124,11 +125,11 @@ const dynamicSlideLayout: React.FC<MoodboardCollage4SlideLayoutProps> = ({ data:
                 {...promptTargetAttrs({
                   path: `images[${3}].__image_prompt__`,
                   type: "image",
-                  name: "Moodboard image 4",
-                  description: "Fourth moodboard image prompt",
+                  name: "Использование или вручение",
+                  description: "Сценарий взаимодействия аудитории с сувениром",
                 })}
                 src={i3}
-                alt={imgs[3]?.__image_prompt__ || "moodboard 4"}
+                alt={imgs[3]?.__image_prompt__ || "Использование или вручение сувенира"}
                 className="w-full h-full object-cover"
               />
             </div>

@@ -15,8 +15,8 @@ const ImageSchema = z.object({
     .string()
     .min(3)
     .max(180)
-    .default("Pattern image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Фирменный паттерн для сувенирной продукции, собранный из визуальных мотивов брифа")
+    .meta({ description: "Бесшовный или модульный графический паттерн без случайного текста, логотипов и неподтверждённых символов." }),
 })
 
 const IconSchema = z.object({
@@ -26,22 +26,23 @@ const IconSchema = z.object({
 
 const layoutId = "header-paragraph-pattern-image-slide"
 const layoutName = "Header Paragraph Pattern Image Slide"
-const layoutDescription = "A slide with a header, a paragraph, and a large pattern image."
+const layoutDescription =
+  "Фирменный паттерн сувенирной линейки: принцип построения, связь с концепцией и применение на изделиях или упаковке."
 
 const Schema = z.object({
-  title: z.string().min(3).max(30).default("ФИРМЕННЫЙ ПАТТЕРН").meta({ description: "Header. Max 2 words" }),
+  title: z.string().min(3).max(30).default("ФИРМЕННЫЙ ПАТТЕРН").meta({ description: "Заголовок раздела о графическом паттерне." }),
   description: z
     .string()
     .min(20)
     .max(260)
     .default(
-      "Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна"
+      "Паттерн развивает визуальную идею мероприятия и масштабируется на разные изделия, упаковку и сопроводительные материалы."
     )
-    .meta({ description: "Paragraph text. Max 32 words" }),
+    .meta({ description: "Кратко описать мотив, принцип построения и применение паттерна. Не придумывать символику, которой нет в брифе." }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Soft abstract brand pattern",
-  }).meta({ description: "Pattern image. Max 30 words" }),
+    __image_prompt__: "Модульный фирменный паттерн для сувенирной продукции, основанный на формах, ритме и настроении из брифа",
+  }).meta({ description: "Крупное изображение паттерна без мокапа случайного товара и без читаемого текста." }),
 })
 
 type HeaderParagraphPatternImageSlideData = z.infer<typeof Schema>
@@ -84,7 +85,7 @@ const dynamicSlideLayout: React.FC<HeaderParagraphPatternImageSlideLayoutProps> 
             })}
           >
             {slideData?.description ||
-              "Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна Описание паттерна"}
+              "Паттерн развивает визуальную идею мероприятия и масштабируется на разные изделия, упаковку и сопроводительные материалы."}
           </span>
         </div>
 

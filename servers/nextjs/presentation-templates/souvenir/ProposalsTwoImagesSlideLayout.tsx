@@ -15,8 +15,8 @@ const ImageSchema = z.object({
     .string()
     .min(3)
     .max(180)
-    .default("Proposal image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Конкретное сувенирное предложение на основе брифа")
+    .meta({ description: "Предмет, набор или упаковка из предложения; без случайного текста, логотипов и неподтверждённых характеристик." }),
 })
 
 const IconSchema = z.object({
@@ -26,34 +26,35 @@ const IconSchema = z.object({
 
 const layoutId = "proposals-two-images-slide"
 const layoutName = "Proposals Two Images Slide"
-const layoutDescription = "A slide with a header, a tag row, and two side-by-side images with labels."
+const layoutDescription =
+  "Два согласованных предложения для сувенирной линейки: конкретные позиции из брифа либо уместные творческие варианты для аудитории и повода."
 
 const LabeledImageSchema = z.object({
-  label: z.string().min(2).max(20).default("Пригласительные").meta({ description: "Image label. Max 2 words" }),
+  label: z.string().min(2).max(20).default("Основной предмет").meta({ description: "Короткое название позиции или роли кадра. До 2 слов." }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Product photo",
-  }).meta({ description: "Image content. Max 30 words" }),
+    __image_prompt__: "Сувенирное изделие или упаковка, связанная с подписью и требованиями брифа",
+  }).meta({ description: "Изображение конкретной позиции; второй кадр должен показывать другое изделие или функцию." }),
 })
 
 const Schema = z.object({
-  titlePrefix: z.string().min(10).max(30).default("ПРЕДЛОЖЕНИЯ ПО").meta({ description: "Header prefix. Max 2 words" }),
-  blockName: z.string().min(3).max(20).default("НАЗВАНИЕ БЛОКА").meta({ description: "Block name. Max 2 words" }),
+  titlePrefix: z.string().min(10).max(30).default("ПРЕДЛОЖЕНИЯ ПО").meta({ description: "Первая часть заголовка раздела с вариантами." }),
+  blockName: z.string().min(3).max(20).default("ЛИНЕЙКЕ").meta({ description: "Короткое название категории или набора из брифа." }),
   tags: z
-    .array(z.string().min(2).max(20).meta({ description: "Tag text. Max 2 words" }))
+    .array(z.string().min(2).max(20).meta({ description: "Название одной позиции или роли в комплекте." }))
     .min(2)
     .max(2)
-    .default(["Пригласительные", "Блокнот"])
-    .meta({ description: "Tag row items. Max 2 items" }),
+    .default(["Основной предмет", "Упаковка"])
+    .meta({ description: "Две разные позиции из брифа или два уместных предложения, согласованных между собой." }),
   images: z
     .array(LabeledImageSchema)
     .min(2)
     .max(2)
     .default([
-      { label: "Пригласительные", image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Invitation card photo" } },
-      { label: "Блокнот", image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Notebook photo" } },
+      { label: "Основной предмет", image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Основное сувенирное изделие для аудитории и задачи из брифа, предметная съёмка" } },
+      { label: "Упаковка", image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Упаковка или комплектование того же сувенирного предложения в согласованной визуальной системе" } },
     ])
-    .meta({ description: "Two images. Max 2 items" }),
+    .meta({ description: "Ровно два различных, но согласованных предложения или компонента набора." }),
 })
 
 type ProposalsTwoImagesSlideData = z.infer<typeof Schema>
@@ -96,7 +97,7 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
               description: "Header block name",
             })}
           >
-            {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
+            {slideData?.blockName || "ЛИНЕЙКЕ"}
           </span>
         </div>
 
@@ -124,8 +125,8 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
                 {...promptTargetAttrs({
                   path: `images[${idx}].image.__image_prompt__`,
                   type: "image",
-                  name: `Proposal image ${idx + 1}`,
-                  description: "Proposal image prompt",
+                  name: `Изображение предложения ${idx + 1}`,
+                  description: "Отдельная позиция или компонент сувенирной линейки",
                 })}
                 src={it.image.__image_url__}
                 alt={it.image.__image_prompt__ || it.label}
@@ -137,7 +138,7 @@ const dynamicSlideLayout: React.FC<ProposalsTwoImagesSlideLayoutProps> = ({ data
                     path: `images[${idx}].label`,
                     type: "field",
                     name: `Image label ${idx + 1}`,
-                    description: "Proposal image label",
+                    description: "Короткое название позиции или роли кадра",
                   })}
                 >
                   {it.label}

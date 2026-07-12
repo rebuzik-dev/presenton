@@ -9,14 +9,14 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Soft abstract background")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Фон обложки сувенирной концепции, связанный с материалами и характером линейки из брифа")
+    .meta({ description: "Фон обложки без текста, случайных логотипов и конкретных изделий, не указанных в брифе." }),
 })
 
 const IconSchema = z.object({
@@ -31,15 +31,16 @@ const IconSchema = z.object({
 
 const layoutId = "cover-background-kicker-title-slide"
 const layoutName = "Cover Background Kicker Title Slide"
-const layoutDescription = "A slide with a full background image, a kicker, and a large title."
+const layoutDescription =
+  "Обложка сувенирной концепции: тип документа и точное название мероприятия из брифа на нейтральном тематическом фоне."
 
 const Schema = z.object({
   background: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Abstract light background with soft shapes",
-  }).meta({ description: "Background image. Max 30 words" }),
-  kicker: z.string().min(3).max(40).default("Наименование типа документа").meta({ description: "Kicker line. Max 4 words" }),
-  title: z.string().min(5).max(55).default("НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ").meta({ description: "Main title. Max 3 words" }),
+    __image_prompt__: "Фактура материалов или абстрактная композиция для сувенирной линейки, основанная на визуальном стиле мероприятия",
+  }).meta({ description: "Фоновый кадр поддерживает концепцию, но не показывает вымышленные товары." }),
+  kicker: z.string().min(3).max(40).default("Концепция сувенирной продукции").meta({ description: "Тип документа или раздела. До 4 слов." }),
+  title: z.string().min(5).max(55).default("НАЗВАНИЕ МЕРОПРИЯТИЯ").meta({ description: "Название мероприятия точно из брифа, без добавления даты или места." }),
 })
 
 type CoverBackgroundKickerTitleSlideData = z.infer<typeof Schema>
@@ -63,8 +64,8 @@ const dynamicSlideLayout: React.FC<CoverBackgroundKickerTitleSlideLayoutProps> =
           {...promptTargetAttrs({
             path: "background.__image_prompt__",
             type: "image",
-            name: "Background image prompt",
-            description: "Cover background image prompt",
+            name: "Фон обложки",
+            description: "Фон сувенирной концепции без вымышленных товаров",
           })}
           src={slideData?.background?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
           alt={slideData?.background?.__image_prompt__ || "background"}
@@ -79,11 +80,11 @@ const dynamicSlideLayout: React.FC<CoverBackgroundKickerTitleSlideLayoutProps> =
             {...promptTargetAttrs({
               path: "kicker",
               type: "field",
-              name: "Kicker",
-              description: "Cover kicker line",
+              name: "Тип документа",
+              description: "Короткая строка над названием мероприятия",
             })}
           >
-            {slideData?.kicker || "Наименование типа документа"}
+            {slideData?.kicker || "Концепция сувенирной продукции"}
           </span>
         </div>
         <div className="mt-6 text-[64px] leading-[70px] tracking-[0.5px] text-[var(--style-text-primary)] font-[900] uppercase overflow-hidden max-w-[980px]" style={{ color: titleColor, fontFamily: titleFont }}>
@@ -91,11 +92,11 @@ const dynamicSlideLayout: React.FC<CoverBackgroundKickerTitleSlideLayoutProps> =
             {...promptTargetAttrs({
               path: "title",
               type: "field",
-              name: "Title",
-              description: "Cover title",
+              name: "Название мероприятия",
+              description: "Точное название мероприятия из брифа",
             })}
           >
-            {slideData?.title || "НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ"}
+            {slideData?.title || "НАЗВАНИЕ МЕРОПРИЯТИЯ"}
           </span>
         </div>
       </div>

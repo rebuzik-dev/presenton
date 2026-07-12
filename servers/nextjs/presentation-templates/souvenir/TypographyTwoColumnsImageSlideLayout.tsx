@@ -15,8 +15,8 @@ const ImageSchema = z.object({
     .string()
     .min(3)
     .max(180)
-    .default("Typography supporting photo")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Типографика на сувенирном изделии, упаковке или сопроводительном носителе из брифа")
+    .meta({ description: "Реалистичный кадр применения шрифта на релевантном носителе без случайной читаемой надписи." }),
 })
 
 const IconSchema = z.object({
@@ -26,30 +26,31 @@ const IconSchema = z.object({
 
 const layoutId = "typography-two-columns-image-slide"
 const layoutName = "Typography Two Columns Image Slide"
-const layoutDescription = "A slide with a header, typography blocks, and a supporting image."
+const layoutDescription =
+  "Типографическая система сувенирной линейки и её применение на изделии, упаковке или сопроводительном носителе."
 
 const Schema = z.object({
-  title: z.string().min(3).max(20).default("ТИПОГРАФИКА").meta({ description: "Header. Max 1 word" }),
-  leftTitle: z.string().min(3).max(20).default("Inter Bold").meta({ description: "Left typography title. Max 2 words" }),
+  title: z.string().min(3).max(20).default("ТИПОГРАФИКА").meta({ description: "Заголовок раздела с типографикой." }),
+  leftTitle: z.string().min(3).max(20).default("Inter Bold").meta({ description: "Название акцентного шрифта из брендбука или выбранного для концепции." }),
   leftBullets: z
-    .array(z.string().min(3).max(28).meta({ description: "Bullet line. Max 3 words" }))
+    .array(z.string().min(3).max(28).meta({ description: "Роль акцентного шрифта на изделиях и упаковке." }))
     .min(2)
     .max(4)
     .default(["Заголовки", "Короткие акценты", "Пункты перечней"])
-    .meta({ description: "Left bullet list. Max 4 items" }),
-  leftSample: z.string().min(3).max(20).default("Aa Bb Cc 123").meta({ description: "Left sample text. Max 4 words" }),
-  rightTitle: z.string().min(3).max(20).default("Inter Regular").meta({ description: "Right typography title. Max 2 words" }),
+    .meta({ description: "От двух до четырёх способов применения акцентного начертания." }),
+  leftSample: z.string().min(3).max(20).default("Aa Bb Cc 123").meta({ description: "Короткий образец акцентного начертания." }),
+  rightTitle: z.string().min(3).max(20).default("Inter Regular").meta({ description: "Название основного шрифта из брендбука или выбранного для концепции." }),
   rightBody: z
     .string()
     .min(20)
     .max(200)
     .default("Основное повествование. Нейтральный текст, пригодный как для презентаций, так и для лендингов.")
-    .meta({ description: "Right paragraph. Max 26 words" }),
-  rightSample: z.string().min(3).max(30).default("Aa Bb Cc 123 AbCbZzAa").meta({ description: "Right sample text. Max 5 words" }),
+    .meta({ description: "Роль основного шрифта в маркировке, описаниях, упаковке и сопроводительных материалах." }),
+  rightSample: z.string().min(3).max(30).default("Aa Bb Cc 123 AbCbZzAa").meta({ description: "Короткий образец основного начертания." }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Elegant table decor photo",
-  }).meta({ description: "Right image. Max 30 words" }),
+    __image_prompt__: "Крупный кадр сувенирного изделия, упаковки или карточки с аккуратным применением выбранной типографики",
+  }).meta({ description: "Носитель типографики должен относиться к сувенирной линейке, а не к декору или сервировке." }),
 })
 
 type TypographyTwoColumnsImageSlideData = z.infer<typeof Schema>

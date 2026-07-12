@@ -8,38 +8,43 @@ const ImageSchema = z.object({
     .string()
     .url()
     .default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"),
-  __image_prompt__: z.string().min(3).max(220).default("Design element image"),
+  __image_prompt__: z.string().min(3).max(220).default("Визуальный элемент сувенирной линейки").meta({
+    description: "Кадр изделия, материала или коллекции на основе брифа; без случайного текста и неподтверждённого брендинга.",
+  }),
 });
 
 const layoutId = "design-elements-text-image-swatches-slide";
 const layoutName = "Design Elements Text + Stacked Images Slide";
-const layoutDescription = "Left 2 text blocks + right 2 stacked images (no overflow).";
+const layoutDescription =
+  "Материалы, отделка и брендинг сувенирной линейки: два текстовых блока, детальный кадр и общий вид коллекции.";
 
 const Schema = z.object({
-  title: z.string().min(3).max(60).default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"),
+  title: z.string().min(3).max(60).default("МАТЕРИАЛЫ И ОТДЕЛКА").meta({
+    description: "Заголовок раздела о материалах, производстве и визуальных деталях сувениров.",
+  }),
 
   topText: z
     .string()
     .min(10)
     .max(260)
-    .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Top text block" }),
+    .default("Материалы и технологии выбираются по назначению изделий, ожидаемому сроку использования и ограничениям производства.")
+    .meta({ description: "Материалы, технологии, долговечность и тактильные свойства. Не придумывать бюджет или производство." }),
 
   bottomText: z
     .string()
     .min(10)
     .max(260)
-    .default("Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов")
-    .meta({ description: "Bottom text block" }),
+    .default("Цвет, печать, гравировка или другая отделка поддерживают общую айдентику и остаются уместными для целевой аудитории.")
+    .meta({ description: "Отделка и брендинг: использовать требования из брифа или предложить уместный способ нанесения как вариант." }),
 
   topImage: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Close-up decor detail (candles, texture, floristics), premium editorial photo",
+    __image_prompt__: "Крупный план материала, фактуры, шва, печати, гравировки или другой отделки сувенирного изделия",
   }),
 
   bottomImage: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Wide main decor scene (overall composition), premium editorial photo",
+    __image_prompt__: "Общий вид сувенирной линейки или набора, показывающий согласованность материалов, цветов и брендинга",
   }),
 });
 
@@ -84,7 +89,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
           className="text-[48px] leading-[54px] font-[900] uppercase"
           style={{ color: titleColor, fontFamily: titleFont }}
         >
-          {slideData?.title || "ОСНОВНЫЕ ЭЛЕМЕНТЫ ДИЗАЙНА"}
+          {slideData?.title || "МАТЕРИАЛЫ И ОТДЕЛКА"}
         </div>
 
         {/* Body занимает оставшуюся высоту и НЕ даёт детям распирать контейнер */}

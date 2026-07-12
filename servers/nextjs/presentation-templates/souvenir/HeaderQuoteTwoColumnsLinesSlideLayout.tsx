@@ -26,36 +26,37 @@ const IconSchema = z.object({
 
 const layoutId = "header-quote-two-columns-lines-slide"
 const layoutName = "Header Quote Two Columns Lines Slide"
-const layoutDescription = "A slide with a header, a quote card, and two text columns with divider lines."
+const layoutDescription =
+  "Концепция сувенирной линейки: основная идея, задача для аудитории и ключевые принципы выбора изделий на основе брифа."
 
 const Schema = z.object({
-  title: z.string().min(5).max(40).default("КОНЦЕПЦИЯ МЕРОПРИЯТИЯ").meta({ description: "Header. Max 2 words" }),
+  title: z.string().min(5).max(40).default("КОНЦЕПЦИЯ ЛИНЕЙКИ").meta({ description: "Заголовок раздела о сувенирной концепции." }),
   quote: z
     .string()
     .min(20)
     .max(220)
     .default(
-      "Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта"
+      "Сувенирная линейка продолжает идею мероприятия и превращает её в полезные, уместные для аудитории предметы."
     )
-    .meta({ description: "Quote text. Max 28 words" }),
-  leftTitle: z.string().min(3).max(20).default("Миссия").meta({ description: "Left column title. Max 1 word" }),
-  rightTitle: z.string().min(3).max(30).default("Ключевые смыслы").meta({ description: "Right column title. Max 2 words" }),
+    .meta({ description: "Одна ёмкая идея линейки: какую связь с мероприятием и ценность для получателя она создаёт." }),
+  leftTitle: z.string().min(3).max(20).default("Задача").meta({ description: "Заголовок блока с назначением сувениров." }),
+  rightTitle: z.string().min(3).max(30).default("Принципы выбора").meta({ description: "Заголовок блока с критериями линейки." }),
   leftBody: z
     .string()
     .min(20)
     .max(240)
     .default(
-      "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"
+      "Сформировать цельный набор для целевой аудитории, учитывая повод, способ вручения, практическую ценность и ограничения брифа."
     )
-    .meta({ description: "Left body. Max 28 words" }),
+    .meta({ description: "Назначение линейки для конкретной аудитории. Не придумывать тираж, бюджет и способ вручения." }),
   rightBody: z
     .string()
     .min(20)
     .max(240)
     .default(
-      "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"
+      "Изделия объединяются общей визуальной системой, материалами и логикой применения; конкретные позиции берутся из брифа или предлагаются как варианты."
     )
-    .meta({ description: "Right body. Max 28 words" }),
+    .meta({ description: "Критерии выбора изделий: полезность, уместность, долговечность, производство и брендинг в рамках брифа." }),
 })
 
 type HeaderQuoteTwoColumnsLinesSlideData = z.infer<typeof Schema>
@@ -88,7 +89,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
               description: "Concept header",
             })}
           >
-            {slideData?.title || "КОНЦЕПЦИЯ МЕРОПРИЯТИЯ"}
+            {slideData?.title || "КОНЦЕПЦИЯ ЛИНЕЙКИ"}
           </span>
         </div>
 
@@ -104,7 +105,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
               })}
             >
               {slideData?.quote ||
-                "Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта Ключевая идея, суть концепта"}
+                "Сувенирная линейка продолжает идею мероприятия и превращает её в полезные, уместные для аудитории предметы."}
             </span>
           </div>
         </div>
@@ -120,7 +121,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                   description: "Left column title",
                 })}
               >
-                {slideData?.leftTitle || "Миссия"}
+                {slideData?.leftTitle || "Задача"}
               </span>
             </div>
             <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60" style={{ backgroundColor: accentColor }}></div>
@@ -134,7 +135,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                 })}
               >
                 {slideData?.leftBody ||
-                  "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+                  "Сформировать цельный набор для целевой аудитории, учитывая повод, способ вручения, практическую ценность и ограничения брифа."}
               </span>
             </div>
           </div>
@@ -149,7 +150,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                   description: "Right column title",
                 })}
               >
-                {slideData?.rightTitle || "Ключевые смыслы"}
+                {slideData?.rightTitle || "Принципы выбора"}
               </span>
             </div>
             <div className="mt-6 h-[2px] w-full bg-[var(--style-accent)]/60" style={{ backgroundColor: accentColor }}></div>
@@ -163,7 +164,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsLinesSlideLayoutProps> =
                 })}
               >
                 {slideData?.rightBody ||
-                  "Описание основных элементов Описание основных элементов Описание основных элементов Описание основных элементов"}
+                  "Изделия объединяются общей визуальной системой, материалами и логикой применения; конкретные позиции берутся из брифа или предлагаются как варианты."}
               </span>
             </div>
           </div>

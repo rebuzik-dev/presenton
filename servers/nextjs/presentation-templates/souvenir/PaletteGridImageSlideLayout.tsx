@@ -15,8 +15,8 @@ const ImageSchema = z.object({
     .string()
     .min(3)
     .max(180)
-    .default("Supporting photo")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Сувенирная продукция или материалы, показывающие применение палитры из брифа")
+    .meta({ description: "Кадр применения палитры на изделиях, материалах или упаковке без случайного текста и логотипов." }),
 })
 
 const IconSchema = z.object({
@@ -26,47 +26,48 @@ const IconSchema = z.object({
 
 const layoutId = "palette-grid-image-slide"
 const layoutName = "Palette Grid Image Slide"
-const layoutDescription = "A slide with a header, a palette grid of color cards, and a large image."
+const layoutDescription =
+  "Палитра сувенирной линейки: фирменные цвета из брифа либо обоснованное сочетание под аудиторию, материалы и назначение изделий."
 
 const ColorCardSchema = z.object({
-  hex: z.string().min(4).max(9).default("#DEDDDD").meta({ description: "Hex code. Max 1 word" }),
-  name: z.string().min(3).max(28).default("Название цвета").meta({ description: "Color name. Max 3 words" }),
+  hex: z.string().min(4).max(9).default("#DEDDDD").meta({ description: "HEX из брендбука или предложенный цвет, если палитра не задана." }),
+  name: z.string().min(3).max(28).default("Роль цвета").meta({ description: "Короткая роль цвета в изделии, материале, печати или упаковке." }),
 })
 
 const Schema = z.object({
-  title: z.string().min(5).max(30).default("ЦВЕТОВАЯ ПАЛИТРА").meta({ description: "Main header" }),
-  leftHeader: z.string().min(3).max(30).default("Основные цвета").meta({ description: "Left column header (Primary colors)" }),
-  rightHeader: z.string().min(3).max(40).default("Дополнительные цвета").meta({ description: "Right column header (Secondary colors)" }),
+  title: z.string().min(5).max(30).default("ЦВЕТОВАЯ ПАЛИТРА").meta({ description: "Универсальный заголовок раздела с палитрой." }),
+  leftHeader: z.string().min(3).max(30).default("Основные цвета").meta({ description: "Заголовок группы основных цветов." }),
+  rightHeader: z.string().min(3).max(40).default("Дополнительные цвета").meta({ description: "Заголовок группы дополнительных цветов." }),
   primary: z
     .array(ColorCardSchema)
     .min(3)
     .max(3)
     .default([
-      { hex: "#DEDDDD", name: "Название цвета" },
-      { hex: "#C2BAC2", name: "Название цвета" },
-      { hex: "#999DA9", name: "Название цвета" },
+      { hex: "#F1EFEA", name: "Светлая база" },
+      { hex: "#30383D", name: "Основной контраст" },
+      { hex: "#B58A56", name: "Фирменный акцент" },
     ])
     .meta({
       description:
-        "LEFT column. Primary colors only. Order is important: render top-to-bottom as given (most important first). Max 3 items.",
+        "Три основных цвета: сначала точные брендовые значения из брифа, иначе обоснованная палитра для сувенирной линейки.",
     }),
   secondary: z
     .array(ColorCardSchema)
     .min(3)
     .max(3)
     .default([
-      { hex: "#81919E", name: "Название цвета" },
-      { hex: "#5D7079", name: "Название цвета" },
-      { hex: "#1A1C23", name: "Название цвета" },
+      { hex: "#D7C9B8", name: "Материальный тон" },
+      { hex: "#6D7A70", name: "Поддерживающий цвет" },
+      { hex: "#FFFFFF", name: "Нейтральный фон" },
     ])
     .meta({
       description:
-        "RIGHT column. Secondary colors only. Order is important: render top-to-bottom as given. Max 3 items.",
+        "Три дополнительных цвета, которые поддерживают материалы, отделку, печать и упаковку; не дублировать основные.",
     }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Event table setting photo",
-  }).meta({ description: "Right image. Max 30 words" }),
+    __image_prompt__: "Сувенирные изделия, материалы или упаковка из концепции, на которых заметно применение выбранной палитры",
+  }).meta({ description: "Изображение демонстрирует палитру на сувенирной продукции, а не на декоре или сервировке." }),
 })
 
 type PaletteGridImageSlideData = z.infer<typeof Schema>

@@ -15,8 +15,8 @@ const ImageSchema = z.object({
     .string()
     .min(3)
     .max(180)
-    .default("Proposal image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Кадр сувенирной линейки на основе брифа")
+    .meta({ description: "Самостоятельный кадр линейки, детали или сценария вручения; без случайного текста и логотипов." }),
 })
 
 const IconSchema = z.object({
@@ -27,46 +27,46 @@ const IconSchema = z.object({
 const layoutId = "proposals-collage-left-right-stack-slide"
 const layoutName = "Proposals Collage Left Right Stack Slide"
 const layoutDescription =
-  "A slide with a header, a tag row, and a collage with a large left image and two stacked right images."
+  "Итоговый коллаж сувенирной концепции: общий вид линейки, деталь изделия и сценарий упаковки, использования или вручения."
 
 const LabeledImageSchema = z.object({
-  label: z.string().min(2).max(22).default("Брошь").meta({ description: "Image label. Max 2 words" }),
+  label: z.string().min(2).max(22).default("Линейка").meta({ description: "Короткая роль кадра или название позиции из брифа." }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Product photo",
-  }).meta({ description: "Image content. Max 30 words" }),
+    __image_prompt__: "Кадр сувенирной концепции, связанный с подписью и требованиями брифа",
+  }).meta({ description: "Изображение для указанной роли; три кадра должны отличаться масштабом и содержанием." }),
 })
 
 const Schema = z.object({
   titlePrefix: z.string().min(10).max(30).default("ПРЕДЛОЖЕНИЯ ПО").meta({ description: "Header prefix. Max 2 words" }),
-  blockName: z.string().min(3).max(20).default("НАЗВАНИЕ БЛОКА").meta({ description: "Block name. Max 2 words" }),
+  blockName: z.string().min(3).max(20).default("ЛИНЕЙКЕ").meta({ description: "Короткое название категории или набора из брифа." }),
   tags: z
     .array(z.string().min(2).max(22).meta({ description: "Tag text. Max 2 words" }))
     .min(2)
     .max(3)
-    .default(["Брошь", "Набор косметики", "Пригласительное"])
-    .meta({ description: "Tag row items. Max 3 items" }),
+    .default(["Линейка", "Деталь", "Вручение"])
+    .meta({ description: "Три роли кадров: общий вид, значимая деталь и контекст использования или вручения." }),
   left: LabeledImageSchema.default({
-    label: "Брошь",
+    label: "Линейка",
     image: {
       __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-      __image_prompt__: "Brooch close-up",
+      __image_prompt__: "Общий вид согласованной сувенирной линейки или набора для аудитории из брифа",
     },
-  }).meta({ description: "Left large image. Max 30 words" }),
+  }).meta({ description: "Крупный левый кадр: общий вид всей линейки или ключевого набора." }),
   rightTop: LabeledImageSchema.default({
-    label: "Набор косметики",
+    label: "Деталь",
     image: {
       __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-      __image_prompt__: "Cosmetic set close-up",
+      __image_prompt__: "Крупный план материала, отделки, печати или функциональной детали одного сувенирного изделия",
     },
-  }).meta({ description: "Right top image. Max 30 words" }),
+  }).meta({ description: "Верхний правый кадр: отличимая материальная или производственная деталь." }),
   rightBottom: LabeledImageSchema.default({
-    label: "Пригласительное",
+    label: "Вручение",
     image: {
       __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-      __image_prompt__: "Invitation close-up",
+      __image_prompt__: "Упаковка, комплектование, использование или вручение сувенира в естественном контексте мероприятия",
     },
-  }).meta({ description: "Right bottom image. Max 30 words" }),
+  }).meta({ description: "Нижний правый кадр: упаковка или взаимодействие аудитории с сувениром." }),
 })
 
 type ProposalsCollageLeftRightStackSlideData = z.infer<typeof Schema>
@@ -105,7 +105,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
               description: "Header block name",
             })}
           >
-            {slideData?.blockName || "НАЗВАНИЕ БЛОКА"}
+            {slideData?.blockName || "ЛИНЕЙКЕ"}
           </span>
         </div>
 
@@ -134,7 +134,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                   description: "Left collage label",
                 })}
               >
-                {slideData?.left?.label || "Брошь"}
+                {slideData?.left?.label || "Линейка"}
               </span>
             </div>
           </div>
@@ -164,7 +164,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                     description: "Right top collage label",
                   })}
                 >
-                  {slideData?.rightTop?.label || "Набор косметики"}
+                  {slideData?.rightTop?.label || "Деталь"}
                 </span>
               </div>
             </div>
@@ -193,7 +193,7 @@ const dynamicSlideLayout: React.FC<ProposalsCollageLeftRightStackSlideLayoutProp
                     description: "Right bottom collage label",
                   })}
                 >
-                  {slideData?.rightBottom?.label || "Пригласительное"}
+                  {slideData?.rightBottom?.label || "Вручение"}
                 </span>
               </div>
             </div>
