@@ -4,14 +4,14 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(5).max(220).meta({ description: "Image prompt" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
+  __image_prompt__: z.string().min(5).max(220).meta({ description: "Самостоятельный кадр вступления по брифу; два слота должны различаться планом и содержанием." }),
 });
 
 const layoutId = "storyboard-frame-description-slide";
 const layoutName = "Storyboard Frame Description Slide";
 const layoutDescription =
-  "Storyboard: left text column + right two images column, with top/bottom grey bars.";
+  "Начало раскадровки: хук, описание вступительных кадров, возможный текст озвучки и два разных плана одной сцены.";
 
 const Schema = z.object({
   title: z
@@ -19,59 +19,59 @@ const Schema = z.object({
     .min(3)
     .max(40)
     .default("РАСКАДРОВКА")
-    .meta({ description: "Main slide title" }),
+    .meta({ description: "Заголовок раздела с раскадровкой." }),
 
   phase: z
     .string()
     .min(2)
     .max(30)
     .default("Хук")
-    .meta({ description: "Video phase title" }),
+    .meta({ description: "Название вступительного драматургического этапа." }),
 
   timing: z
     .string()
     .min(5)
     .max(20)
-    .default("0:00–0:25")
-    .meta({ description: "Timing range" }),
+    .default("Без таймкода")
+    .meta({ description: "Точный интервал только при наличии длительности или тайминга в брифе; иначе написать «Без таймкода»." }),
 
   framesLabel: z
     .string()
     .min(2)
     .max(30)
     .default("Кадры:")
-    .meta({ description: "Label for visuals description" }),
+    .meta({ description: "Короткая подпись перед описанием визуального ряда." }),
 
   visualDescription: z
     .string()
     .min(10)
     .max(420)
-    .default("Темный экран. Строка кода оживает и превращается в лицо разработчика.")
-    .meta({ description: "Description of the frame" }),
+    .default("Первый выразительный образ быстро вводит зрителя в тему, контекст и эмоциональный тон проекта.")
+    .meta({ description: "Конкретное описание вступительных кадров по брифу. Творческий хук допустим, фактические детали не придумывать." }),
 
   voiceoverLabel: z
     .string()
     .min(2)
     .max(40)
     .default("Текст для озвучки:")
-    .meta({ description: "Label for voiceover block" }),
+    .meta({ description: "Подпись перед текстом озвучки или экранным сообщением." }),
 
   voiceover: z
     .string()
     .min(10)
     .max(520)
-    .default("«Лучший код — тот, который не видно. Но люди, которые его пишут, заслуживают быть в центре внимания.»")
-    .meta({ description: "Narrator text" }),
+    .default("Короткая фраза задаёт тему и обещание ролика, не повторяя неподтверждённые факты.")
+    .meta({ description: "Текст озвучки или экранное сообщение в тональности проекта. Не приписывать бренду утверждения, которых нет в брифе." }),
 
   imageLeft: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Binary code pattern on dark background",
-  }).meta({ description: "Right column image 1" }),
+    __image_prompt__: "Общий или установочный план вступительной сцены, раскрывающий контекст проекта из брифа",
+  }).meta({ description: "Первый кадр: общий план, пространство или главный образ вступления." }),
 
   imageRight: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg",
-    __image_prompt__: "Developer portrait with projected light",
-  }).meta({ description: "Right column image 2" }),
+    __image_prompt__: "Деталь, действие или эмоциональная реакция в той же вступительной сцене, отличимая от общего плана",
+  }).meta({ description: "Второй кадр: деталь или действие той же сцены, не дублирующее первый кадр." }),
 });
 
 type StoryboardFrameData = z.infer<typeof Schema>;
@@ -146,7 +146,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                     description: "Storyboard timing range",
                   })}
                 >
-                  {slideData?.timing || "0:00–0:25"}
+                  {slideData?.timing || "Без таймкода"}
                 </span>)
               </div>
             </div>
@@ -176,7 +176,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                     })}
                   >
                     {slideData?.visualDescription ||
-                      "Темный экран. Строка кода оживает и превращается в лицо разработчика."}
+                      "Первый выразительный образ быстро вводит зрителя в тему, контекст и эмоциональный тон проекта."}
                   </span>
                 </div>
               </div>
@@ -205,7 +205,7 @@ const dynamicSlideLayout: React.FC<StoryboardFrameProps> = ({ data: slideData })
                     })}
                   >
                     {slideData?.voiceover ||
-                      "«Лучший код — тот, который не видно. Но люди, которые его пишут, заслуживают быть в центре внимания.»"}
+                      "Короткая фраза задаёт тему и обещание ролика, не повторяя неподтверждённые факты."}
                   </span>
                 </div>
               </div>

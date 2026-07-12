@@ -5,7 +5,8 @@ import { promptTargetAttrs } from "@/app/(presentation-generator)/components/Pro
 
 const layoutId = "concept-mission-mood-slide";
 const layoutName = "Concept Mission Mood Slide";
-const layoutDescription = "A concept slide with a hero quote card and two columns (mission + mood).";
+const layoutDescription =
+  "Концепция видеоролика: основная идея, коммуникационная задача и тональность, выведенные из целей, аудитории и контекста брифа.";
 
 /**
  * В эталоне (изобр.1):
@@ -14,7 +15,7 @@ const layoutDescription = "A concept slide with a hero quote card and two column
  */
 const Schema = z.object({
   title: z.string().min(5).max(40).default("КОНЦЕПЦИЯ ВИДЕО").meta({
-    description: "Main section title. Max 3 words",
+    description: "Заголовок раздела о концепции видео.",
   }),
 
   // Верхняя широкая плашка (цитата/концепт)
@@ -23,33 +24,33 @@ const Schema = z.object({
     .min(40)
     .max(700)
     .default(
-      "В основе — идея «точки сборки»: конкурс объединяет разрозненные таланты в единое профессиональное сообщество. Через живые интервью, динамичный монтаж и контраст цифровой эстетики с человеческими эмоциями ролик показывает, что за каждой строкой кода стоит человек — с амбициями, вызовами и стремлением к развитию."
+      "Видеоролик раскрывает главную идею проекта через понятную драматургию, выразительные образы и эмоциональный путь, соответствующий задаче и аудитории из брифа."
     )
-    .meta({ description: "Main concept quote in the teal card." }),
+    .meta({ description: "Одна ёмкая формулировка творческой идеи. Не придумывать отрасль, героев, событие или визуальный приём без основания в брифе." }),
 
   missionTitle: z.string().min(2).max(30).default("Миссия").meta({
-    description: "Mission block title. Max 2 words",
+    description: "Заголовок блока с коммуникационной задачей ролика.",
   }),
   missionContent: z
     .string()
     .min(20)
     .max(400)
     .default(
-      "Создать устойчивую среду для роста и признания IT-специалистов, объединить экспертов, разработчиков, студентов и компании в точке сборки профессионального сообщества."
+      "Донести ключевое сообщение до целевой аудитории и вызвать требуемое действие или впечатление, сохраняя точность фактов и интонацию проекта."
     )
-    .meta({ description: "Mission description." }),
+    .meta({ description: "Коммуникационная задача и ожидаемый эффект ролика только из целей брифа." }),
 
   moodTitle: z.string().min(2).max(30).default("Настроение видео").meta({
-    description: "Mood block title. Max 3 words",
+    description: "Заголовок блока с настроением и визуальной тональностью.",
   }),
   moodContent: z
     .string()
     .min(20)
     .max(400)
     .default(
-      "Технологичная динамика, цифровая эстетика, LED-экраны, световые инсталляции, строгая геометрия. Атмосфера интеллектуального вызова и профессионального драйва"
+      "Темп, свет, цвет, камера, звук и монтаж формируют настроение, которое соответствует формату, аудитории и эмоциональной задаче проекта."
     )
-    .meta({ description: "Mood description." }),
+    .meta({ description: "Тональность и визуально-звуковые ориентиры из брифа либо обоснованные творческие предложения." }),
 });
 
 type ConceptMissionMoodData = z.infer<typeof Schema>;
@@ -122,7 +123,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
             style={{ color: heroText, fontFamily: bodyFont }}
           >
             {slideData?.heroQuote ||
-              "В основе — идея «точки сборки»: конкурс объединяет разрозненные таланты..."}
+              "Видеоролик раскрывает главную идею проекта через понятную драматургию, выразительные образы и эмоциональный путь."}
           </div>
         </div>
 
@@ -156,7 +157,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
-              {slideData?.missionContent || "Создать устойчивую среду..."}
+              {slideData?.missionContent || "Донести ключевое сообщение до целевой аудитории и вызвать требуемое впечатление или действие."}
             </div>
           </section>
 
@@ -188,7 +189,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
             >
-              {slideData?.moodContent || "Технологичная динамика..."}
+              {slideData?.moodContent || "Темп, свет, цвет, камера, звук и монтаж формируют настроение, соответствующее задаче проекта."}
             </div>
           </section>
         </div>

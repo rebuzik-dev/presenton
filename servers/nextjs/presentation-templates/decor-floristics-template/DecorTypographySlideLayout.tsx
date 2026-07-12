@@ -6,17 +6,17 @@ import { promptTargetAttrs } from "@/app/(presentation-generator)/components/Pro
 const layoutId = "typography-spec-slide";
 const layoutName = "Typography Spec Slide";
 const layoutDescription =
-  "Typography slide with a static type specimen and a brief-driven right image showing a relevant signage, navigation, or print carrier.";
+  "Типографика оформления и её применение на релевантном носителе: навигации, меню, приглашении, постере или другом объекте из брифа.";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Right-side image URL" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL правого изображения." }),
   __image_prompt__: z
     .string()
     .min(10)
     .max(260)
     .meta({
       description:
-        "Prompt for a typography carrier, such as signage, navigation, menu, invitation, or poster. Use brief-derived style, palette, materials, and mood only.",
+        "Носитель типографики: вывеска, навигация, меню, приглашение или постер. Использовать только стиль, палитру, материалы и настроение из брифа.",
     }),
 });
 
@@ -189,7 +189,7 @@ const dynamicSlideLayout: React.FC<TypographySpecProps> = ({ data: slideData }) 
                     path: "rightImage.__image_prompt__",
                     type: "image",
                     name: "Right image prompt",
-                    description: "Typography carrier image prompt",
+                    description: "Изображение носителя типографики",
                   })}
                   src={rightImg}
                   alt={slideData?.rightImage?.__image_prompt__ || "Poster photo"}

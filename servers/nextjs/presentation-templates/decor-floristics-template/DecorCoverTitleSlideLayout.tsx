@@ -9,7 +9,7 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const layoutId = "title-event-header-slide"
 const layoutName = "Title Event Header Slide"
-const layoutDescription = "A title slide for a decor or floristics concept: use the document type and event name from the brief only."
+const layoutDescription = "Обложка концепции декора или флористики: тип документа и точное название мероприятия только из брифа."
 
 const Schema = z.object({
   documentType: z
@@ -19,7 +19,7 @@ const Schema = z.object({
     .default("Концепция оформления")
     .meta({
       description:
-        "Document type from the brief or context, such as decor concept, floristics concept, or event styling presentation. Do not add a date, theme, venue, or format unless stated in the brief.",
+        "Тип документа из брифа или контекста: концепция декора, флористики или оформления. Не добавлять дату, тему, площадку и формат без основания.",
     }),
   eventName: z
     .string()
@@ -28,7 +28,7 @@ const Schema = z.object({
     .default("НАЗВАНИЕ МЕРОПРИЯТИЯ")
     .meta({
       description:
-        "Main event name exactly from the brief. Keep it concise and do not invent occasion, audience, brand, or location details.",
+        "Название мероприятия точно из брифа. Не придумывать повод, аудиторию, бренд, место или дату.",
     }),
 })
 
@@ -74,7 +74,7 @@ const dynamicSlideLayout: React.FC<TitleEventHeaderLayoutProps> = ({ data: slide
               path: "documentType",
               type: "field",
               name: "Document type",
-              description: "Decor concept document type",
+              description: "Тип концепции оформления",
             })}
             className="text-[24px] leading-[32px] font-[500] uppercase tracking-[0.02em]"
             style={{ color: kickerColor, fontFamily: kickerFont }}
@@ -91,7 +91,7 @@ const dynamicSlideLayout: React.FC<TitleEventHeaderLayoutProps> = ({ data: slide
                 path: "eventName",
                 type: "field",
                 name: "Event name",
-                description: "Main event name",
+                description: "Точное название мероприятия из брифа",
               })}
               className="max-w-[980px] text-[64px] leading-[68px] font-[800] uppercase tracking-[0.4px] text-left"
               style={{ color: titleColor, fontFamily: titleFont }}

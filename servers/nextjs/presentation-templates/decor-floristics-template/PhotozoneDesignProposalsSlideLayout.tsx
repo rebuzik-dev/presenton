@@ -4,17 +4,17 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Image URL" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
   __image_prompt__: z.string().min(10).max(360).meta({
     description:
-      "Photozone visual prompt based on the brief. The first image should be a wide overall view; the second a related vertical/detail angle. Do not invent fixed flowers, symbols, people, logos, text, colors, or constructions.",
+      "Визуал фотозоны по брифу: первый кадр широкий, второй — связанный вертикальный ракурс или деталь. Не придумывать цветы, символы, людей, логотипы, текст, цвета и конструкции.",
   }),
 });
 
 const layoutId = "photozone-proposals-slide";
 const layoutName = "Photozone Design Proposals Slide";
 const layoutDescription =
-  "Brief-driven photozone proposal slide with two related images: a wide overall view and a vertical or detail angle using only supported theme, palette, materials, floristics, venue, and mood.";
+  "Предложение по оформлению фотозоны: широкий общий вид и связанный вертикальный ракурс или деталь по данным брифа."
 
 const Schema = z.object({
   title: z
@@ -24,7 +24,7 @@ const Schema = z.object({
     .default("ПРЕДЛОЖЕНИЯ ПО ОФОРМЛЕНИЮ ФОТОЗОНЫ")
     .meta({
       description:
-        "Main title for photozone design proposals. Keep universal unless the brief gives a specific zone name or format.",
+        "Заголовок предложения по фотозоне. Уточнять название зоны и формат только по брифу.",
     }),
 
   leftLabel: z
@@ -34,7 +34,7 @@ const Schema = z.object({
     .default("Фотозона")
     .meta({
       description:
-        "Overlay label for the left photozone image, based on the brief if a more specific label is provided.",
+        "Короткая подпись на левом изображении; использовать более точное название только из брифа.",
     }),
 
   visuals: z
@@ -55,7 +55,7 @@ const Schema = z.object({
     ])
     .meta({
       description:
-        "Two related photozone proposal visuals. visuals[0] is the wide overall view; visuals[1] is a vertical/detail view of the same concept. Keep both consistent with the brief.",
+        "Два связанных кадра одной концепции: широкий вид фотозоны и вертикальный ракурс или деталь."
     }),
 });
 
@@ -89,7 +89,7 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
             path: "title",
             type: "field",
             name: "Title",
-            description: "Photozone proposals title",
+            description: "Заголовок предложения по оформлению фотозоны",
           })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -107,7 +107,7 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
                   path: `visuals[${0}].__image_prompt__`,
                   type: "image",
                   name: "Photozone image 1",
-                  description: "Wide photozone visual prompt",
+                  description: "Широкий общий вид фотозоны",
                 })}
                 src={imgLeft}
                 alt={visuals[0]?.__image_prompt__ || "Photozone wide"}
@@ -123,7 +123,7 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
                 path: "leftLabel",
                 type: "field",
                 name: "Left label",
-                description: "Overlay label for the left photozone image",
+                description: "Короткая подпись фотозоны",
               })}
               className="absolute top-[14px] left-[16px] text-[18px] leading-[22px] font-[600]"
               style={{ color: labelColor, fontFamily: labelFont }}
@@ -140,7 +140,7 @@ const dynamicSlideLayout: React.FC<PhotozoneSlideProps> = ({ data: slideData }) 
                   path: `visuals[${1}].__image_prompt__`,
                   type: "image",
                   name: "Photozone image 2",
-                  description: "Vertical photozone visual prompt",
+                  description: "Вертикальный ракурс или деталь фотозоны",
                 })}
                 src={imgRight}
                 alt={visuals[1]?.__image_prompt__ || "Photozone vertical"}

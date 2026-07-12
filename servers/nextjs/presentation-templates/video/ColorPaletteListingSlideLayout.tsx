@@ -15,25 +15,26 @@ const ImageSchema = z.object({
     .string()
     .min(3)
     .max(180)
-    .default("Photo for slide")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Ключевой кадр видеоролика, демонстрирующий выбранную палитру и тональность")
+    .meta({ description: "Поддерживающий кадр видеоконцепции без случайного текста, логотипов и неподтверждённых объектов." }),
 })
 
 const layoutId = "color-palette-listing-slide"
 const layoutName = "Color Palette Listing Slide"
-const layoutDescription = "A slide with grouped color cards and a supporting image."
+const layoutDescription =
+  "Палитра видеоролика: использовать брендовые цвета из брифа, а при их отсутствии предложить сочетание под жанр, эмоцию и условия съёмки."
 
 const ColorItemSchema = z.object({
   hex: z
     .string()
     .min(4)
     .max(9)
-    .meta({ description: "Hex code string" }),
+    .meta({ description: "HEX из брендбука или предложенный цвет, если палитра не задана." }),
   label: z
     .string()
     .min(2)
     .max(70)
-    .meta({ description: "Color label text" }),
+    .meta({ description: "Роль цвета в кадре: фон, свет, костюм, графика, объект или акцент." }),
 })
 
 const Schema = z.object({
@@ -42,19 +43,19 @@ const Schema = z.object({
     .min(5)
     .max(40)
     .default("ЦВЕТОВАЯ ПАЛИТРА")
-    .meta({ description: "Main header" }),
+    .meta({ description: "Универсальный заголовок раздела с палитрой." }),
   primaryTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Основные цвета")
-    .meta({ description: "Left column header (Primary colors)" }),
+    .meta({ description: "Заголовок группы основных цветов." }),
   secondaryTitle: z
     .string()
     .min(3)
     .max(40)
     .default("Дополнительные цвета")
-    .meta({ description: "Right column header (Secondary colors)" }),
+    .meta({ description: "Заголовок группы дополнительных цветов." }),
   primaryColors: z
     .array(ColorItemSchema)
     .min(1)
@@ -66,7 +67,7 @@ const Schema = z.object({
     ])
     .meta({
       description:
-        "LEFT column. Primary colors only. Order is important: render top-to-bottom as given (most important first). Max 3 items.",
+        "До трёх основных цветов: сначала значения из брендбука, иначе обоснованная палитра под концепцию ролика.",
     }),
   secondaryColors: z
     .array(ColorItemSchema)
@@ -79,12 +80,12 @@ const Schema = z.object({
     ])
     .meta({
       description:
-        "RIGHT column. Secondary colors only. Order is important: render top-to-bottom as given. Max 3 items.",
+        "До трёх дополнительных цветов для света, графики и акцентов; не дублировать основную группу.",
     }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Video moodboard photo in neutral palette",
-  }).meta({ description: "Supporting image. Max 30 words" }),
+    __image_prompt__: "Ключевой кадр видеоролика в контексте проекта, показывающий применение выбранной палитры, света и настроения",
+  }).meta({ description: "Кадр демонстрирует палитру в сцене, а не повторяет список HEX." }),
 })
 
 type ColorPaletteListingData = z.infer<typeof Schema>

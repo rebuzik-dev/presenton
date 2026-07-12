@@ -4,35 +4,35 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(5).max(220).meta({ description: "Image prompt text" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
+  __image_prompt__: z.string().min(5).max(220).meta({ description: "Один кадр развития истории; соседний слот должен показывать другой план, действие или реакцию." }),
 });
 
 const layoutId = "storyboard-split-visual-slide";
 const layoutName = "Storyboard Split Visual Slide";
 const layoutDescription =
-  "Storyboard slide: left text column + right two images, with overlay metric badge.";
+  "Развитие видеосюжета: следующий драматургический этап, визуальный ряд, графика и два различающихся кадра с опциональным смысловым бейджем.";
 
 const Schema = z.object({
-  title: z.string().min(3).max(40).default("РАСКАДРОВКА").meta({ description: "Main slide title" }),
+  title: z.string().min(3).max(40).default("РАСКАДРОВКА").meta({ description: "Заголовок раздела с раскадровкой." }),
 
-  phase: z.string().min(2).max(60).default("Масштаб и отбор").meta({ description: "Phase title" }),
-  timing: z.string().min(5).max(20).default("1:20–2:40").meta({ description: "Timing range" }),
+  phase: z.string().min(2).max(60).default("Развитие истории").meta({ description: "Название этапа, следующего за хуком, в драматургии конкретного ролика." }),
+  timing: z.string().min(5).max(20).default("Без таймкода").meta({ description: "Точный интервал только из длительности или сценария брифа; иначе «Без таймкода»." }),
 
   // Цельные блоки, без принудительных переносов
   framesText: z
     .string()
     .min(5)
     .max(320)
-    .default("Кадры: – заполнение заявок, онлайн-интервью.")
-    .meta({ description: "Frames text block (single block, auto-wrap)" }),
+    .default("Кадры: действие развивается, раскрывая героя, продукт, место или процесс, заданный брифом.")
+    .meta({ description: "Описание последовательности кадров этого этапа. Творческие переходы допустимы, факты и участники — только из брифа." }),
 
   graphicsTextBlock: z
     .string()
     .min(5)
     .max(320)
-    .default("Графика: – 500+ заявок – 16.03–01.04 – конкурсный отбор")
-    .meta({ description: "Graphics text block (single block, auto-wrap)" }),
+    .default("Графика: титры, факты или визуальные акценты поддерживают развитие сюжета.")
+    .meta({ description: "Экранная графика и факты. Даты, числа, названия и метрики использовать только при наличии в брифе." }),
 
   visuals: z
     .array(ImageSchema)
@@ -41,16 +41,16 @@ const Schema = z.object({
     .default([
       {
         __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-        __image_prompt__: "Hands typing on a keyboard with digital glow",
+        __image_prompt__: "Основное действие этапа развития истории в контексте проекта и среды из брифа",
       },
       {
         __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-        __image_prompt__: "Young IT specialists in a training lab",
+        __image_prompt__: "Деталь, альтернативный ракурс или эмоциональная реакция, дополняющая основное действие этого этапа",
       },
     ])
-    .meta({ description: "Two visual storyboard frames" }),
+    .meta({ description: "Ровно два связанных, но визуально разных кадра одного этапа: действие и дополняющий план." }),
 
-  badgeText: z.string().min(3).max(40).default("500+ заявок").meta({ description: "Overlay badge text" }),
+  badgeText: z.string().min(3).max(40).default("Развитие").meta({ description: "Короткий смысловой акцент; метрику использовать только при её наличии в брифе." }),
 });
 
 type StoryboardSplitData = z.infer<typeof Schema>;
@@ -117,7 +117,7 @@ const dynamicSlideLayout: React.FC<StoryboardSplitProps> = ({ data: slideData })
                   description: "Storyboard phase title",
                 })}
               >
-                {slideData?.phase || "Масштаб и отбор"}
+                {slideData?.phase || "Развитие истории"}
               </span>{" "}
               (<span
                 {...promptTargetAttrs({
@@ -127,7 +127,7 @@ const dynamicSlideLayout: React.FC<StoryboardSplitProps> = ({ data: slideData })
                   description: "Storyboard timing range",
                 })}
               >
-                {slideData?.timing || "1:20–2:40"}
+                {slideData?.timing || "Без таймкода"}
               </span>)
             </div>
 
@@ -143,7 +143,7 @@ const dynamicSlideLayout: React.FC<StoryboardSplitProps> = ({ data: slideData })
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
-                {slideData?.framesText || "Кадры: – заполнение заявок, онлайн-интервью."}
+                {slideData?.framesText || "Кадры: действие развивается, раскрывая героя, продукт, место или процесс, заданный брифом."}
               </div>
 
               <div
@@ -156,7 +156,7 @@ const dynamicSlideLayout: React.FC<StoryboardSplitProps> = ({ data: slideData })
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
-                {slideData?.graphicsTextBlock || "Графика: – 500+ заявок – 16.03–01.04 – конкурсный отбор"}
+                {slideData?.graphicsTextBlock || "Графика: титры, факты или визуальные акценты поддерживают развитие сюжета."}
               </div>
             </div>
 
@@ -218,7 +218,7 @@ const dynamicSlideLayout: React.FC<StoryboardSplitProps> = ({ data: slideData })
                     opacity: 0.9,
                   }}
                 >
-                  {slideData?.badgeText || "500+ заявок"}
+                  {slideData?.badgeText || "Развитие"}
                 </div>
               </div>
             </div>

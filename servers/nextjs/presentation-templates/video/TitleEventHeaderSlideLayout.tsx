@@ -9,21 +9,22 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const layoutId = "title-event-header-slide"
 const layoutName = "Title Event Header Slide"
-const layoutDescription = "A title slide with a document type label and main event heading."
+const layoutDescription =
+  "Обложка видеоконцепции: тип документа и точное название проекта или мероприятия из брифа, без вымышленных дат и форматов."
 
 const Schema = z.object({
   documentType: z
     .string()
     .min(5)
     .max(50)
-    .default("Наименование типа документа")
-    .meta({ description: "Document category. Max 6 words" }),
+    .default("Концепция видеоролика")
+    .meta({ description: "Тип документа или видеоматериала из брифа. До 6 слов." }),
   eventName: z
     .string()
     .min(5)
     .max(100)
-    .default("НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ")
-    .meta({ description: "Main event name. Max 10 words" }),
+    .default("НАЗВАНИЕ ПРОЕКТА")
+    .meta({ description: "Название проекта или мероприятия точно из брифа. Не добавлять дату, площадку или аудиторию." }),
 })
 
 type TitleEventHeaderData = z.infer<typeof Schema>
@@ -67,13 +68,13 @@ const dynamicSlideLayout: React.FC<TitleEventHeaderLayoutProps> = ({ data: slide
             {...promptTargetAttrs({
               path: "documentType",
               type: "field",
-              name: "Document type",
-              description: "Document category label",
+              name: "Тип документа",
+              description: "Категория видеоматериала из брифа",
             })}
             className="text-[24px] leading-[32px] font-[500] uppercase tracking-[0.02em]"
             style={{ color: kickerColor, fontFamily: kickerFont }}
           >
-            {slideData?.documentType || "Наименование типа документа"}
+            {slideData?.documentType || "Концепция видеоролика"}
           </div>
         </div>
 
@@ -84,13 +85,13 @@ const dynamicSlideLayout: React.FC<TitleEventHeaderLayoutProps> = ({ data: slide
               {...promptTargetAttrs({
                 path: "eventName",
                 type: "field",
-                name: "Event name",
-                description: "Main event heading",
+                name: "Название проекта",
+                description: "Точное название из брифа",
               })}
               className="max-w-[980px] text-[64px] leading-[68px] font-[800] uppercase tracking-[0.4px] text-left"
               style={{ color: titleColor, fontFamily: titleFont }}
             >
-              {slideData?.eventName || "НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ"}
+              {slideData?.eventName || "НАЗВАНИЕ ПРОЕКТА"}
             </div>
 
             <div className="mt-12 flex items-center gap-4">

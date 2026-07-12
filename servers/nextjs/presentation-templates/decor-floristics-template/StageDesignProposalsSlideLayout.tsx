@@ -4,17 +4,17 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Image URL" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
   __image_prompt__: z.string().min(10).max(360).meta({
     description:
-      "Stage visual prompt based on the brief. The first image should be a wide view; the second a related vertical alternate angle or detail. Do not invent fixed symbols, people, logos, text, flowers, or constructions.",
+      "Визуал сцены по брифу: первый кадр широкий, второй — связанный вертикальный ракурс или деталь. Не придумывать символы, людей, логотипы, текст, цветы и конструкции.",
   }),
 });
 
 const layoutId = "storyboard-event-point-slide";
 const layoutName = "Stage Design Proposals Slide";
 const layoutDescription =
-  "Brief-driven stage proposal slide with two related images: a wide stage view and a vertical alternate angle or detail using only supported event, venue, palette, material, floral, lighting, and mood inputs.";
+  "Предложение по оформлению сцены: широкий общий вид и связанный вертикальный ракурс или деталь по данным брифа."
 
 const Schema = z.object({
   title: z
@@ -24,7 +24,7 @@ const Schema = z.object({
     .default("ПРЕДЛОЖЕНИЯ ПО ОФОРМЛЕНИЮ СЦЕНЫ")
     .meta({
       description:
-        "Main title for stage design proposals. Keep universal unless the brief names a specific stage zone, format, or event title.",
+        "Заголовок предложения по сцене. Сохранять универсальным, если бриф не задаёт конкретную зону, формат или название.",
     }),
 
   leftLabel: z
@@ -34,7 +34,7 @@ const Schema = z.object({
     .default("Сцена")
     .meta({
       description:
-        "Small overlay label for the left stage image, based on the brief if a more specific zone name is given.",
+        "Короткая подпись на левом изображении; уточнять название зоны только по брифу.",
     }),
 
   visuals: z
@@ -55,7 +55,7 @@ const Schema = z.object({
     ])
     .meta({
       description:
-        "Two related stage proposal visuals. visuals[0] is a wide stage view; visuals[1] is a vertical alternate angle or detail of the same concept. Keep both consistent with the brief.",
+        "Два связанных кадра одной концепции: широкий вид сцены и вертикальный альтернативный ракурс или деталь."
     }),
 });
 
@@ -91,7 +91,7 @@ const dynamicSlideLayout: React.FC<StageProposalsProps> = ({ data: slideData }) 
             path: "title",
             type: "field",
             name: "Title",
-            description: "Stage proposals title",
+            description: "Заголовок предложения по оформлению сцены",
           })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -109,7 +109,7 @@ const dynamicSlideLayout: React.FC<StageProposalsProps> = ({ data: slideData }) 
                   path: `visuals[${0}].__image_prompt__`,
                   type: "image",
                   name: "Stage proposal image 1",
-                  description: "Wide stage visual prompt",
+                  description: "Широкий общий вид сцены",
                 })}
                 src={imgLeft}
                 alt={visuals[0]?.__image_prompt__ || "Stage proposal wide"}
@@ -125,7 +125,7 @@ const dynamicSlideLayout: React.FC<StageProposalsProps> = ({ data: slideData }) 
                 path: "leftLabel",
                 type: "field",
                 name: "Left label",
-                description: "Overlay label for the left stage image",
+                description: "Короткая подпись сцены",
               })}
               className="absolute top-[14px] left-[16px] text-[18px] leading-[22px] font-[600]"
               style={{ color: labelColor, fontFamily: labelFont }}
@@ -142,7 +142,7 @@ const dynamicSlideLayout: React.FC<StageProposalsProps> = ({ data: slideData }) 
                   path: `visuals[${1}].__image_prompt__`,
                   type: "image",
                   name: "Stage proposal image 2",
-                  description: "Vertical stage visual prompt",
+                  description: "Вертикальный ракурс или деталь сцены",
                 })}
                 src={imgRight}
                 alt={visuals[1]?.__image_prompt__ || "Stage proposal vertical"}

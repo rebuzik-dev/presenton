@@ -7,14 +7,14 @@ const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
   __image_prompt__: z.string().min(10).max(320).meta({
     description:
-      "Wide editorial decor reference based on the brief. Include the main visual accent, palette, materials, floristics, lighting, venue, and mood only when supported.",
+      "Широкий референс декора по брифу: главный акцент, палитра, материалы, флористика, свет, площадка и настроение только при наличии оснований.",
   }),
 });
 
 const layoutId = "storyboard-split-visual-slide";
 const layoutName = "Decor Elements Wide Image Slide";
 const layoutDescription =
-  "Brief-driven wide decor reference slide: a large editorial image plus two paragraphs about the main visual accent, palette, materials, atmosphere, and meaning.";
+  "Главный визуальный акцент оформления: широкое изображение и два блока о палитре, материалах, атмосфере и смысле по брифу."
 
 const Schema = z.object({
   title: z
@@ -24,7 +24,7 @@ const Schema = z.object({
     .default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДЕКОРА")
     .meta({
       description:
-        "Universal title for the decor elements or main visual accent section. Avoid unsupported event-specific wording.",
+        "Универсальный заголовок раздела о главном визуальном акценте без неподтверждённой событийной конкретики.",
     }),
 
   // 2 цельных текстовых блока (как в рефе)
@@ -37,7 +37,7 @@ const Schema = z.object({
     )
     .meta({
       description:
-        "Explain the main visual accent from the brief and how it works in the space. Do not invent a construction, flower, object, or lighting effect.",
+        "Главный визуальный акцент из брифа и его работа в пространстве. Не придумывать конструкцию, цветок, объект или световой эффект.",
     }),
 
   textBottom: z
@@ -49,7 +49,7 @@ const Schema = z.object({
     )
     .meta({
       description:
-        "Explain palette, materials, floristics, atmosphere, and meaning from the brief. Keep consistency with previous slides and avoid unsupported specifics.",
+        "Палитра, материалы, флористика, атмосфера и смысл из брифа в согласовании с предыдущими слайдами.",
     }),
 
   // В референсе одно большое изображение слева
@@ -59,7 +59,7 @@ const Schema = z.object({
       "Wide editorial event decor reference based on the brief: main visual accent, coherent palette, materials, floristics, lighting, venue context, atmosphere, high-end composition",
   }).meta({
     description:
-      "Left wide decor image prompt. Keep the visual consistent with the brief and earlier palette/material choices; do not force any fixed flower, object, structure, or people.",
+      "Широкое изображение декора, согласованное с брифом, палитрой и материалами. Не навязывать цветок, объект, конструкцию или людей.",
   }),
 });
 
@@ -94,7 +94,7 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
             path: "title",
             type: "field",
             name: "Title",
-            description: "Decor accent title",
+            description: "Заголовок главного визуального акцента",
           })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -112,7 +112,7 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
                   path: "image.__image_prompt__",
                   type: "image",
                   name: "Decor accent image prompt",
-                  description: "Wide decor reference image prompt",
+                  description: "Широкий референс декора",
                 })}
                 src={imgUrl}
                 alt={slideData?.image?.__image_prompt__ || "Decor floristics"}
@@ -128,7 +128,7 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
                 path: "textTop",
                 type: "field",
                 name: "Top text",
-                description: "Main visual accent text",
+                description: "Описание главного визуального акцента",
               })}
               className="text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -142,7 +142,7 @@ const dynamicSlideLayout: React.FC<DecorSplitProps> = ({ data: slideData }) => {
                 path: "textBottom",
                 type: "field",
                 name: "Bottom text",
-                description: "Palette and materials text",
+                description: "Описание палитры, материалов и атмосферы",
               })}
               className="mt-[26px] text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}

@@ -4,21 +4,21 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(10).max(220).meta({ description: "Prompt text" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
+  __image_prompt__: z.string().min(10).max(220).meta({ description: "Один кадр кульминации или финала; соседний слот должен показывать другой план или эмоциональный отклик." }),
 });
 
 const layoutId = "storyboard-climax-slide";
 const layoutName = "Storyboard Climax Slide";
 const layoutDescription =
-  "Storyboard slide in the same style: top/bottom bars, left text column, right two images. No overlay graphics block on images.";
+  "Кульминация и финал раскадровки: главное действие, эмоциональный результат, финальный посыл и два разных кадра без фиксированного типа события."
 
 const Schema = z.object({
-  title: z.string().min(3).max(40).default("РАСКАДРОВКА").meta({ description: "Main slide title" }),
+  title: z.string().min(3).max(40).default("РАСКАДРОВКА").meta({ description: "Заголовок раздела с раскадровкой." }),
 
-  phase: z.string().min(2).max(40).default("Кульминация").meta({ description: "Video phase" }),
+  phase: z.string().min(2).max(40).default("Кульминация и финал").meta({ description: "Название кульминационного или финального этапа истории." }),
 
-  timing: z.string().min(5).max(20).default("5:15–7:00").meta({ description: "Timing range" }),
+  timing: z.string().min(5).max(20).default("Без таймкода").meta({ description: "Точный интервал только из длительности или сценария брифа; иначе «Без таймкода»." }),
 
   visuals: z
     .array(ImageSchema)
@@ -28,30 +28,30 @@ const Schema = z.object({
       {
         __image_url__: "https://images.pexels.com/photos/976866/pexels-photo-976866.jpeg",
         __image_prompt__:
-          "Awards ceremony stage, speaker walking on stage, bright stage lights, LED screen with event logo, audience clapping, realistic event photo, high detail",
+          "Главное действие кульминации или финала в среде, с героями и объектами, заданными брифом",
       },
       {
         __image_url__: "https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg",
         __image_prompt__:
-          "Audience applauding in a modern conference hall, LED screens, stage lighting, cinematic event photo, realistic, high detail",
+          "Эмоциональный результат, реакция, деталь или финальный образ, дополняющий главное действие и завершающий историю",
       },
     ])
-    .meta({ description: "Two storyboard visuals (right column)" }),
+    .meta({ description: "Ровно два разных кадра: главное действие кульминации и эмоциональный или смысловой финальный образ." }),
 
   // Цельные блоки текста слева (без разбиения на строки в разметке)
   framesText: z
     .string()
     .min(10)
     .max(420)
-    .default("Кадры: выход на сцену. Аплодисменты. Свет сцены. Логотип на LED-экране.")
-    .meta({ description: "Frames block (single block, auto-wrap)" }),
+    .default("Кадры: главное действие достигает кульминации и переходит в ясный эмоциональный или смысловой финал.")
+    .meta({ description: "Описание кульминационных и финальных кадров по концепции. Не придумывать церемонию, сцену, аудиторию или брендинг." }),
 
   graphicsTextBlock: z
     .string()
     .min(5)
     .max(220)
-    .default("Графика: Код признания. IT-Профи 2026.")
-    .meta({ description: "Graphics block (single block, auto-wrap)" }),
+    .default("Графика: финальное сообщение или призыв завершает историю и поддерживает задачу ролика.")
+    .meta({ description: "Финальный титр, сообщение или призыв из брифа либо нейтральное творческое предложение без вымышленных фактов." }),
 });
 
 type StoryboardClimaxData = z.infer<typeof Schema>;
@@ -124,7 +124,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                   description: "Storyboard timing range",
                 })}
               >
-                {slideData?.timing || "5:15–7:00"}
+                {slideData?.timing || "Без таймкода"}
               </span>)
             </div>
 
@@ -140,7 +140,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
                 {slideData?.framesText ||
-                  "Кадры: выход на сцену. Аплодисменты. Свет сцены. Логотип на LED-экране."}
+                  "Кадры: главное действие достигает кульминации и переходит в ясный эмоциональный или смысловой финал."}
               </div>
 
               <div
@@ -153,7 +153,7 @@ const dynamicSlideLayout: React.FC<StoryboardClimaxProps> = ({ data: slideData }
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
-                {slideData?.graphicsTextBlock || "Графика: Код признания. IT-Профи 2026."}
+                {slideData?.graphicsTextBlock || "Графика: финальное сообщение или призыв завершает историю и поддерживает задачу ролика."}
               </div>
             </div>
 

@@ -7,14 +7,14 @@ const ImageSchema = z.object({
   __image_url__: z.string().url().meta({ description: "Image URL" }),
   __image_prompt__: z.string().min(10).max(320).meta({
     description:
-      "Main decor scene prompt based on the brief. Include relevant event type, venue, palette, materials, floristics, lighting, and mood only; do not invent fixed objects, people, symbols, or logos.",
+      "Главная сцена декора по брифу: тип события, площадка, палитра, материалы, флористика, свет и настроение. Не придумывать объекты, людей, символы и логотипы.",
   }),
 });
 
 const layoutId = "decor-elements-slide";
 const layoutName = "Decor Elements Slide";
 const layoutDescription =
-  "Brief-driven decor elements slide: title, two text blocks, and a main scene image describing the spatial, material, floral, lighting, and styling decisions supported by the brief.";
+  "Основные элементы декора: пространственные, материальные, флористические и световые решения, подтверждённые брифом."
 
 const Schema = z.object({
   title: z
@@ -24,7 +24,7 @@ const Schema = z.object({
     .default("ОСНОВНЫЕ ЭЛЕМЕНТЫ ДЕКОРА")
     .meta({
       description:
-        "Universal section title for decor elements. Do not mention a specific occasion, flower, palette, or construction unless required by the brief.",
+        "Универсальный заголовок раздела. Не упоминать конкретный повод, цветок, палитру или конструкцию без основания в брифе.",
     }),
 
   // 2 цельных текстовых блока (не бьём разметкой)
@@ -37,7 +37,7 @@ const Schema = z.object({
     )
     .meta({
       description:
-        "Describe the main architectural or spatial decor elements from the brief. Include forms, zones, scale, venue constraints, and function only when supported.",
+        "Основные архитектурные и пространственные элементы из брифа: формы, зоны, масштаб, ограничения площадки и функция.",
     }),
 
   descriptionBottom: z
@@ -49,7 +49,7 @@ const Schema = z.object({
     )
     .meta({
       description:
-        "Describe secondary decor layers: materials, floristics, lighting, textile, furniture, props, print, and details from the brief. Avoid unsupported specifics.",
+        "Дополнительные слои декора: материалы, флористика, свет, текстиль, мебель, реквизит и полиграфия из брифа.",
     }),
 
   image: ImageSchema.default({
@@ -58,7 +58,7 @@ const Schema = z.object({
       "Main event decor scene based on the brief: relevant venue zone, coherent palette, materials, floristics, lighting, scale, and mood, high-end editorial interior/event photo",
   }).meta({
     description:
-      "Right-side decor image prompt. Use the brief as source of truth and keep it consistent with palette, materials, floristics, and mood across the presentation.",
+      "Правое изображение декора по брифу, согласованное с палитрой, материалами, флористикой и настроением всей презентации.",
   }),
 });
 
@@ -91,7 +91,7 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
             path: "title",
             type: "field",
             name: "Title",
-            description: "Decor elements title",
+            description: "Заголовок элементов декора",
           })}
           className="uppercase font-[900] text-[44px] leading-[52px]"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -108,7 +108,7 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
                 path: "descriptionTop",
                 type: "field",
                 name: "Top description",
-                description: "Main decor elements description",
+                description: "Описание основных пространственных элементов",
               })}
               className="text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -122,7 +122,7 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
                 path: "descriptionBottom",
                 type: "field",
                 name: "Bottom description",
-                description: "Secondary decor layers description",
+                description: "Описание материалов, флористики и деталей",
               })}
               className="mt-[26px] text-[20px] leading-[28px] font-[500]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -140,7 +140,7 @@ const dynamicSlideLayout: React.FC<DecorElementsProps> = ({ data: slideData }) =
                   path: "image.__image_prompt__",
                   type: "image",
                   name: "Decor image prompt",
-                  description: "Main decor scene image prompt",
+                  description: "Главная сцена декора",
                 })}
                 src={imgUrl}
                 alt={slideData?.image?.__image_prompt__ || "Decor floristics"}

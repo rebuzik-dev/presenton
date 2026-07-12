@@ -6,22 +6,22 @@ import { promptTargetAttrs } from "@/app/(presentation-generator)/components/Pro
 const layoutId = "typography-spec-slide";
 const layoutName = "Typography Spec Slide";
 const layoutDescription =
-  "Typography slide matching reference: static typography sheet + generated right photo (poster on stand).";
+  "Типографика видеоролика и её применение на релевантном носителе: титр, заставка, экран, постер или навигация из контекста брифа.";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Right-side image URL" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL правого изображения." }),
   __image_prompt__: z
     .string()
     .min(10)
     .max(220)
-    .meta({ description: "Prompt for the right image (poster on stand)" }),
+    .meta({ description: "Кадр применения типографики на уместном носителе. Не добавлять случайный читаемый текст и логотипы." }),
 });
 
 const Schema = z.object({
   rightImage: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/1227511/pexels-photo-1227511.jpeg",
     __image_prompt__:
-      "A vertical poster on a stand, teal paper texture background with subtle flowers, clean white border frame, shallow depth of field, realistic photo, typography-focused, no people",
+      "Титр, экран, заставка, постер или другой носитель видеопроекта с аккуратной типографикой в стиле и палитре из брифа",
   }),
 });
 

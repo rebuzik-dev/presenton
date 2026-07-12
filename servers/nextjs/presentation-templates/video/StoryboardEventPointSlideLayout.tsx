@@ -4,62 +4,61 @@ import { resolveColor, resolveFontFamily, resolveRootStyle } from "../_shared/st
 import { promptTargetAttrs } from "@/app/(presentation-generator)/components/PromptTarget";
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "Image URL" }),
-  __image_prompt__: z.string().min(5).max(220).meta({ description: "Prompt for the image" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
+  __image_prompt__: z.string().min(5).max(220).meta({ description: "Один кадр ключевого момента истории; второй слот должен показывать другой план или реакцию." }),
 });
 
 const layoutId = "storyboard-event-point-slide";
 const layoutName = "Storyboard Event Point Slide";
 const layoutDescription =
-  "Storyboard: left text column + right two images, with overlay metric badge.";
+  "Ключевой момент видеосюжета: поворот, встреча, демонстрация или другое событие из концепции с двумя разными кадрами и опциональной датой или метрикой."
 
 const Schema = z.object({
-  title: z.string().min(3).max(40).default("РАСКАДРОВКА").meta({ description: "Main slide title" }),
+  title: z.string().min(3).max(40).default("РАСКАДРОВКА").meta({ description: "Заголовок раздела с раскадровкой." }),
 
   phase: z
     .string()
     .min(2)
     .max(60)
-    .default("Точка сборки")
-    .meta({ description: "Video phase title" }),
+    .default("Ключевой момент")
+    .meta({ description: "Название поворотного или центрального этапа конкретной истории." }),
 
   timing: z
     .string()
     .min(5)
     .max(20)
-    .default("2:40–4:00")
-    .meta({ description: "Timing interval" }),
+    .default("Без таймкода")
+    .meta({ description: "Точный интервал только из длительности или сценария брифа; иначе «Без таймкода»." }),
 
   // Цельный блок текста (без ручного разбиения на строки в разметке)
   framesText: z
     .string()
     .min(10)
     .max(420)
-    .default("Кадры: регистрация, бейджи, серверные, мастер-классы.")
-    .meta({ description: "Frames description block (single block, auto-wrap)" }),
+    .default("Кадры: центральное действие или поворот раскрывает главное сообщение и меняет эмоциональный ритм ролика.")
+    .meta({ description: "Описание ключевого действия, героев и среды только в контексте брифа; творческий способ съёмки можно предложить." }),
 
   // Цельный блок графики (может включать дату и метрику в одном поле, если нужно)
   graphicsTextBlock: z
     .string()
     .min(5)
     .max(220)
-    .default("Графика: 300 профессионалов, 15–16 апреля 2026")
-    .meta({ description: "Graphics block (single block, auto-wrap)" }),
+    .default("Графика: ключевое сообщение или подтверждённый факт усиливает центральный момент.")
+    .meta({ description: "Экранная графика. Даты, числа, названия и метрики использовать только при наличии в брифе." }),
 
   // Для бейджа на фото — отдельное поле
   badgeText: z
     .string()
     .min(3)
     .max(40)
-    .default("300 профессионалов")
-    .meta({ description: "Overlay metric text on photo" }),
+    .default("Ключевой момент")
+    .meta({ description: "Короткий акцент на изображении; метрику использовать только из брифа." }),
 
   dateText: z
     .string()
-    .min(5)
     .max(40)
-    .default("15–16 апреля 2026")
-    .meta({ description: "Optional date string" }),
+    .default("")
+    .meta({ description: "Опциональная дата точно из брифа. Если даты нет, вернуть пустую строку." }),
 
   visuals: z
     .array(ImageSchema)
@@ -68,14 +67,14 @@ const Schema = z.object({
     .default([
       {
         __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-        __image_prompt__: "People at event registration desk receiving badges",
+        __image_prompt__: "Общий план ключевого действия, героя, объекта или пространства, заданного концепцией и брифом",
       },
       {
         __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-        __image_prompt__: "IT specialist giving a workshop in a modern room",
+        __image_prompt__: "Деталь, альтернативный ракурс или эмоциональная реакция в том же ключевом моменте",
       },
     ])
-    .meta({ description: "Two storyboard visuals" }),
+    .meta({ description: "Ровно два связанных, но отличающихся кадра: общий план ключевого действия и дополняющая деталь или реакция." }),
 });
 
 type StoryboardEventPointData = z.infer<typeof Schema>;
@@ -142,7 +141,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                   description: "Storyboard phase title",
                 })}
               >
-                {slideData?.phase || "Точка сборки"}
+                {slideData?.phase || "Ключевой момент"}
               </span>{" "}
               (<span
                 {...promptTargetAttrs({
@@ -152,7 +151,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                   description: "Storyboard timing interval",
                 })}
               >
-                {slideData?.timing || "2:40–4:00"}
+                {slideData?.timing || "Без таймкода"}
               </span>)
             </div>
 
@@ -167,7 +166,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
-                {slideData?.framesText || "Кадры: регистрация, бейджи, серверные, мастер-классы."}
+                {slideData?.framesText || "Кадры: центральное действие или поворот раскрывает главное сообщение и меняет эмоциональный ритм ролика."}
               </div>
 
               <div
@@ -180,7 +179,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
-                {slideData?.graphicsTextBlock || "Графика: 300 профессионалов, 15–16 апреля 2026"}
+                {slideData?.graphicsTextBlock || "Графика: ключевое сообщение или подтверждённый факт усиливает центральный момент."}
               </div>
 
               {/* Если хочешь держать дату отдельно — это отдельный блок, тоже цельный */}
@@ -188,7 +187,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                 className="font-[500] text-[22px] leading-[28px]"
                 style={{ color: bodyColor, fontFamily: bodyFont }}
               >
-                {slideData?.dateText || "15–16 апреля 2026"}
+                {slideData?.dateText || ""}
               </div> */}
             </div>
 
@@ -249,7 +248,7 @@ const dynamicSlideLayout: React.FC<StoryboardEventPointProps> = ({ data: slideDa
                     opacity: 0.9,
                   }}
                 >
-                  {slideData?.badgeText || "300 профессионалов"}
+                  {slideData?.badgeText || "Ключевой момент"}
                 </div>
               </div>
             </div>

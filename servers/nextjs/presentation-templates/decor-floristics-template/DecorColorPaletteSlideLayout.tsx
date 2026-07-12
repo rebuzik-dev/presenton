@@ -18,14 +18,14 @@ const ImageSchema = z.object({
     .default("Photo for slide")
     .meta({
       description:
-        "Mood/reference image prompt for the decor palette. Use brief-derived theme, style, venue, materials, floristics, and palette; do not invent fixed flowers, constructions, people, logos, or colors.",
+        "Референс палитры декора по теме, стилю, площадке, материалам и флористике из брифа. Не придумывать цветы, конструкции, людей, логотипы и цвета.",
     }),
 })
 
 const layoutId = "color-palette-listing-slide"
 const layoutName = "Color Palette Listing Slide"
 const layoutDescription =
-  "A brief-driven color palette slide: derive primary and secondary colors from brand inputs when provided, otherwise from event mood, venue, audience, season, format, and desired style."
+  "Палитра оформления: использовать брендовые цвета из брифа, а при их отсутствии вывести сочетание из настроения, площадки, аудитории, сезона и формата."
 
 const ColorItemSchema = z.object({
   hex: z
@@ -34,7 +34,7 @@ const ColorItemSchema = z.object({
     .max(9)
     .meta({
       description:
-        "Hex color from the brand palette if provided; otherwise choose a role-appropriate color inferred from the brief, venue, mood, format, audience, and desired style.",
+        "HEX из брендовой палитры, если она задана; иначе уместный цвет, выведенный из брифа, площадки, настроения, формата и аудитории.",
     }),
   label: z
     .string()
@@ -42,7 +42,7 @@ const ColorItemSchema = z.object({
     .max(70)
     .meta({
       description:
-        "Explain this color's role in the concept, such as base, accent, contrast, background, floristics, material, or lighting. Do not tie it to unsupported symbols.",
+        "Роль цвета в концепции: база, акцент, контраст, фон, флористика, материал или свет. Не связывать с неподтверждённой символикой.",
     }),
 })
 
@@ -52,19 +52,19 @@ const Schema = z.object({
     .min(5)
     .max(40)
     .default("ЦВЕТОВАЯ ПАЛИТРА")
-    .meta({ description: "Universal palette section title." }),
+    .meta({ description: "Универсальный заголовок раздела с палитрой." }),
   primaryTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Основные цвета")
-    .meta({ description: "Header for the main palette colors selected from the brief." }),
+    .meta({ description: "Заголовок основных цветов, выбранных из брифа." }),
   secondaryTitle: z
     .string()
     .min(3)
     .max(40)
     .default("Дополнительные цвета")
-    .meta({ description: "Header for secondary/supporting colors selected from the brief." }),
+    .meta({ description: "Заголовок дополнительных цветов, выбранных из брифа." }),
   primaryColors: z
     .array(ColorItemSchema)
     .min(1)
@@ -76,7 +76,7 @@ const Schema = z.object({
     ])
     .meta({
       description:
-        "LEFT column. Select up to 3 primary colors from brand guidance if present; otherwise infer them from the brief. Order top-to-bottom by importance.",
+        "До трёх основных цветов из брендбука; если их нет — обоснованное сочетание из брифа. Порядок по значимости.",
     }),
   secondaryColors: z
     .array(ColorItemSchema)
@@ -89,14 +89,14 @@ const Schema = z.object({
     ])
     .meta({
       description:
-        "RIGHT column. Select up to 3 secondary colors that support the brief-derived concept, materials, floristics, lighting, and spatial context.",
+        "До трёх дополнительных цветов, поддерживающих концепцию, материалы, флористику, свет и пространство из брифа.",
     }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
     __image_prompt__: "Moodboard-style decor palette reference based on the brief: event theme, venue, materials, floristics, lighting, and brand or inferred colors, cohesive editorial photo.",
   }).meta({
     description:
-      "Supporting mood/reference image. Build it from the brief and palette logic; do not force any specific flower, structure, object, people, logo, or color.",
+      "Поддерживающий референс палитры по брифу. Не навязывать конкретный цветок, конструкцию, предмет, людей, логотип или цвет.",
   }),
 })
 
@@ -146,7 +146,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
             path: `${pathPrefix}[${index}].hex`,
             type: "field",
             name: `Color ${index + 1} hex`,
-            description: "Color swatch hex value",
+            description: "HEX цветового образца",
           })}
           className="text-[17px] leading-[21px] tracking-[0.4px] font-[700]"
           style={{ color: resolvedTextColor, fontFamily: cardFont }}
@@ -158,7 +158,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
             path: `${pathPrefix}[${index}].label`,
             type: "field",
             name: `Color ${index + 1} label`,
-            description: "Color swatch label",
+            description: "Роль цвета в концепции",
           })}
           className="text-[18px] leading-[22px] font-[500]"
           style={{ color: resolvedTextColor, fontFamily: cardFont }}
@@ -182,7 +182,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                 path: "title",
                 type: "field",
                 name: "Title",
-                description: "Main palette header",
+                description: "Главный заголовок палитры",
               })}
             >
               {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
@@ -197,7 +197,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                     path: "primaryTitle",
                     type: "field",
                     name: "Primary title",
-                    description: "Primary colors section title",
+                    description: "Заголовок основных цветов",
                   })}
                 >
                   {slideData?.primaryTitle || "Основные цвета"}
@@ -217,7 +217,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                     path: "secondaryTitle",
                     type: "field",
                     name: "Secondary title",
-                    description: "Secondary colors section title",
+                    description: "Заголовок дополнительных цветов",
                   })}
                 >
                   {slideData?.secondaryTitle || "Дополнительные цвета"}
@@ -239,7 +239,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
                 path: "image.__image_prompt__",
                 type: "image",
                 name: "Palette image prompt",
-                description: "Supporting moodboard image prompt",
+                description: "Поддерживающий референс палитры",
               })}
               src={slideData?.image?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"}
               alt={slideData?.image?.__image_prompt__ || slideData?.title || ""}

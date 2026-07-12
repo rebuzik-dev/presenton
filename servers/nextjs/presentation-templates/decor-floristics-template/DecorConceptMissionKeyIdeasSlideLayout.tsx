@@ -6,7 +6,7 @@ import { promptTargetAttrs } from "@/app/(presentation-generator)/components/Pro
 const layoutId = "concept-mission-mood-slide";
 const layoutName = "Concept Mission Mood Slide";
 const layoutDescription =
-  "A brief-driven concept slide with a central decor idea plus mission and mood blocks. Use only theme, mood, format, audience, venue, and visual references supported by the brief.";
+  "Концепция оформления: центральная идея, задача и ключевые смыслы на основе темы, формата, аудитории, площадки и визуальных ориентиров из брифа.";
 
 /**
  * В эталоне (изобр.1):
@@ -16,7 +16,7 @@ const layoutDescription =
 const Schema = z.object({
   title: z.string().min(5).max(40).default("КОНЦЕПЦИЯ ДЕКОРАЦИОННОГО ОФОРМЛЕНИЯ").meta({
     description:
-      "Universal section title about the decor concept. Keep it broad and do not include a specific occasion, flower, symbol, or venue unless the brief requires it.",
+      "Универсальный заголовок концепции. Не добавлять конкретный повод, цветок, символ или площадку, если этого нет в брифе.",
   }),
 
   // Верхняя широкая плашка (цитата/концепт)
@@ -29,11 +29,11 @@ const Schema = z.object({
     )
     .meta({
       description:
-        "Central decor idea inferred from the brief. Summarize the event-specific visual logic and explicitly avoid unsupported dates, symbols, flowers, people, logos, industries, or fixed decor elements.",
+        "Центральная идея декора из брифа. Кратко раскрыть визуальную логику и не добавлять неподтверждённые даты, символы, цветы, людей, логотипы и конструкции.",
     }),
 
   missionTitle: z.string().min(2).max(30).default("Миссия").meta({
-    description: "Mission block title. Max 2 words",
+    description: "Заголовок блока с задачей оформления.",
   }),
   missionContent: z
     .string()
@@ -44,11 +44,11 @@ const Schema = z.object({
     )
     .meta({
       description:
-        "Describe the visual styling task for this event based on the brief: function, atmosphere, audience, format, venue, and desired impression. Do not invent a holiday, industry, or ceremonial meaning.",
+        "Задача оформления по брифу: функция, атмосфера, аудитория, формат, площадка и ожидаемое впечатление. Не придумывать праздник, отрасль или символику.",
     }),
 
   moodTitle: z.string().min(2).max(30).default("Ключевые смыслы").meta({
-    description: "Mood block title. Max 3 words",
+    description: "Заголовок блока с ключевыми смыслами и настроением.",
   }),
   moodContent: z
     .string()
@@ -59,7 +59,7 @@ const Schema = z.object({
     )
     .meta({
       description:
-        "List the mood, meanings, style references, palette, materials, floristics, lighting, and spatial cues from the brief. Do not add unsupported symbolic or seasonal references.",
+        "Настроение, смыслы, стилистика, палитра, материалы, флористика, свет и пространственные ориентиры из брифа. Не добавлять сезонную или символическую трактовку без основания.",
     }),
 });
 
@@ -96,7 +96,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
             path: "title",
             type: "field",
             name: "Title",
-            description: "Main decor concept title",
+            description: "Главный заголовок концепции декора",
           })}
           className="uppercase font-[800] text-[48px] leading-[56px]"
           style={{ color: titleColor, fontFamily: titleFont }}
@@ -127,7 +127,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
               path: "heroQuote",
               type: "field",
               name: "Hero quote",
-              description: "Central decor idea",
+              description: "Центральная идея оформления",
             })}
             className="font-[700] text-[24px] leading-[30px]"
             style={{ color: heroText, fontFamily: bodyFont }}
@@ -146,7 +146,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "missionTitle",
                 type: "field",
                 name: "Mission title",
-                description: "Mission block title",
+                description: "Заголовок блока с задачей",
               })}
               className="font-[800] text-[28px] leading-[34px]"
               style={{ color: bodyColor, fontFamily: sectionTitleFont }}
@@ -162,7 +162,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "missionContent",
                 type: "field",
                 name: "Mission content",
-                description: "Mission block content",
+                description: "Задача оформления по брифу",
               })}
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
@@ -178,7 +178,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "moodTitle",
                 type: "field",
                 name: "Mood title",
-                description: "Key meanings title",
+                description: "Заголовок ключевых смыслов",
               })}
               className="font-[800] text-[28px] leading-[34px]"
               style={{ color: bodyColor, fontFamily: sectionTitleFont }}
@@ -194,7 +194,7 @@ const dynamicSlideLayout: React.FC<ConceptMissionMoodProps> = ({ data: slideData
                 path: "moodContent",
                 type: "field",
                 name: "Mood content",
-                description: "Key meanings content",
+                description: "Ключевые смыслы и настроение",
               })}
               className="mt-[22px] font-[500] text-[24px] leading-[30px]"
               style={{ color: bodyColor, fontFamily: bodyFont }}
