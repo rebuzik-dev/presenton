@@ -81,6 +81,7 @@ from utils.get_env import (
     get_polza_image_options_env,
 )
 from utils.parsers import parse_bool_or_none
+from utils.image_provider import normalize_legacy_polza_provider
 from utils.user_config_store import read_user_config_file, update_user_config_file
 from utils.llm_provider_profiles import resolve_active_model_profile
 from utils.set_env import (
@@ -264,8 +265,9 @@ def get_user_config():
         CUSTOM_MODEL=_prefer_env_value(
             get_custom_model_env(), existing_config.CUSTOM_MODEL
         ),
-        IMAGE_PROVIDER=_prefer_env_value(
-            get_image_provider_env(), existing_config.IMAGE_PROVIDER
+        IMAGE_PROVIDER=normalize_legacy_polza_provider(
+            _prefer_env_value(get_image_provider_env(), existing_config.IMAGE_PROVIDER),
+            existing_config.IMAGE_GEN_BASE_URL or get_image_gen_base_url_env(),
         ),
         IMAGE_GEN_API_KEY=existing_config.IMAGE_GEN_API_KEY
         or get_image_gen_api_key_env(),
@@ -428,7 +430,13 @@ def update_env_with_user_config(user_config: UserConfig | None = None):
     if user_config.DISABLE_IMAGE_GENERATION is not None:
         set_disable_image_generation_env(str(user_config.DISABLE_IMAGE_GENERATION))
     if user_config.IMAGE_PROVIDER:
-        set_image_provider_env(user_config.IMAGE_PROVIDER)
+        set_image_provider_env(
+            normalize_legacy_polza_provider(
+                user_config.IMAGE_PROVIDER,
+                user_config.IMAGE_GEN_BASE_URL,
+            )
+            or user_config.IMAGE_PROVIDER
+        )
     if user_config.IMAGE_GEN_API_KEY:
         set_image_gen_api_key_env(user_config.IMAGE_GEN_API_KEY)
     if user_config.IMAGE_GEN_BASE_URL:

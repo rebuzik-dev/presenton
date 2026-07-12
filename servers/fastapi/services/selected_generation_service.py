@@ -31,6 +31,7 @@ from services.template_prompt_profile_service import template_prompt_profile_ser
 from utils.get_layout_by_name import get_layout_by_name
 from utils.ppt_utils import get_presentation_title_from_outlines
 from utils.template_prompt_overrides import get_active_template_prompt
+from utils.llm_failure import status_error_from_exception
 
 
 async def prepare_selected_generation(
@@ -216,7 +217,7 @@ async def run_selected_generation(
         status.status = "error"
         status.message = "Selected slide generation failed"
         status.updated_at = datetime.now()
-        status.error = {"detail": str(getattr(exc, "detail", exc))}
+        status.error = status_error_from_exception(exc)
         sql_session.add(status)
         await sql_session.commit()
         raise

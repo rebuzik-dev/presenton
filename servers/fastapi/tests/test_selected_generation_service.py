@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel, select
 
@@ -64,6 +65,45 @@ def _layout():
             ),
         ],
     )
+
+
+@pytest.mark.anyio
+async def test_selected_generation_records_structured_llm_error(session):
+    request = GenerateSelectedSlidesRequest(
+        request_id=uuid4(),
+        template="general",
+        slides_markdown=[{"content": "Opening"}],
+        slide_indices=[0],
+    )
+    await prepare_selected_generation(session, request=request)
+    failure = {
+        "code": "llm_budget_exceeded",
+        "detail": "The active text model has exhausted its provider budget.",
+        "http_status": 429,
+        "retryable": False,
+        "provider": "custom",
+        "model": "gpt-5-mini",
+        "action": "top_up_or_change_model",
+    }
+    with patch(
+        "services.selected_generation_service.template_prompt_profile_service.get_by_slug",
+        new=AsyncMock(side_effect=HTTPException(status_code=429, detail=failure)),
+    ):
+        with pytest.raises(HTTPException):
+            await run_selected_generation(
+                session,
+                request=request,
+                auth_token=None,
+                api_key=None,
+                preview_auth_context={"headers": {}, "params": {}},
+            )
+
+    status = await session.get(
+        AsyncPresentationGenerationTaskModel,
+        request.request_id,
+    )
+    assert status.status == "error"
+    assert status.error == failure
 
 
 @pytest.mark.anyio
