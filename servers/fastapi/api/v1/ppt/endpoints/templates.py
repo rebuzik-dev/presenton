@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Tuple
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from models.block_map import TemplateBlockMapResponse
 from services.template_service import template_service
@@ -34,10 +34,17 @@ TEMPLATES_ROUTER = APIRouter(prefix="/templates", tags=["Templates"])
 
 class LayoutItemSchema(BaseModel):
     """Schema for a single layout within a template."""
+    model_config = ConfigDict(populate_by_name=True)
+
     name: str = Field(..., description="Layout component name")
     file: str = Field(..., description="TSX filename")
     description: Optional[str] = Field(None, description="What this layout is for")
-    schema: Optional[dict] = Field(None, description="Zod schema in JSON format")
+    schema_: Optional[dict] = Field(
+        None,
+        alias="schema",
+        serialization_alias="schema",
+        description="Zod schema in JSON format",
+    )
 
 
 class TemplateResponse(BaseModel):
@@ -510,7 +517,7 @@ async def create_template(
     try:
         layouts_dict = None
         if request.layouts:
-            layouts_dict = [l.model_dump() for l in request.layouts]
+            layouts_dict = [l.model_dump(by_alias=True) for l in request.layouts]
 
         template = await template_service.create_custom(
             name=request.name,
@@ -549,7 +556,7 @@ async def update_template(template_id: UUID, request: UpdateTemplateRequest):
     try:
         layouts_dict = None
         if request.layouts:
-            layouts_dict = [l.model_dump() for l in request.layouts]
+            layouts_dict = [l.model_dump(by_alias=True) for l in request.layouts]
 
         template = await template_service.update_custom(
             template_id=template_id,

@@ -2,6 +2,7 @@ import os
 from utils.get_env import get_app_data_directory_env, get_database_url_env
 from urllib.parse import urlsplit, urlunsplit, parse_qsl
 import ssl
+from sqlalchemy.engine import make_url
 
 
 def _ensure_sqlite_parent_dir(database_url: str) -> None:
@@ -104,11 +105,17 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
             # But the logic was just intending to handle ssl context. 
             # We can skip urlunsplit if we didn't modify the url string itself (which we didn't above)
             pass 
-    except Exception as e:
-        print(f"Error parsing database URL: {e}")
+    except Exception:
+        print("Error parsing database URL; using driver defaults")
         pass
 
-    print(f"Final Database URL: {database_url}")
+    try:
+        safe_database_url = make_url(database_url).render_as_string(
+            hide_password=True
+        )
+    except Exception:
+        safe_database_url = "<unparseable database URL>"
+    print(f"Final Database URL: {safe_database_url}")
     return database_url, connect_args
 
 
