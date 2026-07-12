@@ -29,16 +29,16 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 # Install ollama
 #RUN curl -fsSL https://ollama.com/install.sh | sh
 
-RUN pip config set global.index-url https://pypi.mirrors.ustc.edu.cn/simple/ 
+ARG PYPI_INDEX_URL=https://pypi.org/simple
 
 # Install dependencies for FastAPI
-RUN pip install --default-timeout=120 --retries 10 aiohttp aiomysql aiosqlite asyncpg fastapi[standard] \
+RUN pip install --index-url "${PYPI_INDEX_URL}" --default-timeout=120 --retries 10 aiohttp aiomysql aiosqlite asyncpg fastapi[standard] \
     pathvalidate pdfplumber chromadb sqlmodel \
     anthropic google-genai openai llmai==0.2.5 fastmcp dirtyjson
 
-RUN pip install --default-timeout=120 --retries 10 docling --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install --index-url "${PYPI_INDEX_URL}" --default-timeout=120 --retries 10 docling --extra-index-url https://download.pytorch.org/whl/cpu
 
-RUN pip install --default-timeout=120 --retries 10 \
+RUN pip install --index-url "${PYPI_INDEX_URL}" --default-timeout=120 --retries 10 \
     alembic fastembed-vectorstore fonttools greenlet jsonschema \
     mem0ai[nlp] nltk psycopg[binary] psycopg2-binary PyJWT python-pptx redis
 
