@@ -9,29 +9,30 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Moodboard photo")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Кадр визуальной системы кейтеринга на основе брифа")
+    .meta({ description: "Один самостоятельный кадр кейтеринг-мудборда. Не повторять композицию соседних слотов." }),
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
   __icon_prompt__: z
     .string()
     .min(1)
     .max(60)
-    .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
+    .default("иконка кейтеринг-мудборда")
+    .meta({ description: "Короткое описание иконки, только если она требуется layout." }),
 })
 
 const layoutId = "header-moodboard-collage-slide"
 const layoutName = "Header Moodboard Collage Slide"
-const layoutDescription = "A slide with a header and an image collage with a tall middle column and two stacked images."
+const layoutDescription =
+  "Четырёхкадровый кейтеринг-мудборд: общий вид сервиса, гостевой сценарий, деталь подачи и материалы или бренд-акценты в едином стиле."
 
 const Schema = z.object({
   title: z
@@ -39,18 +40,18 @@ const Schema = z.object({
     .min(3)
     .max(20)
     .default("МУДБОРД")
-    .meta({ description: "Main header. Max 1 word" }),
+    .meta({ description: "Короткий заголовок кейтеринг-мудборда." }),
   images: z
     .array(ImageSchema)
     .min(4)
     .max(4)
     .default([
-      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Moodboard image 1" },
-      { __image_url__: "https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg", __image_prompt__: "Moodboard image 2" },
-      { __image_url__: "https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg", __image_prompt__: "Moodboard image 3" },
-      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Moodboard image 4" },
+      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Общий вид кейтеринг-зоны в контексте площадки и формата мероприятия" },
+      { __image_url__: "https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg", __image_prompt__: "Гости взаимодействуют с подачей или сервисной зоной в естественном сценарии мероприятия" },
+      { __image_url__: "https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg", __image_prompt__: "Крупный план блюда, напитка или порционной подачи из концепции меню" },
+      { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Материалы сервировки, упаковки или бренд-акценты кейтеринга без случайного текста" },
     ])
-    .meta({ description: "Collage images. Max 4 items" }),
+    .meta({ description: "Ровно четыре разных кадра в общей визуальной системе; палитра и стиль передаются отдельно через image_style." }),
 })
 
 type HeaderMoodboardCollageSlideData = z.infer<typeof Schema>
@@ -64,19 +65,19 @@ const dynamicSlideLayout: React.FC<HeaderMoodboardCollageSlideLayoutProps> = ({ 
   const imageItems = [
     {
       url: imgs[0]?.__image_url__ || "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-      prompt: imgs[0]?.__image_prompt__ || "moodboard 1",
+      prompt: imgs[0]?.__image_prompt__ || "Общий вид кейтеринг-зоны",
     },
     {
       url: imgs[1]?.__image_url__ || "https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg",
-      prompt: imgs[1]?.__image_prompt__ || "moodboard 2",
+      prompt: imgs[1]?.__image_prompt__ || "Гостевой сценарий и сервис",
     },
     {
       url: imgs[2]?.__image_url__ || "https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg",
-      prompt: imgs[2]?.__image_prompt__ || "moodboard 3",
+      prompt: imgs[2]?.__image_prompt__ || "Деталь подачи блюда",
     },
     {
       url: imgs[3]?.__image_url__ || "https://images.pexels.com/photos/2693212/pexels-photo-2693212.jpeg",
-      prompt: imgs[3]?.__image_prompt__ || "moodboard 4",
+      prompt: imgs[3]?.__image_prompt__ || "Материалы и бренд-акценты",
     },
   ]
   const rootFont = resolveFontFamily(slideData, "container", "var(--template-font, Inter)", "body")

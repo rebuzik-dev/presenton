@@ -8,28 +8,29 @@ import {
 import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "URL to image. Max 10 words" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Supporting image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Поддерживающий кадр концепции кейтеринга")
+    .meta({ description: "Описание поддерживающего изображения, если оно потребуется layout." }),
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
   __icon_prompt__: z
     .string()
     .min(1)
     .max(60)
-    .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
+    .default("нейтральная иконка кейтеринга")
+    .meta({ description: "Короткое описание иконки, только если она требуется layout." }),
 })
 
 const layoutId = "header-quote-two-columns-slide"
 const layoutName = "Header Quote Two Columns Slide"
-const layoutDescription = "A slide with a header, a quote card, and two text columns with a bullet list."
+const layoutDescription =
+  "Концепция кейтеринга как часть гостевого пути: роль сервиса, ключевые принципы и решения, основанные на формате, аудитории и сценарии из брифа."
 
 const Schema = z.object({
   title: z
@@ -37,63 +38,63 @@ const Schema = z.object({
     .min(5)
     .max(45)
     .default("КОНЦЕПЦИЯ КЕЙТЕРИНГА")
-    .meta({ description: "Main header. Max 2 words" }),
+    .meta({ description: "Универсальный заголовок раздела о концепции кейтеринга." }),
   quote: z
     .string()
     .min(20)
     .max(160)
     .default("Кейтеринг рассматривается как часть сценария пребывания гостя, а не как отдельная сервисная зона.")
-    .meta({ description: "Quote card text. Max 22 words" }),
+    .meta({ description: "Одна ёмкая формулировка роли кейтеринга в сценарии конкретного мероприятия. Не придумывать формат и аудиторию." }),
   leftColumnTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Ключевые смыслы")
-    .meta({ description: "Left column header. Max 2 words" }),
+    .meta({ description: "Короткий заголовок блока о гостевом опыте и задачах сервиса." }),
   leftStrongLine: z
     .string()
     .min(10)
     .max(80)
-    .default("Поддержка делового ритма и концентрации,")
-    .meta({ description: "Left emphasized line. Max 7 words" }),
+    .default("Поддержка ритма и комфорта гостей,")
+    .meta({ description: "Главный принцип сервиса, следующий из сценария, длительности и аудитории мероприятия." }),
   leftWeakLine: z
     .string()
     .min(3)
     .max(60)
-    .default("без отвлечения от содержательной части программы.")
-    .meta({ description: "Left supporting line. Max 8 words" }),
+    .default("без разрывов в программе мероприятия.")
+    .meta({ description: "Короткое продолжение главного принципа без новых неподтверждённых фактов." }),
   leftBody: z
     .string()
     .min(25)
     .max(220)
     .default(
-      "Еда работает как фоновый, но структурирующий элемент: помогает переключаться между блоками, фиксировать паузы и выстраивать неформальное общение."
+      "Подача, размещение сервисных зон и скорость обслуживания поддерживают гостевой путь и помогают сохранять нужный темп события."
     )
-    .meta({ description: "Left paragraph text. Max 28 words" }),
+    .meta({ description: "Как кейтеринг поддерживает гостевой путь. Использовать только известные зоны, тайминг и сценарные задачи." }),
   rightColumnTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Ключевая идея")
-    .meta({ description: "Right column header. Max 2 words" }),
+    .meta({ description: "Короткий заголовок блока с предлагаемым решением." }),
   rightBody: z
     .string()
     .min(12)
     .max(160)
-    .default("Концепция соответствует формату делового форума с участием управленческой и экспертной аудитории:")
-    .meta({ description: "Right paragraph text. Max 20 words" }),
+    .default("Решение адаптируется под формат события, состав гостей и условия площадки:")
+    .meta({ description: "Вводная строка к решениям. Формат, аудиторию и площадку называть только при наличии в брифе." }),
   rightBullets: z
     .array(
       z
         .string()
         .min(6)
         .max(80)
-        .meta({ description: "Bullet text. Max 10 words" })
+        .meta({ description: "Отдельный принцип меню, подачи, логистики или обслуживания, подтверждённый брифом либо предложенный как решение." })
     )
     .min(1)
     .max(3)
-    .default(["отсутствие демонстративной гастрономии;", "акцент на удобство, ясность, нейтральность."])
-    .meta({ description: "Bullet list items. Max 3 items" }),
+    .default(["удобная подача для выбранного формата;", "понятная логистика и стабильная скорость сервиса."])
+    .meta({ description: "До трёх конкретных принципов. Не добавлять ограничения питания, нормы или форматы обслуживания без основания в брифе." }),
 })
 
 type HeaderQuoteTwoColumnsSlideData = z.infer<typeof Schema>
@@ -175,7 +176,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
                   role: "body_emphasis",
                 })}
               >
-                {slideData?.leftStrongLine || "Поддержка делового ритма и концентрации,"}
+                {slideData?.leftStrongLine || "Поддержка ритма и комфорта гостей,"}
               </span>{" "}
               <span
                 {...promptTargetAttrs({
@@ -186,7 +187,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
                   role: "body_support",
                 })}
               >
-                {slideData?.leftWeakLine || "без отвлечения от содержательной части программы."}
+                {slideData?.leftWeakLine || "без разрывов в программе мероприятия."}
               </span>
             </div>
 
@@ -202,7 +203,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
               })}
             >
               {slideData?.leftBody ||
-                "Еда работает как фоновый, но структурирующий элемент: помогает переключаться между блоками, фиксировать паузы и выстраивать неформальное общение."}
+                "Подача, размещение сервисных зон и скорость обслуживания поддерживают гостевой путь и помогают сохранять нужный темп события."}
             </div>
           </div>
 
@@ -233,7 +234,7 @@ const dynamicSlideLayout: React.FC<HeaderQuoteTwoColumnsSlideLayoutProps> = ({ d
               })}
             >
               {slideData?.rightBody ||
-                "Концепция соответствует формату делового форума с участием управленческой и экспертной аудитории:"}
+                "Решение адаптируется под формат события, состав гостей и условия площадки:"}
             </div>
 
             <ul className="mt-5 space-y-3 text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500] min-h-0" style={{ color: bodyColor, fontFamily: bodyFont }}>

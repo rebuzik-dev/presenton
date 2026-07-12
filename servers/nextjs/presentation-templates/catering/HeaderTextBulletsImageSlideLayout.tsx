@@ -9,29 +9,30 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Menu photo")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Конкретное блюдо или формат подачи, иллюстрирующий принципы меню из брифа")
+    .meta({ description: "Крупный кадр меню или подачи. Не добавлять неподтверждённые блюда, текст или логотипы." }),
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
   __icon_prompt__: z
     .string()
     .min(1)
     .max(60)
-    .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
+    .default("иконка меню")
+    .meta({ description: "Короткое описание иконки, только если она требуется layout." }),
 })
 
 const layoutId = "header-text-bullets-image-slide"
 const layoutName = "Header Text Bullets Image Slide"
-const layoutDescription = "A slide with a header, a text column with bullet points, and a large image."
+const layoutDescription =
+  "Принципы меню: баланс, формат подачи, тайминг, аудитория и пищевые ограничения из брифа плюс уместные творческие предложения."
 
 const Schema = z.object({
   title: z
@@ -39,35 +40,35 @@ const Schema = z.object({
     .min(10)
     .max(65)
     .default("ОСНОВНЫЕ ПРИНЦИПЫ ФОРМИРОВАНИЯ МЕНЮ")
-    .meta({ description: "Main header. Max 4 words" }),
+    .meta({ description: "Заголовок раздела о принципах формирования меню." }),
   lead: z
     .string()
     .min(10)
     .max(70)
     .default("Меню формируется по функциональной логике.")
-    .meta({ description: "Lead text. Max 6 words" }),
+    .meta({ description: "Короткая формулировка логики меню для этого мероприятия." }),
   listTitle: z
     .string()
     .min(3)
     .max(20)
     .default("Принципы:")
-    .meta({ description: "List header. Max 1 word" }),
+    .meta({ description: "Короткая подпись перед списком принципов." }),
   bullets: z
-    .array(z.string().min(8).max(70).meta({ description: "Bullet text. Max 8 words" }))
+    .array(z.string().min(8).max(70).meta({ description: "Один конкретный принцип меню или подачи, основанный на брифе либо предложенный как решение." }))
     .min(2)
     .max(4)
     .default(["баланс лёгких и сытных позиций;", "адаптация под тайминг;", "универсальность для широкой аудитории."])
-    .meta({ description: "Bullet list items. Max 4 items" }),
+    .meta({ description: "От двух до четырёх разных принципов. Ограничения питания и конкретные блюда указывать только при наличии в брифе." }),
   footerNote: z
     .string()
     .min(6)
     .max(50)
     .default("Фокус — удобство и скорость потребления.")
-    .meta({ description: "Footer note text. Max 6 words" }),
+    .meta({ description: "Короткий вывод о пользе выбранного решения для гостей или сценария." }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Catering dish photo",
-  }).meta({ description: "Supporting image. Max 30 words" }),
+    __image_prompt__: "Блюдо, напиток или порционная подача, напрямую связанная с принципами меню и форматом мероприятия из брифа",
+  }).meta({ description: "Изображение иллюстрирует конкретный принцип меню и не повторяет общий вид сервисной зоны." }),
 })
 
 type HeaderTextBulletsImageSlideData = z.infer<typeof Schema>

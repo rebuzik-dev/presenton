@@ -8,28 +8,29 @@ import {
 import { promptTargetAttrs } from '@/app/(presentation-generator)/components/PromptTarget'
 
 const ImageSchema = z.object({
-  __image_url__: z.string().url().meta({ description: "URL to image. Max 10 words" }),
+  __image_url__: z.string().url().meta({ description: "Служебный URL изображения." }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Abstract presentation image")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Нейтральный фон для концепции кейтеринга, согласованный с визуальным стилем мероприятия")
+    .meta({ description: "Фоновое изображение обложки. Не добавлять текст, логотипы или предметы, которых нет в брифе." }),
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
   __icon_prompt__: z
     .string()
     .min(1)
     .max(60)
-    .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
+    .default("нейтральная иконка кейтеринга")
+    .meta({ description: "Короткое описание иконки, только если она требуется брифом." }),
 })
 
 const layoutId = "cover-kicker-title-slide"
 const layoutName = "Cover Kicker Title Slide"
-const layoutDescription = "A slide with a soft background and a kicker and a large title."
+const layoutDescription =
+  "Обложка концепции кейтеринга: тип документа и точное название мероприятия из брифа, без вымышленных дат, площадок и форматов."
 
 const Schema = z.object({
   kicker: z
@@ -37,13 +38,13 @@ const Schema = z.object({
     .min(3)
     .max(40)
     .default("Концепция кейтеринга")
-    .meta({ description: "Small header line. Max 4 words" }),
+    .meta({ description: "Тип документа: концепция кейтеринга или формулировка из брифа. До 4 слов." }),
   title: z
     .string()
     .min(5)
     .max(55)
     .default("НАИМЕНОВАНИЕ МЕРОПРИЯТИЯ")
-    .meta({ description: "Main large title. Max 3 words" }),
+    .meta({ description: "Название мероприятия точно из брифа. Не добавлять дату, город или формат, если они не входят в название." }),
 })
 
 type CoverKickerTitleSlideData = z.infer<typeof Schema>

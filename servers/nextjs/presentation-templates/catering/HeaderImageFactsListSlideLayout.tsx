@@ -8,25 +8,26 @@ const ImageSchema = z.object({
     .string()
     .url()
     .default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg")
-    .meta({ description: "URL to image" }),
+    .meta({ description: "Служебный URL изображения." }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Overview photo")
-    .meta({ description: "Prompt used to generate the image" }),
+    .default("Общий вид кейтеринга в формате и пространстве мероприятия из брифа")
+    .meta({ description: "Общий кадр сервиса или подачи. Не добавлять людей, зоны, брендинг и формат, которых нет в брифе." }),
 });
 
 const layoutId = "header-image-facts-list-slide";
 const layoutName = "Header Image Facts List Slide";
-const layoutDescription = "Static title + image left + right text blocks (AI-filled).";
+const layoutDescription =
+  "Общая информация о кейтеринге: подтверждённые параметры сервиса и ассортимент, без вымышленных количеств, норм, блюд или ограничений.";
 
 // ✅ Заголовки не заполняются ИИ — поэтому title/listTitle убраны из Schema
 const Schema = z.object({
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Catering overview photo",
-  }).meta({ description: "Main image" }),
+    __image_prompt__: "Общий вид кейтеринг-зоны или подачи, соответствующий формату, площадке и гостевому сценарию из брифа",
+  }).meta({ description: "Главное изображение показывает общий формат кейтеринга и не дублирует крупный план блюда." }),
 
   // ✅ ЦЕЛЬНЫЙ блок под факты (ИИ заполняет одним текстом)
   factsText: z
@@ -34,17 +35,17 @@ const Schema = z.object({
     .min(10)
     .max(420)
     .default(
-      "Количество человек: 200 человек. Выход еды на человека: 700 гр./человек. Выход напитков на человека: 400 гр./человек."
+      "Параметры сервиса определяются числом гостей, длительностью программы, форматом обслуживания и условиями площадки."
     )
-    .meta({ description: "Facts block (single text, auto-wrap)" }),
+    .meta({ description: "Фактические параметры из брифа: число гостей, нормы, длительность, зоны или тайминг. Не придумывать отсутствующие значения." }),
 
   // ✅ ЦЕЛЬНЫЙ блок под ассортимент (ИИ заполняет одним текстом)
   assortmentText: z
     .string()
     .min(10)
     .max(420)
-    .default("Горячие – 2 вида. Салаты – 3 вида. Закуски – 3 вида. Десерты – 2 вида.")
-    .meta({ description: "Assortment block (single text, auto-wrap)" }),
+    .default("Ассортимент формируется под аудиторию, время проведения, формат подачи и указанные пищевые ограничения.")
+    .meta({ description: "Категории меню и их количество только из брифа; при отсутствии состава дать принцип формирования без вымышленных блюд." }),
 });
 
 type HeaderImageFactsListSlideData = z.infer<typeof Schema>;
@@ -96,7 +97,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                 slideData?.image?.__image_url__ ||
                 "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg"
               }
-              alt={slideData?.image?.__image_prompt__ || "Overview"}
+              alt={slideData?.image?.__image_prompt__ || "Общий вид кейтеринга"}
               className="w-full h-full object-cover"
             />
           </div>
@@ -110,7 +111,7 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                   className="text-[22px] leading-[28px] font-[800]"
                   style={{ color: titleColor, fontFamily: bodyFont }}
                 >
-                  Количество человек / нормы
+                  Параметры сервиса
                 </div>
                 <div
                   className="mt-3 text-[20px] leading-[28px] font-[500]"
@@ -119,12 +120,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                     path: "factsText",
                     type: "field",
                     name: "Факты",
-                    description: "Текст блока с количеством и нормами",
+                    description: "Подтверждённые параметры сервиса без вымышленных значений",
                     role: "facts_text",
                   })}
                 >
                   {slideData?.factsText ||
-                    "Количество человек: 200 человек. Выход еды на человека: 700 гр./человек. Выход напитков на человека: 400 гр./человек."}
+                    "Параметры сервиса определяются числом гостей, длительностью программы, форматом обслуживания и условиями площадки."}
                 </div>
               </div>
 
@@ -142,12 +143,12 @@ const dynamicSlideLayout: React.FC<Props> = ({ data: slideData }) => {
                     path: "assortmentText",
                     type: "field",
                     name: "Ассортимент",
-                    description: "Текст блока с ассортиментом",
+                    description: "Подтверждённый ассортимент или принцип его формирования",
                     role: "assortment_text",
                   })}
                 >
                   {slideData?.assortmentText ||
-                    "Горячие – 2 вида. Салаты – 3 вида. Закуски – 3 вида. Десерты – 2 вида."}
+                    "Ассортимент формируется под аудиторию, время проведения, формат подачи и указанные пищевые ограничения."}
                 </div>
               </div>
             </div>

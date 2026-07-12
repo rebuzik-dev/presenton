@@ -9,34 +9,35 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Photo for slide")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Кейтеринг-сцена, показывающая применение палитры в подаче, сервировке или сервисной зоне")
+    .meta({ description: "Поддерживающий кадр палитры: показать её на релевантных объектах кейтеринга без случайного текста и логотипов." }),
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
   __icon_prompt__: z
     .string()
     .min(1)
     .max(60)
-    .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
+    .default("иконка цветовой палитры")
+    .meta({ description: "Короткое описание иконки, только если она требуется layout." }),
 })
 
 const layoutId = "header-color-cards-image-slide"
 const layoutName = "Header Color Cards Image Slide"
-const layoutDescription = "A slide with a header, grouped color cards, and a supporting image."
+const layoutDescription =
+  "Палитра кейтеринга: использовать фирменные цвета из брифа, а при их отсутствии предложить сочетание под формат, аудиторию и атмосферу мероприятия."
 
 const ColorCardSchema = z.object({
-  hex: z.string().min(4).max(9).default("#E6E6E6").meta({ description: "Hex code string. Max 1 word" }),
-  description: z.string().min(6).max(70).default("Описание цвета").meta({ description: "Card description. Max 8 words" }),
-  group: z.enum(["primary", "secondary"]).default("primary").meta({ description: "Group selector. Max 1 word" }),
+  hex: z.string().min(4).max(9).default("#E6E6E6").meta({ description: "HEX из брендбука или предложенный цвет, если палитра не задана." }),
+  description: z.string().min(6).max(70).default("Роль цвета в кейтеринге").meta({ description: "Практическая роль цвета: фон, текстиль, посуда, упаковка, еда или акцент." }),
+  group: z.enum(["primary", "secondary"]).default("primary").meta({ description: "Группа цвета: основной или дополнительный." }),
 })
 
 const Schema = z.object({
@@ -45,39 +46,39 @@ const Schema = z.object({
     .min(5)
     .max(40)
     .default("ЦВЕТОВАЯ ПАЛИТРА")
-    .meta({ description: "Main header" }),
+    .meta({ description: "Универсальный заголовок раздела с палитрой." }),
   primaryTitle: z
     .string()
     .min(3)
     .max(30)
     .default("Основные цвета")
-    .meta({ description: "Left column header (Primary colors)" }),
+    .meta({ description: "Заголовок группы основных цветов." }),
   secondaryTitle: z
     .string()
     .min(3)
     .max(40)
     .default("Дополнительные цвета")
-    .meta({ description: "Right column header (Secondary colors)" }),
+    .meta({ description: "Заголовок группы дополнительных цветов." }),
   colorCards: z
     .array(ColorCardSchema)
     .min(4)
     .max(8)
     .default([
-      { hex: "#E6E6E6", description: "Светло-серый, сервировка, скатерти", group: "primary" },
-      { hex: "#C9C4BE", description: "Тёплый бежево-серый, подложки, текстиль", group: "primary" },
-      { hex: "#999DA9", description: "Холодный серый, акценты и элементы", group: "primary" },
-      { hex: "#7F8C8D", description: "Серо-зелёный, вторичные акценты, флористика", group: "secondary" },
-      { hex: "#4F5D63", description: "Тёмный сланцевый, конструкции и опоры", group: "secondary" },
-      { hex: "#1A1C23", description: "Графит, линии, края, заземление", group: "secondary" },
+      { hex: "#F2EFE8", description: "Светлая база для посуды и поверхностей", group: "primary" },
+      { hex: "#3F474B", description: "Основной контраст для текстиля и оборудования", group: "primary" },
+      { hex: "#B58A56", description: "Тёплый акцент для деталей подачи", group: "primary" },
+      { hex: "#D6C7B5", description: "Поддерживающий оттенок материалов и упаковки", group: "secondary" },
+      { hex: "#6D7A70", description: "Натуральный акцент для свежих продуктов", group: "secondary" },
+      { hex: "#FFFFFF", description: "Нейтральный фон для чистоты композиции", group: "secondary" },
     ])
     .meta({
       description:
-        "Two independent columns. LEFT uses items with group='primary', RIGHT uses items with group='secondary'. In each column, render top-to-bottom in the same order as provided. Max 8 items total.",
+        "От четырёх до восьми цветов: сначала фирменная палитра из брифа, иначе обоснованное предложение. Основные и дополнительные цвета не дублировать.",
     }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Catering photo in neutral palette",
-  }).meta({ description: "Supporting image. Max 30 words" }),
+    __image_prompt__: "Кейтеринг-сцена с посудой, текстилем, упаковкой или подачей, демонстрирующая выбранную палитру в контексте мероприятия",
+  }).meta({ description: "Изображение показывает применение палитры, а не повторяет список HEX." }),
 })
 
 type HeaderColorCardsImageSlideData = z.infer<typeof Schema>

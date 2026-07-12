@@ -9,36 +9,37 @@ import { promptTargetAttrs } from '@/app/(presentation-generator)/components/Pro
 
 const ImageSchema = z.object({
   __image_url__: z.string().url().default("https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg").meta({
-    description: "URL to image. Max 10 words",
+    description: "Служебный URL изображения.",
   }),
   __image_prompt__: z
     .string()
     .min(3)
     .max(180)
-    .default("Decor photo")
-    .meta({ description: "Prompt used to generate the image. Max 30 words" }),
+    .default("Кейтеринг-решение для мероприятия на основе брифа")
+    .meta({ description: "Отдельный кадр кейтеринг-решения: блюдо, формат подачи или сервисная зона. Без текста и случайных логотипов." }),
 })
 
 const IconSchema = z.object({
-  __icon_url__: z.string().default("").meta({ description: "URL to icon. Max 10 words" }),
+  __icon_url__: z.string().default("").meta({ description: "Служебный URL иконки." }),
   __icon_prompt__: z
     .string()
     .min(1)
     .max(60)
-    .default("generic icon")
-    .meta({ description: "Prompt used to generate or search the icon. Max 6 words" }),
+    .default("иконка кейтеринг-решения")
+    .meta({ description: "Короткое описание иконки, только если она требуется layout." }),
 })
 
 const layoutId = "header-three-image-cards-slide"
 const layoutName = "Header Three Image Cards Slide"
-const layoutDescription = "A slide with a header and a row of image cards with titles."
+const layoutDescription =
+  "Три разных кейтеринг-решения для мероприятия: форматы подачи, категории меню или сервисные зоны, выбранные из брифа либо предложенные в его рамках."
 
 const CardSchema = z.object({
-  title: z.string().min(3).max(28).default("Заголовок").meta({ description: "Card title. Max 3 words" }),
+  title: z.string().min(3).max(28).default("Формат подачи").meta({ description: "Короткое название конкретного кейтеринг-решения. До 3 слов." }),
   image: ImageSchema.default({
     __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg",
-    __image_prompt__: "Decor image",
-  }).meta({ description: "Card image. Max 30 words" }),
+    __image_prompt__: "Конкретное кейтеринг-решение, связанное с названием карточки и условиями брифа",
+  }).meta({ description: "Изображение решения из этой карточки; не повторять сцены других карточек." }),
 })
 
 const Schema = z.object({
@@ -46,27 +47,27 @@ const Schema = z.object({
     .string()
     .min(5)
     .max(35)
-    .default("ПРЕДЛОЖЕНИЯ ПО ДЕКОРУ")
-    .meta({ description: "Main header. Max 3 words" }),
+    .default("КЕЙТЕРИНГ-РЕШЕНИЯ")
+    .meta({ description: "Заголовок раздела с вариантами меню, подачи или обслуживания." }),
   cards: z
     .array(CardSchema)
     .min(2)
     .max(4)
     .default([
       {
-        title: "Цветочные композиции",
-        image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Flower decor" },
+        title: "Основная подача",
+        image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Общий вид основной подачи блюд в формате мероприятия из брифа" },
       },
       {
-        title: "Сервировка",
-        image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Table setting" },
+        title: "Сервисная зона",
+        image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Сервисная зона кейтеринга, адаптированная к площадке и гостевому потоку" },
       },
       {
-        title: "Декоративные элементы",
-        image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Decor elements" },
+        title: "Деталь меню",
+        image: { __image_url__: "https://images.pexels.com/photos/31527637/pexels-photo-31527637.jpeg", __image_prompt__: "Крупный план блюда или порционной подачи, соответствующей меню и аудитории из брифа" },
       },
     ])
-    .meta({ description: "Image cards list. Max 4 items" }),
+    .meta({ description: "От двух до четырёх разных решений; интерфейс показывает первые три. Названия и сцены не должны дублироваться." }),
 })
 
 type HeaderThreeImageCardsSlideData = z.infer<typeof Schema>
@@ -99,7 +100,7 @@ const dynamicSlideLayout: React.FC<HeaderThreeImageCardsSlideLayoutProps> = ({ d
             role: "main_title",
           })}
         >
-          {slideData?.title || "ПРЕДЛОЖЕНИЯ ПО ДЕКОРУ"}
+          {slideData?.title || "КЕЙТЕРИНГ-РЕШЕНИЯ"}
         </div>
 
         <div className="mt-14 grid grid-cols-3 gap-7">
@@ -112,7 +113,7 @@ const dynamicSlideLayout: React.FC<HeaderThreeImageCardsSlideLayoutProps> = ({ d
                 path: `cards[${idx}].image.__image_prompt__`,
                 type: "image",
                 name: `Изображение карточки ${idx + 1}`,
-                description: "Фото внутри карточки",
+                description: "Отдельный кадр решения, связанный с подписью карточки",
                 role: "card_image",
               })}
             >
