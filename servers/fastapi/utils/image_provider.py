@@ -1,7 +1,10 @@
+from urllib.parse import urlparse
+
 from enums.image_provider import ImageProvider
 from utils.get_env import (
     get_disable_image_generation_env,
     get_image_provider_env,
+    get_image_gen_base_url_env,
 )
 from utils.parsers import parse_bool_or_none
 
@@ -66,5 +69,25 @@ def get_selected_image_provider() -> ImageProvider | None:
     """
     image_provider_env = get_image_provider_env()
     if image_provider_env:
-        return ImageProvider(image_provider_env)
+        return ImageProvider(
+            normalize_legacy_polza_provider(
+                image_provider_env,
+                get_image_gen_base_url_env(),
+            )
+        )
     return None
+
+
+def normalize_legacy_polza_provider(
+    provider: str | None,
+    base_url: str | None,
+) -> str | None:
+    if provider != ImageProvider.CUSTOM_OPENAI.value or not base_url:
+        return provider
+    try:
+        hostname = (urlparse(base_url).hostname or "").lower()
+    except ValueError:
+        return provider
+    if hostname == "polza.ai" or hostname.endswith(".polza.ai"):
+        return ImageProvider.POLZA.value
+    return provider
