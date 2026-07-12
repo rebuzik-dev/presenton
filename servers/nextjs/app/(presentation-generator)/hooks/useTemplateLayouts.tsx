@@ -7,6 +7,7 @@ import SlideErrorBoundary from "../components/SlideErrorBoundary";
 import TiptapTextReplacer from "../components/TiptapTextReplacer";
 import { updateSlideContent } from "../../../store/slices/presentationGeneration";
 import { Loader2 } from "lucide-react";
+import SlideMediaLayout from "../components/SlideMediaLayout";
 
 export const useTemplateLayouts = () => {
   const dispatch = useDispatch();
@@ -108,7 +109,13 @@ export const useTemplateLayouts = () => {
           data-layout-container="slide-root"
           className="layout-validation-slide-root"
         >
-          {renderedContent}
+          <SlideMediaLayout
+            slideData={slide.content}
+            slideIndex={slide.index}
+            properties={slide.properties}
+          >
+            {renderedContent}
+          </SlideMediaLayout>
         </div>
       );
 

@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { updateSlideImage, updateSlideIcon, updateImageProperties } from '@/store/slices/presentationGeneration';
 import ImageEditor from './ImageEditor';
 import IconsEditor from './IconsEditor';
+import { findBestSlideMediaPath } from '../utils/slideMedia';
 
 interface EditableLayoutWrapperProps {
     children: ReactNode;
@@ -28,7 +29,6 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
     children,
     slideIndex,
     slideData,
-    properties,
 
 }) => {
     const dispatch = useDispatch();
@@ -42,140 +42,6 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
     const dragStartPos = useRef<{ x: number; y: number } | null>(null);
     const dragStartElementPos = useRef<{ x: number; y: number } | null>(null);
     const clickThreshold = 5; // pixels - distinguish click from drag
-
-    /**
-     * Checks if two URLs match using various comparison strategies
-     */
-    const isMatchingUrl = (url1: string, url2: string): boolean => {
-        if (!url1 || !url2) return false;
-
-        // Normalize paths: decode, replace backslashes (Windows), remove query params
-        const normalize = (p: string) => {
-            try {
-                return decodeURIComponent(p).replace(/\\/g, '/').split('?')[0];
-            } catch (e) {
-                return p.replace(/\\/g, '/').split('?')[0];
-            }
-        };
-
-        const p1 = normalize(url1);
-        const p2 = normalize(url2);
-
-        // Direct match after normalization
-        if (p1 === p2) return true;
-
-        // Remove protocol and domain differences
-        const cleanUrl1 = p1.replace(/^https?:\/\/[^\/]+/, '').replace(/^\/+/, '');
-        const cleanUrl2 = p2.replace(/^https?:\/\/[^\/]+/, '').replace(/^\/+/, '');
-
-        if (cleanUrl1 === cleanUrl2) return true;
-
-        // Handle placeholder URLs - be more specific
-        if ((url1.includes('placeholder') && url2.includes('placeholder')) ||
-            (url1.includes('/static/images/') && url2.includes('/static/images/'))) {
-            // For placeholders, if they didn't match above, check just filenames
-            const f1 = p1.split('/').pop();
-            const f2 = p2.split('/').pop();
-            if (f1 === f2) return true;
-        }
-
-        // Handle app_data paths & others - rely on filename matching
-        // This is crucial for matching Frontend URL (http://...) with Backend Path (C:\...)
-        const filename1 = p1.split('/').pop() || '';
-        const filename2 = p2.split('/').pop() || '';
-
-        // Relaxed filename length check (> 5) to support shorter names and icons
-        if (filename1 === filename2 && filename1 !== '' && filename1.length > 5) {
-            return true;
-        }
-
-        return false;
-    };
-
-    /**
-     * Recursively searches for ALL image/icon data paths in the slide data structure
-     */
-    const findAllDataPaths = (targetUrl: string, data: any, path: string = ''): { path: string; type: 'image' | 'icon'; data: any }[] => {
-        if (!data || typeof data !== 'object') return [];
-
-        const matches: { path: string; type: 'image' | 'icon'; data: any }[] = [];
-
-        // Check current level for __image_url__ or __icon_url__
-        if (data.__image_url__ && isMatchingUrl(targetUrl, data.__image_url__)) {
-            matches.push({ path, type: 'image', data });
-        }
-
-        if (data.__icon_url__ && isMatchingUrl(targetUrl, data.__icon_url__)) {
-            matches.push({ path, type: 'icon', data });
-        }
-
-        // Recursively check nested objects and arrays
-        for (const [key, value] of Object.entries(data)) {
-            const newPath = path ? `${path}.${key}` : key;
-
-            if (Array.isArray(value)) {
-                for (let i = 0; i < value.length; i++) {
-                    const results = findAllDataPaths(targetUrl, value[i], `${newPath}[${i}]`);
-                    matches.push(...results);
-                }
-            } else if (value && typeof value === 'object') {
-                const results = findAllDataPaths(targetUrl, value, newPath);
-                matches.push(...results);
-            }
-        }
-
-        return matches;
-    };
-
-    /**
-     * Finds the best matching data path for a specific DOM element
-     */
-    const findBestDataPath = (targetUrl: string, imgElement: HTMLImageElement | SVGElement, data: any): { path: string; type: 'image' | 'icon'; data: any } | null => {
-        const allMatches = findAllDataPaths(targetUrl, data);
-
-        if (allMatches.length === 0) return null;
-        if (allMatches.length === 1) return allMatches[0];
-
-        // If multiple matches, use DOM position to find the correct one across images and svgs
-        const getElementSourceUrl = (el: Element): string | null => {
-            if (el instanceof HTMLImageElement) {
-                return el.src || null;
-            }
-            if (el instanceof SVGElement) {
-                const wrapperWithUrl = (el as unknown as HTMLElement).closest('[data-path]') as HTMLElement | null;
-                return wrapperWithUrl?.getAttribute('data-path') || null;
-            }
-            return null;
-        };
-
-        const allMediaInContainer = containerRef.current?.querySelectorAll('img, svg') || [] as unknown as NodeListOf<Element>;
-        const imgIndex = Array.from(allMediaInContainer).indexOf(imgElement as Element);
-
-        // Find images with the same URL pattern
-        const sameUrlElements: Element[] = [];
-        allMediaInContainer.forEach((el) => {
-            const elUrl = getElementSourceUrl(el);
-            if (elUrl && isMatchingUrl(elUrl, targetUrl)) {
-                sameUrlElements.push(el);
-            }
-        });
-
-        const sameUrlIndex = sameUrlElements.indexOf(imgElement as Element);
-
-        // Try to match based on position in the same URL group
-        if (sameUrlIndex >= 0 && sameUrlIndex < allMatches.length) {
-            return allMatches[sameUrlIndex];
-        }
-
-        // Fallback: try to match based on overall DOM position
-        if (imgIndex >= 0 && imgIndex < allMatches.length) {
-            return allMatches[imgIndex];
-        }
-
-        // Last resort: return the first match
-        return allMatches[0];
-    };
-
 
     /**
      * Finds and processes images in the DOM, making them editable
@@ -192,7 +58,12 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
             const src = htmlImg.src;
 
             if (src) {
-                const result = findBestDataPath(src, htmlImg, slideData);
+                const result = findBestSlideMediaPath(
+                    src,
+                    htmlImg,
+                    slideData,
+                    containerRef.current,
+                );
 
                 if (result) {
                     const { path: dataPath, type, data } = result;
@@ -232,20 +103,8 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
 
                     htmlImg.addEventListener('mousedown', mouseDownHandler, { capture: true });
 
-                    const itemIndex = parseInt(`${slideIndex}-${type}-${dataPath}-${index}`.split('-').pop() || '0');
-                    const propertiesData = properties?.[itemIndex];
-
-                    // Set absolute positioning to allow free movement
-                    const parentElement = htmlImg.parentElement;
-                    if (parentElement && window.getComputedStyle(parentElement).position === 'static') {
-                        parentElement.style.position = 'relative';
-                    }
-
-                    htmlImg.style.position = 'absolute';
                     htmlImg.style.cursor = 'move';
                     htmlImg.style.transition = 'opacity 0.2s';
-                    htmlImg.style.objectFit = propertiesData?.initialObjectFit;
-                    htmlImg.style.objectPosition = `${propertiesData?.initialFocusPoint?.x}% ${propertiesData?.initialFocusPoint?.y}%`;
 
                     const mouseEnterHandler = () => {
                         htmlImg.style.opacity = '0.8';
@@ -282,7 +141,12 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
             const src = wrapperWithUrl?.getAttribute('data-path') || '';
 
             if (src) {
-                const result = findBestDataPath(src, svgEl, slideData);
+                const result = findBestSlideMediaPath(
+                    src,
+                    svgEl,
+                    slideData,
+                    containerRef.current,
+                );
 
                 if (result && result.type === 'icon') {
                     const { path: dataPath, data } = result;

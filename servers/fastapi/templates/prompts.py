@@ -35,6 +35,8 @@ Provide reusable TSX code which can be used as template to generate new slides w
 - Image content:
     - Image field should be 'z.object({"image_url": z.string(), "image_prompt": z.string().max(100)})'
     - Replace actual image url with '/static/images/replaceable_template_image.png'
+    - Every replaceable image slot must be a `relative min-w-0 min-h-0 overflow-hidden` container.
+    - The image inside a replaceable slot must use `absolute inset-0 w-full h-full object-cover`.
 - Icon content:
     - Icon field should be 'z.object({"icon_url": z.string(), "icon_query": z.string().max(30)})'
     - Replace actual icon url with '/static/icons/placeholder.svg'
@@ -47,8 +49,9 @@ Provide reusable TSX code which can be used as template to generate new slides w
 - Try to keep the positions and sizes of elements as close to HTML reference as possible.
 
 # Flexible Positioning and Sizes Rules:
-- Must not use 'absolute' positioning for elements.
+- Must not use 'absolute' positioning for layout elements. Replaceable images are the only exception and must be absolutely positioned inside their own relative slot.
 - Must use 'flex', 'grid', 'margin', 'padding', 'gap', 'basis', 'justify', 'align', etc for positioning of elements.
+- Grid and flex children that contain images must use `min-w-0 min-h-0` so intrinsic image dimensions cannot expand the slide.
 - For variable length lists, wrap list into a container and center it.
 - Don't use specific sizes (height, width) for elements if not necessary.
 
@@ -110,7 +113,7 @@ Provide reusable TSX code which can be used as template to generate new slides w
 # React Component Rules:
 - React component must be named dynamicSlideLayout.
 - dynamicSlideLayout must take "{ data }: { data: Partial<z.infer<typeof Schema>> }" as props.
-- Wrap the code inside these classes: "relative w-full rounded-sm max-w-[1280px] shadow-lg max-h-[720px] aspect-video bg-white z-20 mx-auto overflow-hidden".
+- Wrap the code inside these classes: "relative w-[1280px] h-[720px] min-w-[1280px] min-h-[720px] max-w-[1280px] max-h-[720px] rounded-sm shadow-lg bg-white z-20 mx-auto overflow-hidden".
 - Make sure camelCase is used for all styles. For e.g. "letter-spacing" should be "letterSpacing".
 - Schema.parse must not be used in the code.
 - Use 'const {field1, field2, ...} = data;' to access the data.
@@ -159,6 +162,8 @@ You need to edit the given TSX code of the slide layout code according to the pr
 Follow these rules if new icons/images are asked:
 - Image field should be 'z.object({"image_url": z.string(), "image_prompt": z.string().max(100)})'
 - Use this as default image url: '/static/images/replaceable_template_image.png'
+- Put every replaceable image in a `relative min-w-0 min-h-0 overflow-hidden` slot and render it with `absolute inset-0 w-full h-full object-cover`.
+- Grid and flex children containing images must use `min-w-0 min-h-0`.
 - Icon field should be 'z.object({"icon_url": z.string(), "icon_query": z.string().max(30)})'
 - Use this as default icon url: '/static/icons/placeholder.svg'
 
@@ -211,6 +216,8 @@ You need to edit the given TSX code of the slide layout code according to the pr
 Follow these rules if new icons/images are asked:
 - Image field should be 'z.object({"image_url": z.string(), "image_prompt": z.string().max(100)})'
 - Use this as default image url: '/static/images/replaceable_template_image.png'
+- Put every replaceable image in a `relative min-w-0 min-h-0 overflow-hidden` slot and render it with `absolute inset-0 w-full h-full object-cover`.
+- Grid and flex children containing images must use `min-w-0 min-h-0`.
 - Icon field should be 'z.object({"icon_url": z.string(), "icon_query": z.string().max(30)})'
 - Use this as default icon url: '/static/icons/placeholder.svg'
 
