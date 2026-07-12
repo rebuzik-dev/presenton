@@ -24,6 +24,7 @@ from utils.get_env import get_app_data_directory_env
 
 
 _preview_locks: dict[uuid.UUID, asyncio.Lock] = {}
+PREVIEW_RENDERER_REVISION = "schema-media-v2"
 
 
 def compute_presentation_preview_revision(
@@ -31,6 +32,7 @@ def compute_presentation_preview_revision(
     slides: list[SlideModel],
 ) -> str:
     payload = {
+        "renderer_revision": PREVIEW_RENDERER_REVISION,
         "layout": presentation.layout,
         "slides": [
             {
@@ -138,7 +140,7 @@ async def ensure_presentation_preview_manifest(
         _write_manifest(rendering)
 
         try:
-            rendered_paths = await _render_previews_with_nextjs(
+            rendered_paths, render_warnings = await _render_previews_with_nextjs(
                 presentation_id=presentation_id,
                 revision=current.revision,
                 expected_slide_count=len(current.slides),
@@ -175,8 +177,18 @@ async def ensure_presentation_preview_manifest(
                 state="ready",
                 slides=ready_slides,
                 updated_at=updated_at,
+                warnings=render_warnings,
             )
             _write_manifest(manifest)
+            cleanup_warning = _remove_obsolete_preview_files(
+                presentation_id,
+                {Path(path).resolve() for path in rendered_paths.values()},
+            )
+            if cleanup_warning:
+                manifest = manifest.model_copy(
+                    update={"warnings": [*manifest.warnings, cleanup_warning]}
+                )
+                _write_manifest(manifest)
             return manifest
         except Exception as exc:
             failed = current.model_copy(
@@ -283,7 +295,7 @@ async def _render_previews_with_nextjs(
     revision: str,
     expected_slide_count: int,
     auth_context: dict[str, dict[str, str]],
-) -> dict[int, str]:
+) -> tuple[dict[int, str], list[str]]:
     base_url = os.getenv("NEXTJS_API_URL", "http://localhost:3000").rstrip("/")
     headers = {"Content-Type": "application/json", **auth_context["headers"]}
     params = auth_context["params"]
@@ -306,13 +318,30 @@ async def _render_previews_with_nextjs(
                 raise RuntimeError(f"Next.js preview renderer failed: {detail}")
 
     slides = payload.get("slides", []) if isinstance(payload, dict) else []
-    return {
+    rendered_paths = {
         int(item["index"]): str(item["filesystem_path"])
         for item in slides
         if isinstance(item, dict)
         and "index" in item
         and "filesystem_path" in item
     }
+    warnings = payload.get("warnings", []) if isinstance(payload, dict) else []
+    return rendered_paths, [str(item) for item in warnings if isinstance(item, str)]
+
+
+def _remove_obsolete_preview_files(
+    presentation_id: uuid.UUID,
+    active_paths: set[Path],
+) -> Optional[str]:
+    preview_directory = get_preview_directory(presentation_id)
+    try:
+        for candidate in preview_directory.glob("slide-*.png"):
+            resolved = candidate.resolve()
+            if resolved.parent == preview_directory and resolved not in active_paths:
+                candidate.unlink(missing_ok=True)
+    except OSError as exc:
+        return f"Failed to remove obsolete preview files: {exc}"
+    return None
 
 
 def extract_preview_auth_context(

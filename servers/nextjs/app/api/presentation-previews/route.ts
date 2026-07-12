@@ -6,6 +6,8 @@ import puppeteer, { Browser } from "puppeteer";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const REVISION_PATTERN = /^[0-9a-f]{64}$/i;
+const SLIDE_WIDTH = 1280;
+const SLIDE_HEIGHT = 720;
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -43,7 +45,11 @@ export async function POST(request: NextRequest) {
       ],
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
+    await page.setViewport({
+      width: SLIDE_WIDTH,
+      height: SLIDE_HEIGHT,
+      deviceScaleFactor: 1,
+    });
     page.setDefaultNavigationTimeout(300000);
     page.setDefaultTimeout(300000);
 
@@ -73,7 +79,18 @@ export async function POST(request: NextRequest) {
         const images = Array.from(wrapper.querySelectorAll('img'));
         const imagesReady = images.every((image) => image.complete);
         const fontsReady = !document.fonts || document.fonts.status === 'loaded';
-        return slides.length > 0 && skeletons.length === 0 && imagesReady && fontsReady;
+        const runtimeReady = Array.from(slides).every((slide) => {
+          return Boolean(
+            slide.querySelector('[data-slide-render-state="ready"]')
+          );
+        });
+        return (
+          slides.length > 0 &&
+          skeletons.length === 0 &&
+          imagesReady &&
+          fontsReady &&
+          runtimeReady
+        );
       }`,
       { timeout: 60000 },
     );
@@ -86,6 +103,30 @@ export async function POST(request: NextRequest) {
       }`,
       { timeout: 30000 },
     );
+    await page.evaluate(async () => {
+      if (document.fonts) await document.fonts.ready;
+      const images = Array.from(
+        document.querySelectorAll<HTMLImageElement>(
+          "#presentation-slides-wrapper img",
+        ),
+      );
+      await Promise.all(
+        images.map(async (image) => {
+          if (!image.complete) {
+            await new Promise<void>((resolve) => {
+              image.addEventListener("load", () => resolve(), { once: true });
+              image.addEventListener("error", () => resolve(), { once: true });
+            });
+          }
+          if (typeof image.decode === "function") {
+            await image.decode().catch(() => undefined);
+          }
+        }),
+      );
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+    });
 
     const slideElements = await page.$$(
       "#presentation-slides-wrapper > div > div",
@@ -105,7 +146,49 @@ export async function POST(request: NextRequest) {
     await fs.promises.mkdir(previewDirectory, { recursive: true });
 
     const slides: Array<{ index: number; filesystem_path: string }> = [];
+    const warnings: string[] = [];
     for (const [index, element] of slideElements.entries()) {
+      const metrics = await element.evaluate((slide) => {
+        const rect = slide.getBoundingClientRect();
+        const runtime = slide.querySelector<HTMLElement>("[data-slide-root]");
+        const images = Array.from(slide.querySelectorAll<HTMLImageElement>("img"));
+        return {
+          width: rect.width,
+          height: rect.height,
+          overflowX: runtime
+            ? runtime.scrollWidth > runtime.clientWidth + 1
+            : false,
+          overflowY: runtime
+            ? runtime.scrollHeight > runtime.clientHeight + 1
+            : false,
+          brokenImages: images.filter(
+            (image) => image.complete && image.naturalWidth === 0,
+          ).length,
+        };
+      });
+      if (
+        Math.abs(metrics.width - SLIDE_WIDTH) > 0.5 ||
+        Math.abs(metrics.height - SLIDE_HEIGHT) > 0.5
+      ) {
+        throw new Error(
+          "Slide " + (index + 1) + " rendered at " +
+            metrics.width + "x" + metrics.height + "; expected " +
+            SLIDE_WIDTH + "x" + SLIDE_HEIGHT,
+        );
+      }
+      if (metrics.overflowX || metrics.overflowY) {
+        warnings.push(
+          "Slide " + (index + 1) + " contains content outside the " +
+            SLIDE_WIDTH + "x" + SLIDE_HEIGHT + " canvas",
+        );
+      }
+      if (metrics.brokenImages > 0) {
+        warnings.push(
+          "Slide " + (index + 1) + " contains " + metrics.brokenImages +
+            " image asset(s) that failed to load",
+        );
+      }
+
       const filename = `slide-${index}-${revision.slice(0, 12)}.png`;
       const filesystemPath = path.resolve(previewDirectory, filename);
       if (path.dirname(filesystemPath) !== previewDirectory) {
@@ -122,6 +205,7 @@ export async function POST(request: NextRequest) {
       presentation_id: presentationId,
       revision,
       slides,
+      warnings,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
