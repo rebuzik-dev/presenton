@@ -97,6 +97,7 @@ class SlideImageSummaryResponse(BaseModel):
     slide_description: str
     image_prompt_slots: int
     image_prompts: List[str] = Field(default_factory=list)
+    image_slots: List[dict[str, Any]] = Field(default_factory=list)
     count_is_approximate: bool = False
 
 

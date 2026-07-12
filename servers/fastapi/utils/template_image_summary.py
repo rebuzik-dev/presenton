@@ -12,6 +12,12 @@ from utils.template_style_summary import build_template_style_summary
 SOURCE_IMAGE_PROMPT_RE = re.compile(
     r"""__image_prompt__\s*:\s*["']([^"']+)["']"""
 )
+PLACEHOLDER_IMAGE_PROMPT_RE = re.compile(
+    r"^(?:(?:generic|replaceable)\s+)?(?:image|photo|image prompt)(?:\s+\d+)?$"
+    r"|^(?:moodboard)(?:\s+(?:image|photo))?(?:\s+\d+)?$"
+    r"|^(?:catering\s+)?overview\s+photo$",
+    re.IGNORECASE,
+)
 
 
 def _decode_json_pointer_token(token: str) -> str:
@@ -114,6 +120,111 @@ def count_image_prompt_slots(schema: dict[str, Any]) -> Tuple[int, bool]:
     if not isinstance(schema, dict):
         return 0, False
     return _count_image_prompt_slots(schema, schema, set())
+
+
+def is_placeholder_image_prompt(value: str | None) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return True
+    return bool(PLACEHOLDER_IMAGE_PROMPT_RE.match(value.strip()))
+
+
+def _collect_image_slot_paths(
+    schema: Any,
+    *,
+    root_schema: dict[str, Any],
+    path: str,
+    seen_refs: set[str],
+) -> list[str]:
+    if not isinstance(schema, dict):
+        return []
+
+    ref = schema.get("$ref")
+    if isinstance(ref, str):
+        if ref in seen_refs:
+            return []
+        resolved = _resolve_local_ref(ref, root_schema)
+        if not resolved:
+            return []
+        return _collect_image_slot_paths(
+            resolved,
+            root_schema=root_schema,
+            path=path,
+            seen_refs=seen_refs | {ref},
+        )
+
+    paths: list[str] = []
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        for name, child in properties.items():
+            child_path = f"{path}.{name}" if path else name
+            if name == "__image_prompt__":
+                paths.append(child_path)
+                continue
+            paths.extend(
+                _collect_image_slot_paths(
+                    child,
+                    root_schema=root_schema,
+                    path=child_path,
+                    seen_refs=seen_refs,
+                )
+            )
+
+    if schema.get("type") == "array":
+        multiplier, _ = _get_array_multiplier(schema)
+        for index in range(multiplier):
+            item_path = f"{path}[{index}]" if path else f"[{index}]"
+            paths.extend(
+                _collect_image_slot_paths(
+                    schema.get("items"),
+                    root_schema=root_schema,
+                    path=item_path,
+                    seen_refs=seen_refs,
+                )
+            )
+
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        variants = schema.get(keyword)
+        if isinstance(variants, list):
+            for variant in variants:
+                paths.extend(
+                    _collect_image_slot_paths(
+                        variant,
+                        root_schema=root_schema,
+                        path=path,
+                        seen_refs=seen_refs,
+                    )
+                )
+
+    return list(dict.fromkeys(paths))
+
+
+def extract_slide_image_slots(
+    schema: dict[str, Any],
+    prompts: list[str],
+    expected_count: int,
+) -> list[dict[str, Any]]:
+    paths = _collect_image_slot_paths(
+        schema,
+        root_schema=schema,
+        path="",
+        seen_refs=set(),
+    )
+    while len(paths) < expected_count:
+        paths.append(f"image_slots[{len(paths)}].__image_prompt__")
+
+    slots: list[dict[str, Any]] = []
+    for index in range(expected_count):
+        raw_hint = prompts[index] if index < len(prompts) else None
+        placeholder = is_placeholder_image_prompt(raw_hint)
+        slots.append(
+            {
+                "slot_index": index,
+                "schema_path": paths[index],
+                "default_hint": None if placeholder else raw_hint,
+                "is_placeholder": placeholder,
+            }
+        )
+    return slots
 
 
 def _append_unique_prompt(prompts: list[str], value: str) -> None:
@@ -357,6 +468,11 @@ def build_layout_image_summary(
                 ),
                 "image_prompt_slots": image_slots,
                 "image_prompts": image_prompts,
+                "image_slots": extract_slide_image_slots(
+                    json_schema,
+                    image_prompts,
+                    image_slots,
+                ),
                 "count_is_approximate": is_approximate,
             }
         )

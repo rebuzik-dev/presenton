@@ -2,6 +2,7 @@ from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from utils.template_image_summary import (
     build_layout_image_summary,
     count_image_prompt_slots,
+    extract_slide_image_slots,
 )
 
 
@@ -92,6 +93,43 @@ def test_count_image_slots_with_defs_and_refs():
     assert approximate is False
 
 
+def test_extract_image_slots_expands_arrays_and_marks_placeholders():
+    schema = {
+        "type": "object",
+        "properties": {
+            "images": {
+                "type": "array",
+                "maxItems": 2,
+                "items": {
+                    "type": "object",
+                    "properties": {"__image_prompt__": {"type": "string"}},
+                },
+            }
+        },
+    }
+
+    slots = extract_slide_image_slots(
+        schema,
+        ["Moodboard image 1", "Premium table detail"],
+        2,
+    )
+
+    assert slots == [
+        {
+            "slot_index": 0,
+            "schema_path": "images[0].__image_prompt__",
+            "default_hint": None,
+            "is_placeholder": True,
+        },
+        {
+            "slot_index": 1,
+            "schema_path": "images[1].__image_prompt__",
+            "default_hint": "Premium table detail",
+            "is_placeholder": False,
+        },
+    ]
+
+
 def test_build_layout_image_summary_contains_descriptions():
     layout = PresentationLayoutModel(
         name="general",
@@ -127,6 +165,14 @@ def test_build_layout_image_summary_contains_descriptions():
     assert "Hero layout with one image" in summary["slides"][0]["slide_description"]
     assert "Schema: Hero Slide" in summary["slides"][0]["slide_description"]
     assert summary["slides"][0]["image_prompts"] == ["Hero visual prompt"]
+    assert summary["slides"][0]["image_slots"] == [
+        {
+            "slot_index": 0,
+            "schema_path": "image.__image_prompt__",
+            "default_hint": "Hero visual prompt",
+            "is_placeholder": False,
+        }
+    ]
 
 
 def test_build_layout_image_summary_prefers_concrete_prompt_defaults():
