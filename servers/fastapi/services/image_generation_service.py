@@ -3,6 +3,7 @@ import base64
 import json
 import mimetypes
 import os
+from urllib.parse import urlparse
 from io import BytesIO
 import aiohttp
 from fastapi import HTTPException
@@ -18,7 +19,14 @@ from utils.get_env import (
     get_image_gen_api_key_env,
     get_image_gen_base_url_env,
     get_image_gen_model_env,
+    get_polza_image_options_env,
+    get_openai_compat_image_api_key_env,
+    get_openai_compat_image_base_url_env,
+    get_openai_compat_image_model_env,
+    get_open_webui_image_api_key_env,
+    get_open_webui_image_url_env,
 )
+from services.polza_media_client import PolzaMediaClient
 from utils.get_env import get_pixabay_api_key_env
 from utils.get_env import get_comfyui_url_env
 from utils.get_env import get_comfyui_workflow_env
@@ -32,6 +40,9 @@ from utils.image_provider import (
     is_dalle3_selected,
     is_comfyui_selected,
     is_custom_openai_selected,
+    is_open_webui_selected,
+    is_openai_compatible_selected,
+    is_polza_selected,
     is_vsellm_selected,
 )
 import uuid
@@ -67,6 +78,12 @@ class ImageGenerationService:
             return self.generate_image_openai_gpt_image_1_5
         elif is_comfyui_selected():
             return self.generate_image_comfyui
+        elif is_open_webui_selected():
+            return self.generate_image_open_webui
+        elif is_openai_compatible_selected():
+            return self.generate_image_openai_compatible
+        elif is_polza_selected():
+            return self.generate_image_polza
         elif is_vsellm_selected():
             return self.generate_image_vsellm
         elif is_custom_openai_selected():
@@ -565,6 +582,147 @@ class ImageGenerationService:
             "gpt-image-1.5",
             get_gpt_image_1_5_quality_env() or "medium",
         )
+
+    async def generate_image_openai_compatible(
+        self, prompt: str, output_directory: str
+    ) -> str:
+        base_url = get_openai_compat_image_base_url_env()
+        api_key = get_openai_compat_image_api_key_env()
+        model = get_openai_compat_image_model_env()
+        if not base_url or not api_key or not model:
+            raise ValueError(
+                "OPENAI_COMPAT_IMAGE_BASE_URL, OPENAI_COMPAT_IMAGE_API_KEY and "
+                "OPENAI_COMPAT_IMAGE_MODEL must be set"
+            )
+
+        parsed = urlparse(base_url)
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+        response = await client.images.generate(
+            model=model,
+            prompt=prompt,
+            n=1,
+            size="1024x1024",
+        )
+        item = response.data[0]
+        if getattr(item, "b64_json", None):
+            return self._save_base64_image(
+                item.b64_json, output_directory, "png"
+            )
+        image_url = getattr(item, "url", None)
+        if image_url:
+            if image_url.startswith("/"):
+                image_url = origin + image_url
+            async with aiohttp.ClientSession(trust_env=True) as session:
+                response = await session.get(
+                    image_url,
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    timeout=aiohttp.ClientTimeout(total=120),
+                )
+                if response.status != 200:
+                    raise Exception(
+                        "Failed to download image from OpenAI-compatible provider: "
+                        f"{response.status}"
+                    )
+                image_path = os.path.join(output_directory, f"{uuid.uuid4()}.png")
+                with open(image_path, "wb") as image_file:
+                    image_file.write(await response.read())
+                return image_path
+        raise Exception("OpenAI-compatible provider returned no image data")
+
+    async def generate_image_open_webui(
+        self, prompt: str, output_directory: str
+    ) -> str:
+        base_url = (get_open_webui_image_url_env() or "").rstrip("/")
+        if not base_url:
+            raise ValueError("OPEN_WEBUI_IMAGE_URL environment variable is not set")
+        api_key = get_open_webui_image_api_key_env() or ""
+        parsed = urlparse(base_url)
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            response = await session.post(
+                f"{base_url}/images/generations",
+                json={"prompt": prompt, "n": 1, "size": "1024x1024"},
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=300),
+            )
+            if response.status != 200:
+                raise Exception(
+                    f"Open WebUI image generation returned {response.status}: "
+                    f"{(await response.text())[:500]}"
+                )
+            body = await response.json()
+            items = body if isinstance(body, list) else body.get("data", [])
+            if not items:
+                raise Exception("Open WebUI returned empty results")
+            item = items[0]
+            if item.get("b64_json"):
+                return self._save_base64_image(
+                    item["b64_json"], output_directory, "png"
+                )
+            image_url = item.get("url")
+            if not image_url:
+                raise Exception("Open WebUI returned no image payload")
+            if image_url.startswith("/"):
+                image_url = origin + image_url
+            download = await session.get(
+                image_url,
+                headers=(
+                    {"Authorization": f"Bearer {api_key}"} if api_key else {}
+                ),
+                timeout=aiohttp.ClientTimeout(total=120),
+            )
+            if download.status != 200:
+                raise Exception(f"Failed to download Open WebUI image: {download.status}")
+            return self._save_image_bytes(
+                await download.read(), output_directory, "png"
+            )
+
+    async def generate_image_polza(
+        self,
+        prompt: str,
+        output_directory: str,
+        reference_images: list[str] | None = None,
+    ) -> str:
+        if reference_images:
+            raise ValueError("Polza text-to-image generation does not accept reference images")
+
+        api_key = get_image_gen_api_key_env()
+        model = get_image_gen_model_env()
+        base_url = get_image_gen_base_url_env() or "https://polza.ai/api/v1"
+        if not api_key:
+            raise ValueError("IMAGE_GEN_API_KEY is required for Polza provider")
+        if not model:
+            raise ValueError("IMAGE_GEN_MODEL is required for Polza provider")
+
+        raw_options = get_polza_image_options_env()
+        try:
+            options = json.loads(raw_options) if raw_options else {}
+        except json.JSONDecodeError as exc:
+            raise ValueError("POLZA_IMAGE_OPTIONS must be valid JSON") from exc
+
+        client = PolzaMediaClient(api_key=api_key, base_url=base_url)
+        result = await client.generate(model_id=model, prompt=prompt, options=options)
+        image_url = client.result_url(result)
+
+        parsed_url = urlparse(image_url)
+        extension = os.path.splitext(parsed_url.path)[1] or ".png"
+        output_path = os.path.join(output_directory, f"{uuid.uuid4()}{extension}")
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            response = await session.get(
+                image_url,
+                timeout=aiohttp.ClientTimeout(total=120),
+            )
+            if response.status >= 400:
+                raise RuntimeError(
+                    f"Unable to download Polza image: HTTP {response.status}"
+                )
+            with open(output_path, "wb") as image_file:
+                image_file.write(await response.read())
+        return output_path
 
     async def generate_image_custom_openai(
         self, prompt: str, output_directory: str

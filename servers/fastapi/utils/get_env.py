@@ -363,6 +363,10 @@ def get_image_gen_model_env():
     return os.getenv("IMAGE_GEN_MODEL")
 
 
+def get_polza_image_options_env():
+    return os.getenv("POLZA_IMAGE_OPTIONS")
+
+
 def get_jwt_secret_env():
     return os.getenv("JWT_SECRET")
 

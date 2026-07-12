@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo } from "react";
+import React, { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useLayout } from "../context/LayoutContext";
 import EditableLayoutWrapper from "../components/EditableLayoutWrapper";
@@ -13,21 +13,16 @@ export const useTemplateLayouts = () => {
   const { getLayoutById, getLayout, loading } =
     useLayout();
 
-  const getTemplateLayout = useMemo(() => {
-    return (layoutId: string, groupName: string) => {
-      const layout = getLayoutById(layoutId);
-      if (layout) {
-        return getLayout(layoutId);
-      }
-      return null;
-    };
+  const getTemplateLayout = useCallback((layoutId: string) => {
+    const layout = getLayoutById(layoutId);
+    return layout ? getLayout(layoutId) : null;
   }, [getLayoutById, getLayout]);
 
 
 
   // Render slide content with group validation, automatic Tiptap text editing, and editable images/icons
-  const renderSlideContent = useMemo(() => {
-    return (
+  const renderSlideContent = useCallback(
+    (
       slide: any,
       isEditMode: boolean,
       options?: { enableTextReplacer?: boolean }
@@ -42,7 +37,7 @@ export const useTemplateLayouts = () => {
         );
       }
 
-      const Layout = getTemplateLayout(slide.layout, slide.layout_group);
+      const Layout = getTemplateLayout(slide.layout);
       if (loading) {
         return (
           <div className="flex flex-col items-center justify-center aspect-video h-full bg-gray-100 rounded-lg">
@@ -130,8 +125,9 @@ export const useTemplateLayouts = () => {
       }
 
       return contentWithLayoutRoot;
-    };
-  }, [getTemplateLayout, dispatch]);
+    },
+    [getTemplateLayout, dispatch, loading]
+  );
 
   return {
     getTemplateLayout,

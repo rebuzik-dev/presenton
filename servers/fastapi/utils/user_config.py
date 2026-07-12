@@ -1,3 +1,5 @@
+import json
+
 from models.user_config import UserConfig
 from utils.get_env import (
     get_anthropic_api_key_env,
@@ -73,6 +75,10 @@ from utils.get_env import (
     get_openai_compat_image_base_url_env,
     get_openai_compat_image_api_key_env,
     get_openai_compat_image_model_env,
+    get_image_gen_api_key_env,
+    get_image_gen_base_url_env,
+    get_image_gen_model_env,
+    get_polza_image_options_env,
 )
 from utils.parsers import parse_bool_or_none
 from utils.user_config_store import read_user_config_file, update_user_config_file
@@ -150,6 +156,10 @@ from utils.set_env import (
     set_openai_compat_image_base_url_env,
     set_openai_compat_image_api_key_env,
     set_openai_compat_image_model_env,
+    set_image_gen_api_key_env,
+    set_image_gen_base_url_env,
+    set_image_gen_model_env,
+    set_polza_image_options_env,
 )
 
 
@@ -164,6 +174,16 @@ def _prefer_env_bool(env_value, existing_value, default=None):
     if existing_value is not None:
         return existing_value
     return default
+
+
+def _parse_json_object(value):
+    if not value:
+        return None
+    try:
+        parsed = json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
 
 
 def get_user_config():
@@ -247,6 +267,13 @@ def get_user_config():
         IMAGE_PROVIDER=_prefer_env_value(
             get_image_provider_env(), existing_config.IMAGE_PROVIDER
         ),
+        IMAGE_GEN_API_KEY=existing_config.IMAGE_GEN_API_KEY
+        or get_image_gen_api_key_env(),
+        IMAGE_GEN_BASE_URL=existing_config.IMAGE_GEN_BASE_URL
+        or get_image_gen_base_url_env(),
+        IMAGE_GEN_MODEL=existing_config.IMAGE_GEN_MODEL or get_image_gen_model_env(),
+        POLZA_IMAGE_OPTIONS=existing_config.POLZA_IMAGE_OPTIONS
+        or _parse_json_object(get_polza_image_options_env()),
         DISABLE_IMAGE_GENERATION=_prefer_env_bool(
             get_disable_image_generation_env(),
             existing_config.DISABLE_IMAGE_GENERATION,
@@ -300,8 +327,8 @@ def get_user_config():
     ))
 
 
-def update_env_with_user_config():
-    user_config = get_user_config()
+def update_env_with_user_config(user_config: UserConfig | None = None):
+    user_config = resolve_active_model_profile(user_config or get_user_config())
     if user_config.LLM:
         set_llm_provider_env(user_config.LLM)
     if user_config.OPENAI_API_KEY:
@@ -402,6 +429,14 @@ def update_env_with_user_config():
         set_disable_image_generation_env(str(user_config.DISABLE_IMAGE_GENERATION))
     if user_config.IMAGE_PROVIDER:
         set_image_provider_env(user_config.IMAGE_PROVIDER)
+    if user_config.IMAGE_GEN_API_KEY:
+        set_image_gen_api_key_env(user_config.IMAGE_GEN_API_KEY)
+    if user_config.IMAGE_GEN_BASE_URL:
+        set_image_gen_base_url_env(user_config.IMAGE_GEN_BASE_URL)
+    if user_config.IMAGE_GEN_MODEL:
+        set_image_gen_model_env(user_config.IMAGE_GEN_MODEL)
+    if user_config.POLZA_IMAGE_OPTIONS is not None:
+        set_polza_image_options_env(json.dumps(user_config.POLZA_IMAGE_OPTIONS))
     if user_config.PIXABAY_API_KEY:
         set_pixabay_api_key_env(user_config.PIXABAY_API_KEY)
     if user_config.PEXELS_API_KEY:

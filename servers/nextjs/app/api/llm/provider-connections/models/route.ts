@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
-import path from "path";
 import { LLMConfig, LLMProviderConnection } from "@/types/llm_config";
 import { getFastAPIUrl } from "@/utils/api";
 import {
   migrateLegacyLLMConfig,
   normalizeModelsResponse,
-  resolveActiveProfileToLegacyConfig,
+  CONFIGURED_SECRET_MARKER,
   sanitizeProviderConnectionSecrets,
 } from "@/utils/llmProviderProfiles";
 
@@ -183,18 +182,28 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const connectionId = String(body?.connection_id || "");
-  if (!connectionId) {
-    return NextResponse.json({ error: "connection_id is required" }, { status: 400 });
-  }
-
   const fileConfig = readFileConfig();
   const effectiveConfig = migrateLegacyLLMConfig({
     ...fileConfig,
     ...getConfigFromEnv(),
   });
   const connections = effectiveConfig.LLM_PROVIDER_CONNECTIONS || [];
-  const connection = connections.find((candidate) => candidate.id === connectionId);
+  const draft = body?.connection as LLMProviderConnection | undefined;
+  const connectionId = String(draft?.id || body?.connection_id || "");
+  if (!connectionId) {
+    return NextResponse.json({ error: "connection.id is required" }, { status: 400 });
+  }
+  const savedConnection = connections.find((candidate) => candidate.id === connectionId);
+  const connection = draft
+    ? {
+        ...savedConnection,
+        ...draft,
+        api_key:
+          !draft.api_key || draft.api_key === CONFIGURED_SECRET_MARKER
+            ? savedConnection?.api_key
+            : draft.api_key,
+      }
+    : savedConnection;
   if (!connection) {
     return NextResponse.json({ error: "Provider connection not found" }, { status: 404 });
   }
@@ -202,44 +211,19 @@ export async function POST(request: Request) {
   try {
     const models = await requestModels(connection);
     const updatedAt = new Date().toISOString();
-    const nextConfig: LLMConfig = {
-      ...effectiveConfig,
-      LLM_PROVIDER_CONNECTIONS: connections.map((candidate) =>
-        candidate.id === connectionId
-          ? {
-              ...candidate,
-              models_cache: models,
-              models_cache_updated_at: updatedAt,
-              models_cache_error: "",
-            }
-          : candidate
-      ),
+    const refreshedConnection: LLMProviderConnection = {
+      ...connection,
+      models_cache: models,
+      models_cache_updated_at: updatedAt,
+      models_cache_error: "",
     };
-    const runtimeConfig = resolveActiveProfileToLegacyConfig(nextConfig);
-    fs.mkdirSync(path.dirname(userConfigPath), { recursive: true });
-    fs.writeFileSync(userConfigPath, JSON.stringify(runtimeConfig));
 
     return NextResponse.json({
-      connection: sanitizeProviderConnectionSecrets(
-        runtimeConfig.LLM_PROVIDER_CONNECTIONS
-      ).find((candidate) => candidate.id === connectionId),
+      connection: sanitizeProviderConnectionSecrets([refreshedConnection])[0],
       models,
     });
   } catch (error) {
     const message = sanitizeError(error);
-    const nextConfig: LLMConfig = {
-      ...effectiveConfig,
-      LLM_PROVIDER_CONNECTIONS: connections.map((candidate) =>
-        candidate.id === connectionId
-          ? {
-              ...candidate,
-              models_cache_error: message,
-            }
-          : candidate
-      ),
-    };
-    fs.mkdirSync(path.dirname(userConfigPath), { recursive: true });
-    fs.writeFileSync(userConfigPath, JSON.stringify(resolveActiveProfileToLegacyConfig(nextConfig)));
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

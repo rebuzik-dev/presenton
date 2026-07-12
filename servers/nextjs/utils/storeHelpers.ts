@@ -1,6 +1,8 @@
 import { setLLMConfig } from "@/store/slices/userConfig";
 import { store } from "@/store/store";
 import { LLMConfig } from "@/types/llm_config";
+import { getApiUrl } from "@/utils/api";
+import { getHeader } from "@/app/(presentation-generator)/services/api/header";
 
 function isProvided(value: unknown): boolean {
   return value !== "" && value !== null && value !== undefined;
@@ -267,6 +269,7 @@ export const getLLMConfigValidationError = (
         break;
       case "custom_openai":
       case "vsellm":
+      case "polza":
         if (
           !isProvided(llmConfig.IMAGE_GEN_BASE_URL?.trim()) ||
           !isProvided(llmConfig.IMAGE_GEN_API_KEY?.trim()) ||
@@ -327,16 +330,38 @@ export const handleSaveLLMConfig = async (llmConfig: LLMConfig) => {
   }
 
   // Prefer shared API routes; fallback to Electron IPC for packaged compatibility.
+  let savedConfig: LLMConfig;
   if (typeof window !== "undefined" && window.electron?.setUserConfig) {
     await window.electron.setUserConfig(normalizedConfig);
+    const savedResponse = await fetch("/api/user-config");
+    if (!savedResponse.ok) {
+      throw new Error(`Configuration was saved but could not be read (${savedResponse.status})`);
+    }
+    savedConfig = await savedResponse.json();
   } else {
-    await fetch("/api/user-config", {
+    const response = await fetch("/api/user-config", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(normalizedConfig),
     });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `Unable to save configuration (${response.status})`);
+    }
+    savedConfig = await response.json();
   }
 
-  store.dispatch(setLLMConfig(normalizedConfig));
+  const applyResponse = await fetch(getApiUrl("/api/v1/ppt/config/apply"), {
+    method: "POST",
+    headers: getHeader(),
+  });
+  if (!applyResponse.ok) {
+    const error = await applyResponse.json().catch(() => ({}));
+    throw new Error(error.detail || `Configuration was saved but could not be applied (${applyResponse.status})`);
+  }
+
+  store.dispatch(setLLMConfig(savedConfig));
+  return savedConfig;
 };
 
 export const hasValidLLMConfig = (llmConfig: LLMConfig) =>

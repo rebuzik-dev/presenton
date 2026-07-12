@@ -13,3 +13,4 @@ class ImageProvider(Enum):
     COMFYUI = "comfyui"
     OPEN_WEBUI = "open_webui"
     OPENAI_COMPATIBLE = "openai_compatible"
+    POLZA = "polza"

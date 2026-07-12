@@ -11,11 +11,11 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
     const textProviderIcon = LLM_PROVIDERS[llm_config.LLM as keyof typeof LLM_PROVIDERS]?.icon
     const imageProviderIcon = IMAGE_PROVIDERS[llm_config.IMAGE_PROVIDER as keyof typeof IMAGE_PROVIDERS]?.icon || '/providers/pexel.png'
     return (
-        <div className='w-full max-w-[230px] h-screen px-3 pt-[22px] bg-[#F9FAFB] flex flex-col'>
-            <p className='text-xs text-black  font-medium border-b mt-[3.15rem]  border-[#E1E1E5] pb-3.5'>FILTER BY:</p>
+        <div className='flex h-screen w-[72px] shrink-0 flex-col bg-[#F9FAFB] px-2 pt-[22px] sm:w-full sm:max-w-[230px] sm:px-3'>
+            <p className='mt-[3.15rem] hidden border-b border-[#E1E1E5] pb-3.5 text-xs font-medium text-black sm:block'>FILTER BY:</p>
             <div className='mt-6 flex-1'>
-                <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Select Mode</p>
-                <div className='p-0.5 rounded-[40px] bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center mb-[34px] '>
+                <p className='hidden pb-2.5 text-xs font-medium text-[#3A3A3A] sm:block'>Select Mode</p>
+                <div className='mb-[34px] hidden w-fit items-center justify-center rounded-[40px] border border-[#EDEEEF] bg-[#ffffff] p-0.5 sm:flex'>
                     <button className='px-3 font-syne h-[26px] text-[10px] font-medium text-[#3A3A3A] rounded-[70px]'
                         onClick={() => setMode('presenton')}
                         style={{
@@ -44,20 +44,20 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
 
 
                 </div>
-                <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Select Provider</p>
+                <p className='hidden pb-2.5 text-xs font-medium text-[#3A3A3A] sm:block'>Select Provider</p>
                 {mode === 'presenton' && <div className='space-y-2.5'>
-                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'text-provider' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('text-provider')}>
+                    <button aria-label="Text provider" className={` flex w-full items-center justify-center gap-1.5 rounded-[6px] border px-2 py-4 sm:justify-start sm:px-3 ${selectedProvider === 'text-provider' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('text-provider')}>
                         <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF]'>
 
                             <img src={textProviderIcon} className=' object-cover w-full h-full overflow-hidden' alt='google' />
                         </div>
-                        <p className='text-[#191919] text-xs  font-medium' >Text Provider</p>
+                        <p className='hidden text-xs font-medium text-[#191919] sm:block' >Text Provider</p>
                     </button>
-                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'image-provider' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('image-provider')}>
+                    <button aria-label="Image provider" className={` flex w-full items-center justify-center gap-1.5 rounded-[6px] border px-2 py-4 sm:justify-start sm:px-3 ${selectedProvider === 'image-provider' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('image-provider')}>
                         <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF]'>
                             <img src={imageProviderIcon} className=' object-cover w-full h-full overflow-hidden' alt='google' />
                         </div>
-                        <p className='text-[#191919] text-xs  font-medium' >Image Provider</p>
+                        <p className='hidden text-xs font-medium text-[#191919] sm:block' >Image Provider</p>
                     </button>
                 </div>}
                 {
@@ -74,25 +74,27 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
             </div>
 
             <div className='border-t border-[#E1E1E5] py-5 relative z-50'>
-                <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Other</p>
+                <p className='hidden pb-2.5 text-xs font-medium text-[#3A3A3A] sm:block'>Other</p>
                 <div className='space-y-2.5'>
                     <button
-                        className={`w-full rounded-[6px] p-3 py-4 flex items-center gap-1.5 border ${selectedProvider === 'privacy' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`}
+                        aria-label="Usage analytics"
+                        className={`flex w-full items-center justify-center gap-1.5 rounded-[6px] border p-2 py-4 sm:justify-start sm:p-3 ${selectedProvider === 'privacy' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`}
                         onClick={() => setSelectedProvider('privacy')}
                     >
                         <div className='relative w-6 h-6 rounded-full overflow-hidden border border-[#EDEEEF] flex items-center justify-center bg-white'>
                             <Shield className='w-3.5 h-3.5 text-[#5146E5]' />
                         </div>
-                        <p className='text-[#191919] text-xs font-medium'>Usage Analytics</p>
+                        <p className='hidden text-xs font-medium text-[#191919] sm:block'>Usage Analytics</p>
                     </button>
                     <button
-                        className={`w-full rounded-[6px] p-3 py-4 flex items-center gap-1.5 border ${selectedProvider === 'session' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`}
+                        aria-label="Sign out"
+                        className={`flex w-full items-center justify-center gap-1.5 rounded-[6px] border p-2 py-4 sm:justify-start sm:p-3 ${selectedProvider === 'session' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`}
                         onClick={() => setSelectedProvider('session')}
                     >
                         <div className='relative w-6 h-6 rounded-full overflow-hidden border border-[#EDEEEF] flex items-center justify-center bg-white'>
                             <LogOut className='w-3.5 h-3.5 text-[#5146E5]' />
                         </div>
-                        <p className='text-[#191919] text-xs font-medium'>Sign out</p>
+                        <p className='hidden text-xs font-medium text-[#191919] sm:block'>Sign out</p>
                     </button>
                 </div>
             </div>

@@ -112,6 +112,7 @@ class UserConfig(BaseModel):
     IMAGE_GEN_API_KEY: Optional[str] = None
     IMAGE_GEN_BASE_URL: Optional[str] = None
     IMAGE_GEN_MODEL: Optional[str] = None
+    POLZA_IMAGE_OPTIONS: Optional[dict] = None
 
     # Dalle 3 Quality
     DALL_E_3_QUALITY: Optional[str] = None

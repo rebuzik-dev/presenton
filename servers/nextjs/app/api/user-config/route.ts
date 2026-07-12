@@ -114,6 +114,18 @@ function compactEnvConfig(config: LLMConfig): LLMConfig {
   ) as LLMConfig;
 }
 
+function parseJsonObject(value?: string): Record<string, string | number | boolean> | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function getConfigFromEnv(): LLMConfig {
   return compactEnvConfig({
     LLM: process.env.LLM,
@@ -143,6 +155,7 @@ function getConfigFromEnv(): LLMConfig {
     IMAGE_GEN_API_KEY: process.env.IMAGE_GEN_API_KEY,
     IMAGE_GEN_BASE_URL: process.env.IMAGE_GEN_BASE_URL,
     IMAGE_GEN_MODEL: process.env.IMAGE_GEN_MODEL,
+    POLZA_IMAGE_OPTIONS: parseJsonObject(process.env.POLZA_IMAGE_OPTIONS),
     TOOL_CALLS:
       process.env.TOOL_CALLS === undefined
         ? undefined
