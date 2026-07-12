@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 from enums.tone import Tone
 from enums.verbosity import Verbosity
+from models.presentation_outline_model import PresentationImageStyle, SlideImageBrief
 
 
 class GeneratePresentationRequest(BaseModel):
@@ -12,6 +13,7 @@ class GeneratePresentationRequest(BaseModel):
             default=None,
             description="Optional user-provided image guidance for the slide",
         )
+        image_briefs: List[SlideImageBrief] = Field(default_factory=list)
         reference_image_source: Optional[str] = Field(
             default=None,
             description="Optional reference image source (URL/path/data URL) for the slide",
@@ -32,6 +34,7 @@ class GeneratePresentationRequest(BaseModel):
     instructions: Optional[str] = Field(
         default=None, description="The instruction for generating the presentation"
     )
+    image_style: Optional[PresentationImageStyle] = None
     tone: Tone = Field(default=Tone.DEFAULT, description="The tone to use for the text")
     verbosity: Verbosity = Field(
         default=Verbosity.STANDARD, description="How verbose the presentation should be"

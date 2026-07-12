@@ -1,17 +1,28 @@
 import asyncio
+import json
+import re
 from datetime import datetime
 from typing import Any, Dict, Optional
+from fastapi import HTTPException
 from models.llm_message import LLMSystemMessage, LLMUserMessage
 from models.presentation_layout import SlideLayoutModel
-from models.presentation_outline_model import SlideOutlineModel
+from models.presentation_outline_model import PresentationImageStyle, SlideOutlineModel
 from services.llm_client import LLMClient
 from utils.llm_failure import classify_llm_exception, http_exception_from_failure
 from utils.llm_provider import get_model
 from utils.dict_utils import get_dict_at_path, get_dict_paths_with_key, set_dict_at_path
 from utils.schema_utils import add_field_in_schema, remove_fields_from_schema
 from utils.custom_logger import setup_logger
+from utils.template_image_summary import is_placeholder_image_prompt
 
 logger = setup_logger(__name__)
+
+_CYRILLIC_RE = re.compile(r"[А-Яа-яЁё]")
+_TECHNICAL_IMAGE_PROMPT_RE = re.compile(
+    r"generate exactly|layout intent|scene object hints|presentation color palette|"
+    r"image_briefs|slot_index|#[0-9a-f]{6}",
+    re.IGNORECASE,
+)
 
 
 def get_system_prompt(
@@ -19,7 +30,16 @@ def get_system_prompt(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     user_image_guidance: Optional[str] = None,
+    structured_image_briefs: bool = False,
+    validation_feedback: Optional[str] = None,
 ):
+    validation_section = (
+        "# Previous image prompt validation error:\n"
+        f"{validation_feedback}\n"
+        "Correct it in this response."
+        if validation_feedback
+        else ""
+    )
     return f"""
         Generate structured slide based on provided outline, follow mentioned steps and notes and provide structured output.
 
@@ -59,6 +79,10 @@ def get_system_prompt(
         {"- Treat user-provided image guidance as primary intent for all __image_prompt__ fields on this slide." if user_image_guidance else ""}
         {"- If the schema has ARRAY items containing images, split the guidance into N separate prompts and assign one per array element in order." if user_image_guidance else ""}
         {"- If guidance is shorter than required N prompts, infer missing prompts while preserving the same style/topic." if user_image_guidance else ""}
+        {"- Structured image briefs are ordered by slot_index. Map brief 0 to the first __image_prompt__ field in schema order, brief 1 to the second, and so on." if structured_image_briefs else ""}
+        {"- Compile every Russian image brief into one clean English visual scene prompt. Never copy labels, JSON keys, meta-instructions, layout terminology, or repeated HEX lists into __image_prompt__." if structured_image_briefs else ""}
+        {"- Apply image_style as a shared art-direction constraint while preserving the distinct subject of each slot." if structured_image_briefs else ""}
+        {validation_section}
 
         User instructions, tone and verbosity should always be followed and should supercede any other instruction, except for max and min character limit, slide schema and number of items.
 
@@ -105,6 +129,8 @@ def get_messages(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     user_image_guidance: Optional[str] = None,
+    structured_image_briefs: bool = False,
+    validation_feedback: Optional[str] = None,
 ):
 
     return [
@@ -114,12 +140,71 @@ def get_messages(
                 verbosity,
                 instructions,
                 user_image_guidance,
+                structured_image_briefs,
+                validation_feedback,
             ),
         ),
         LLMUserMessage(
             content=get_user_prompt(outline, language, user_image_guidance),
         ),
     ]
+
+
+def _structured_image_guidance(
+    outline: SlideOutlineModel,
+    image_style: Optional[PresentationImageStyle],
+) -> tuple[Optional[str], bool]:
+    if outline.image_briefs:
+        payload = {
+            "brief_language": "Russian",
+            "image_briefs": [
+                item.model_dump(mode="json")
+                for item in sorted(outline.image_briefs, key=lambda item: item.slot_index)
+            ],
+            "image_style": image_style.model_dump(mode="json") if image_style else None,
+        }
+        return json.dumps(payload, ensure_ascii=False, indent=2), True
+    return outline.image_prompt, False
+
+
+def _compiled_prompt_validation_error(
+    slide_content: dict[str, Any],
+    outline: SlideOutlineModel,
+) -> tuple[str, str] | None:
+    if not outline.image_briefs:
+        return None
+
+    image_paths = get_dict_paths_with_key(slide_content, "__image_prompt__")
+    expected = len(outline.image_briefs)
+    if len(image_paths) != expected:
+        return (
+            "image_brief_slot_mismatch",
+            f"Expected {expected} image prompt fields, received {len(image_paths)}.",
+        )
+
+    prompts: list[str] = []
+    for path in image_paths:
+        image_data = get_dict_at_path(slide_content, path)
+        value = image_data.get("__image_prompt__") if isinstance(image_data, dict) else None
+        prompt = value.strip() if isinstance(value, str) else ""
+        if not prompt or is_placeholder_image_prompt(prompt):
+            return (
+                "image_prompt_compile_failed",
+                f"Image slot {len(prompts)} contains an empty or placeholder prompt.",
+            )
+        if _CYRILLIC_RE.search(prompt) or _TECHNICAL_IMAGE_PROMPT_RE.search(prompt):
+            return (
+                "image_prompt_compile_failed",
+                f"Image slot {len(prompts)} was not compiled to a clean English provider prompt.",
+            )
+        prompts.append(prompt)
+
+    if len(prompts) > 1 and len(set(prompts)) != len(prompts):
+        return (
+            "image_prompt_compile_failed",
+            "Compiled image prompts must be distinct for different image slots.",
+        )
+    return None
 
 
 def inject_reference_image_source(
@@ -158,6 +243,7 @@ async def get_slide_content_from_type_and_outline(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
+    image_style: Optional[PresentationImageStyle] = None,
 ):
     client = LLMClient()
     model = get_model()
@@ -179,6 +265,12 @@ async def get_slide_content_from_type_and_outline(
     )
 
     retries = 2
+    validation_feedback: Optional[str] = None
+    compile_retry_used = False
+    image_guidance, structured_image_briefs = _structured_image_guidance(
+        outline,
+        image_style,
+    )
     for attempt in range(retries + 1):
         try:
             logger.debug(
@@ -197,7 +289,9 @@ async def get_slide_content_from_type_and_outline(
                         tone,
                         verbosity,
                         instructions,
-                        outline.image_prompt,
+                        image_guidance,
+                        structured_image_briefs,
+                        validation_feedback,
                     ),
                     response_format=response_schema,
                     strict=False,
@@ -205,6 +299,26 @@ async def get_slide_content_from_type_and_outline(
                 timeout=60.0,
             )
             logger.debug("LLM response received successfully")
+            prompt_error = _compiled_prompt_validation_error(response, outline)
+            if prompt_error:
+                code, detail = prompt_error
+                if compile_retry_used or attempt == retries:
+                    raise HTTPException(
+                        status_code=422,
+                        detail={
+                            "code": code,
+                            "detail": detail,
+                            "retryable": False,
+                        },
+                    )
+                compile_retry_used = True
+                validation_feedback = f"{code}: {detail}"
+                logger.warning(
+                    "Image prompt validation failed code=%s model=%s; retrying once",
+                    code,
+                    model,
+                )
+                continue
             response = inject_slide_style_metadata(
                 response,
                 outline.style,
@@ -214,6 +328,8 @@ async def get_slide_content_from_type_and_outline(
                 outline.reference_image_source,
             )
 
+        except HTTPException:
+            raise
         except asyncio.TimeoutError as exc:
             failure = classify_llm_exception(exc, model=model)
             logger.warning(

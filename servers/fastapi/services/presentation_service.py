@@ -23,6 +23,7 @@ from models.api_error_model import APIErrorModel
 from models.presentation_and_path import PresentationPathAndEditPath
 from models.presentation_layout import PresentationLayoutModel
 from models.presentation_outline_model import (
+    PresentationImageStyle,
     PresentationOutlineModel,
     SlideOutlineModel,
 )
@@ -121,6 +122,7 @@ class PresentationService:
         slides_markdown: Optional[List[SlideOutlineModel]] = None,
         global_reference_image_source: Optional[str] = None,
         template_prompt: Optional[str] = None,
+        image_style: Optional[PresentationImageStyle] = None,
     ) -> PresentationModel:
         logger.info(f"Generating outlines for presentation: {presentation_id}")
         presentation = await sql_session.get(PresentationModel, presentation_id)
@@ -132,10 +134,12 @@ class PresentationService:
                 f"Using user-provided slides_markdown outlines ({len(slides_markdown)} slides), skipping outline LLM call"
             )
             presentation_outlines = PresentationOutlineModel(
+                image_style=image_style,
                 slides=[
                     SlideOutlineModel(
                         content=slide.content,
                         image_prompt=slide.image_prompt,
+                        image_briefs=slide.image_briefs,
                         reference_image_source=(
                             slide.reference_image_source
                             or global_reference_image_source
@@ -384,6 +388,7 @@ class PresentationService:
                         presentation.tone,
                         presentation.verbosity,
                         generation_instructions,
+                        outline.image_style,
                     )
                     for i in range(start, end)
                 ]

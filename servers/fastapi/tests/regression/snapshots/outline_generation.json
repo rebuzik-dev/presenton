@@ -1,10 +1,19 @@
 {
   "slides": [
     {
-      "content": "## Intro - Point A - Point B"
+      "content": "## Intro - Point A - Point B",
+      "image_prompt": null,
+      "image_briefs": [],
+      "reference_image_source": null,
+      "style": null
     },
     {
-      "content": "## Details 1. Item one 2. Item two"
+      "content": "## Details 1. Item one 2. Item two",
+      "image_prompt": null,
+      "image_briefs": [],
+      "reference_image_source": null,
+      "style": null
     }
-  ]
+  ],
+  "image_style": null
 }

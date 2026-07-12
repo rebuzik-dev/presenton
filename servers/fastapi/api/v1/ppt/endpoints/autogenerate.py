@@ -68,6 +68,7 @@ async def autogenerate_presentation(
             SlideOutlineModel(
                 content=slide.content,
                 image_prompt=slide.image_prompt,
+                image_briefs=slide.image_briefs,
                 reference_image_source=slide.reference_image_source,
                 style=slide.style,
             )
@@ -160,6 +161,7 @@ async def autogenerate_presentation(
                     slides_markdown=slide_outline_inputs,
                     global_reference_image_source=request.global_reference_image_source,
                     template_prompt=template_prompt,
+                    image_style=request.image_style,
                 )
                 
                 # B. Prepare Structure

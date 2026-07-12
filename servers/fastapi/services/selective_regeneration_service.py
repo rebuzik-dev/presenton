@@ -10,7 +10,11 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from models.presentation_outline_model import PresentationOutlineModel, SlideOutlineModel
+from models.presentation_outline_model import (
+    PresentationImageStyle,
+    PresentationOutlineModel,
+    SlideOutlineModel,
+)
 from models.selected_generation import IndexedSlideMarkdownInput
 from models.sql.async_presentation_generation_status import (
     AsyncPresentationGenerationTaskModel,
@@ -38,6 +42,7 @@ async def prepare_derived_regeneration(
     request_id: uuid.UUID,
     slide_indices: list[int],
     outline_overrides: Optional[list[IndexedSlideMarkdownInput]] = None,
+    image_style_override: Optional[PresentationImageStyle] = None,
 ) -> tuple[AsyncPresentationGenerationTaskModel, bool]:
     if source_id == request_id:
         raise HTTPException(status_code=409, detail="request_id collides with source")
@@ -48,6 +53,11 @@ async def prepare_derived_regeneration(
             "source_id": str(source_id),
             "slide_indices": slide_indices,
             "outline_overrides": [item.model_dump(mode="json") for item in overrides],
+            "image_style_override": (
+                image_style_override.model_dump(mode="json")
+                if image_style_override
+                else None
+            ),
         }
     )
     existing_presentation = await sql_session.get(PresentationModel, request_id)
@@ -84,7 +94,7 @@ async def prepare_derived_regeneration(
 
     presentation_data = source.model_dump(exclude={"id", "created_at", "updated_at"})
     derived = PresentationModel(**deepcopy(presentation_data), id=request_id)
-    _apply_outline_overrides(derived, overrides)
+    _apply_outline_overrides(derived, overrides, image_style_override)
     derived_slides = [
         SlideModel(
             **deepcopy(slide.model_dump(exclude={"id", "presentation"})),
@@ -212,8 +222,9 @@ async def run_derived_regeneration(
 def _apply_outline_overrides(
     presentation: PresentationModel,
     overrides: list[IndexedSlideMarkdownInput],
+    image_style_override: Optional[PresentationImageStyle] = None,
 ) -> None:
-    if not overrides:
+    if not overrides and image_style_override is None:
         return
     outline = presentation.get_presentation_outline()
     if not outline:
@@ -227,6 +238,7 @@ def _apply_outline_overrides(
         outline.slides[override.index] = SlideOutlineModel(
             **override.model_dump(exclude={"index"})
         )
-    presentation.outlines = PresentationOutlineModel(slides=outline.slides).model_dump(
-        mode="json"
-    )
+    presentation.outlines = PresentationOutlineModel(
+        slides=outline.slides,
+        image_style=image_style_override or outline.image_style,
+    ).model_dump(mode="json")

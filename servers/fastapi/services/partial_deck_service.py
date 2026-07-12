@@ -49,7 +49,16 @@ def canonical_hash(value: Any) -> str:
 
 def build_outline_hashes(outline: PresentationOutlineModel) -> list[str]:
     return [
-        canonical_hash(slide.model_dump(mode="json"))
+        canonical_hash(
+            {
+                "slide": slide.model_dump(mode="json"),
+                "image_style": (
+                    outline.image_style.model_dump(mode="json")
+                    if outline.image_style
+                    else None
+                ),
+            }
+        )
         for slide in outline.slides
     ]
 
@@ -142,6 +151,7 @@ async def generate_selected_slides(
                 presentation.tone,
                 presentation.verbosity,
                 instructions,
+                outline.image_style,
             )
         )
 

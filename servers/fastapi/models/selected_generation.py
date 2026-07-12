@@ -7,11 +7,13 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from enums.tone import Tone
 from enums.verbosity import Verbosity
+from models.presentation_outline_model import PresentationImageStyle, SlideImageBrief
 
 
 class SlideMarkdownInput(BaseModel):
     content: str = Field(..., min_length=1)
     image_prompt: Optional[str] = None
+    image_briefs: list[SlideImageBrief] = Field(default_factory=list)
     reference_image_source: Optional[str] = None
     style: Optional[dict[str, Any]] = None
 
@@ -33,6 +35,7 @@ class GenerateSelectedSlidesRequest(BaseModel):
     font: Optional[str] = None
     tone: Tone = Tone.DEFAULT
     verbosity: Verbosity = Verbosity.STANDARD
+    image_style: Optional[PresentationImageStyle] = None
 
     @field_validator("slide_indices")
     @classmethod
@@ -53,4 +56,3 @@ class GenerateSelectedSlidesResponse(BaseModel):
     status: str
     message: Optional[str] = None
     poll_url: str
-

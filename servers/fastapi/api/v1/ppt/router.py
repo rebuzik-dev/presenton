@@ -38,6 +38,7 @@ async def get_presentation_capabilities():
         "selected_initial_generation": True,
         "outline_overrides": True,
         "partial_deck_status": True,
+        "structured_image_briefs_v1": True,
     }
 
 API_V1_PPT_ROUTER.include_router(FILES_ROUTER)

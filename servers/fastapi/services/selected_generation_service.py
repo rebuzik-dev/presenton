@@ -227,6 +227,7 @@ def _request_outline(
     request: GenerateSelectedSlidesRequest,
 ) -> PresentationOutlineModel:
     return PresentationOutlineModel(
+        image_style=request.image_style,
         slides=[
             SlideOutlineModel(**slide.model_dump(mode="json"))
             for slide in request.slides_markdown

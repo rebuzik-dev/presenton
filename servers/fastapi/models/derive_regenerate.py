@@ -4,6 +4,7 @@ import uuid
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from models.selected_generation import IndexedSlideMarkdownInput
+from models.presentation_outline_model import PresentationImageStyle
 
 
 class DeriveRegenerateRequest(BaseModel):
@@ -12,6 +13,7 @@ class DeriveRegenerateRequest(BaseModel):
         min_length=1
     )
     outline_overrides: list[IndexedSlideMarkdownInput] = Field(default_factory=list)
+    image_style_override: PresentationImageStyle | None = None
 
     @field_validator("slide_indices")
     @classmethod

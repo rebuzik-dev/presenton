@@ -47,6 +47,16 @@ def test_outline_generation_snapshot_matches_normalized_schema(load_snapshot):
     expected = load_snapshot("outline_generation.json")
 
     assert normalized == expected
-    assert set(normalized.keys()) == {"slides"}
+    assert set(normalized.keys()) == {"slides", "image_style"}
     assert len(normalized["slides"]) == 2
-    assert all(set(slide.keys()) == {"content"} for slide in normalized["slides"])
+    assert all(
+        set(slide.keys())
+        == {
+            "content",
+            "image_prompt",
+            "image_briefs",
+            "reference_image_source",
+            "style",
+        }
+        for slide in normalized["slides"]
+    )
