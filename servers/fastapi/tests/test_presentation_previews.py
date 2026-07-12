@@ -5,6 +5,7 @@ import pytest
 
 from models.sql.presentation import PresentationModel
 from models.sql.slide import SlideModel
+from services import presentation_preview_service as preview_service
 from services.presentation_preview_service import (
     compute_presentation_preview_revision,
     derive_slide_preview_title,
@@ -56,6 +57,20 @@ def test_preview_revision_is_stable_and_tracks_rendered_slide_inputs():
     assert first != changed_properties
 
 
+def test_preview_revision_tracks_renderer_version(monkeypatch):
+    presentation = _presentation()
+    slide = _slide(presentation.id)
+    original = compute_presentation_preview_revision(presentation, [slide])
+
+    monkeypatch.setattr(
+        preview_service,
+        "PREVIEW_RENDERER_REVISION",
+        "schema-media-next",
+    )
+
+    assert compute_presentation_preview_revision(presentation, [slide]) != original
+
+
 def test_slide_preview_title_prefers_semantic_headings_and_has_fallback():
     assert derive_slide_preview_title({"body": {"heading": "Nested heading"}}, 1) == (
         "Nested heading"
@@ -84,3 +99,30 @@ def test_preview_path_resolution_rejects_paths_outside_cache(tmp_path: Path):
             presentation_id,
             app_data_directory=str(tmp_path),
         )
+
+
+def test_obsolete_preview_cleanup_keeps_only_active_revision(tmp_path, monkeypatch):
+    presentation_id = uuid4()
+    preview_directory = tmp_path / "previews" / str(presentation_id)
+    preview_directory.mkdir(parents=True)
+    active = preview_directory / "slide-0-current.png"
+    obsolete = preview_directory / "slide-0-obsolete.png"
+    unrelated = preview_directory / "cover.png"
+    for path in (active, obsolete, unrelated):
+        path.touch()
+
+    monkeypatch.setattr(
+        preview_service,
+        "get_preview_directory",
+        lambda _presentation_id: preview_directory.resolve(),
+    )
+
+    warning = preview_service._remove_obsolete_preview_files(
+        presentation_id,
+        {active.resolve()},
+    )
+
+    assert warning is None
+    assert active.exists()
+    assert not obsolete.exists()
+    assert unrelated.exists()
