@@ -31,7 +31,7 @@ import {
     AccordionContent,
 } from "@/components/ui/accordion";
 
-import TemplateService from "../services/api/template";
+import TemplateService, { TemplatePromptConflictError } from "../services/api/template";
 
 interface FieldSummary {
     path: string;
@@ -77,6 +77,10 @@ interface TemplatePromptProfileResponse {
     template_name: string | null;
     template_type: "built-in" | "custom" | "legacy";
     source_prompt: string | null;
+    revision: {
+        fingerprint: string;
+        updated_at: string | null;
+    };
     prompt_profile: PromptProfile | null;
     schema_summary: {
         template: string;
@@ -212,6 +216,7 @@ export default function TemplatePromptEditorPanel({
             const payload = {
                 template_prompt: templatePrompt && templatePrompt.trim() !== "" ? templatePrompt.trim() : null,
                 layout_prompts: prunedLayoutPrompts,
+                expected_fingerprint: data?.revision.fingerprint,
             };
 
             const response = await TemplateService.updateTemplatePromptProfile(slug, payload);
@@ -227,7 +232,12 @@ export default function TemplatePromptEditorPanel({
             }
         } catch (error) {
             console.error("Failed to save overrides:", error);
-            toast.error("Failed to save prompt overrides");
+            if (error instanceof TemplatePromptConflictError) {
+                await fetchProfile();
+                toast.error(error.message);
+            } else {
+                toast.error("Failed to save prompt overrides");
+            }
         } finally {
             setSaving(false);
         }

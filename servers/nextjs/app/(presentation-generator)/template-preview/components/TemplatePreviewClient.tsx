@@ -3,10 +3,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, Loader2, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Eye, History, Loader2, Trash2, Pencil } from "lucide-react";
 import "../../utils/prism-languages";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import TemplatePromptEditorPanel from "../../components/TemplatePromptEditorPanel";
+import TemplatePromptHistorySheet from "../../components/TemplatePromptHistorySheet";
 import TemplatePromptBlocksInline from "../../components/TemplatePromptBlocksInline";
 import PromptInspectableSlideFrame from "../../components/PromptInspectableSlideFrame";
 import { useTemplatePromptProfile } from "../../hooks/useTemplatePromptProfile";
@@ -30,6 +31,7 @@ import { notify } from "@/components/ui/sonner";
 import { CustomTemplateLayout, useCustomTemplateDetails } from "@/app/hooks/useCustomTemplates";
 import { templates as templateGroups, getTemplatesByTemplateName } from "@/app/presentation-templates";
 import { setupImageUrlConverter } from "@/utils/image-url-converter";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const GroupLayoutPreview = () => {
   const searchParams = useSearchParams();
@@ -40,12 +42,56 @@ const GroupLayoutPreview = () => {
 
   const [promptOpen, setPromptOpen] = useState(false);
   const [focusedLayoutId, setFocusedLayoutId] = useState<string | undefined>(undefined);
-  const [inspectorEnabled, setInspectorEnabled] = useState(false);
   const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [flashBlockId, setFlashBlockId] = useState<string | null>(null);
   const [visualTargetIdsByLayout, setVisualTargetIdsByLayout] = useState<Map<string, Set<string>>>(() => new Map());
   const promptProfile = useTemplatePromptProfile(templateParams);
+  const inspectorEnabled = searchParams.get("inspector") === "1";
+  const historyOpen = searchParams.get("history") === "1";
+
+  const updateWorkspaceQuery = useCallback((
+    updates: Record<string, string | null>,
+    mode: "push" | "replace" = "push",
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) params.delete(key);
+      else params.set(key, value);
+    });
+    const nextUrl = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+    if (mode === "replace") router.replace(nextUrl, { scroll: false });
+    else router.push(nextUrl, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  const setInspectorEnabled = useCallback((enabled: boolean) => {
+    updateWorkspaceQuery(
+      enabled
+        ? { inspector: "1" }
+        : { inspector: null, history: null },
+    );
+  }, [updateWorkspaceQuery]);
+
+  useEffect(() => {
+    if (historyOpen && !inspectorEnabled) {
+      updateWorkspaceQuery({ inspector: "1" }, "replace");
+    }
+  }, [historyOpen, inspectorEnabled, updateWorkspaceQuery]);
+
+  const openPromptEditor = useCallback((layoutId?: string) => {
+    if (historyOpen) updateWorkspaceQuery({ history: null }, "replace");
+    setFocusedLayoutId(layoutId);
+    setPromptOpen(true);
+  }, [historyOpen, updateWorkspaceQuery]);
+
+  const setHistoryOpen = useCallback((open: boolean) => {
+    if (open) {
+      setPromptOpen(false);
+      updateWorkspaceQuery({ inspector: "1", history: "1" });
+    } else {
+      updateWorkspaceQuery({ history: null });
+    }
+  }, [updateWorkspaceQuery]);
 
   const isCustom = templateParams.startsWith("custom-");
   const customTemplateId = isCustom ? templateParams.split("custom-")[1] : null;
@@ -89,7 +135,7 @@ const GroupLayoutPreview = () => {
     setSelectedBlockId(blockId);
     setFlashBlockId(blockId);
     window.setTimeout(() => setFlashBlockId((current) => (current === blockId ? null : current)), 1200);
-  }, [identityToBlockId]);
+  }, [identityToBlockId, setInspectorEnabled]);
 
   const handleTargetsChange = useCallback((layoutId: string, targetIds: string[]) => {
     setVisualTargetIdsByLayout((current) => {
@@ -178,7 +224,7 @@ const GroupLayoutPreview = () => {
       : null;
     slideFrame?.scrollIntoView({ behavior: "smooth", block: "center" });
     window.setTimeout(() => setFlashBlockId((current) => (current === block.id ? null : current)), 1200);
-  }, []);
+  }, [setInspectorEnabled]);
 
   const handleDeleteCustomTemplate = async () => {
     if (!customTemplateId) return;
@@ -261,8 +307,7 @@ const GroupLayoutPreview = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setFocusedLayoutId(undefined);
-                  setPromptOpen(true);
+                  openPromptEditor();
                 }}
                 className="flex items-center gap-2 text-purple-700 hover:text-purple-800 border-purple-200 hover:bg-purple-50 bg-white"
               >
@@ -272,7 +317,8 @@ const GroupLayoutPreview = () => {
               <Button
                 variant={inspectorEnabled ? "default" : "outline"}
                 size="sm"
-                onClick={() => setInspectorEnabled((enabled) => !enabled)}
+                onClick={() => setInspectorEnabled(!inspectorEnabled)}
+                aria-pressed={inspectorEnabled}
                 className={`flex items-center gap-2 ${
                   inspectorEnabled
                     ? "bg-purple-600 text-white hover:bg-purple-700"
@@ -280,8 +326,27 @@ const GroupLayoutPreview = () => {
                 }`}
               >
                 <Eye className="w-4 h-4" />
-                Prompt Inspector
+                <span className="hidden sm:inline">Prompt Inspector</span>
               </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={historyOpen ? "default" : "outline"}
+                      size="sm"
+                      aria-label="Open prompt override history"
+                      aria-pressed={historyOpen}
+                      disabled={!promptProfile.data || promptProfile.loading}
+                      onClick={() => setHistoryOpen(!historyOpen)}
+                      className="flex items-center gap-2"
+                    >
+                      <History className="h-4 w-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">History</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="sm:hidden">Prompt override history</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {isCustom && (
                 <Button
                   variant="outline"
@@ -352,8 +417,7 @@ const GroupLayoutPreview = () => {
                           size="sm"
                           className="flex items-center gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50 bg-white"
                           onClick={() => {
-                            setFocusedLayoutId(template.layoutId || template.layoutName);
-                            setPromptOpen(true);
+                            openPromptEditor(template.layoutId || template.layoutName);
                           }}
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -437,8 +501,7 @@ const GroupLayoutPreview = () => {
                           size="sm"
                           className="flex items-center gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50 bg-white"
                           onClick={() => {
-                            setFocusedLayoutId(layout.rawLayoutId || layout.layoutId || layout.rawLayoutName);
-                            setPromptOpen(true);
+                            openPromptEditor(layout.rawLayoutId || layout.layoutId || layout.rawLayoutName);
                           }}
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -513,9 +576,17 @@ const GroupLayoutPreview = () => {
             initialLayoutId={focusedLayoutId}
             compact={true}
             onClose={() => setPromptOpen(false)}
+            onSaveSuccess={promptProfile.refetch}
           />
         </SheetContent>
       </Sheet>
+      <TemplatePromptHistorySheet
+        slug={templateParams}
+        open={historyOpen}
+        currentFingerprint={promptProfile.data?.revision.fingerprint || ""}
+        onOpenChange={setHistoryOpen}
+        onProfileChanged={promptProfile.refetch}
+      />
     </div>
   );
 };

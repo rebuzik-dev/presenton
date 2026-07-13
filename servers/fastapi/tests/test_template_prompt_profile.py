@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 from api.deps import get_current_user_or_api_key
 from api.v1.ppt.endpoints.templates import TEMPLATES_ROUTER
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
+from services.template_prompt_profile_service import PromptProfileConflictError
 from utils.template_image_summary import build_layout_image_summary
 from utils.template_prompt_overrides import (
     apply_prompt_profile_to_layout,
@@ -280,3 +282,101 @@ def test_template_prompt_is_added_to_generation_instructions_only_when_active():
         "Template-level instructions:\nKeep the story concise"
     )
     assert get_active_template_prompt(_profile(is_active=False)) is None
+
+
+def test_patch_template_prompt_profile_returns_conflict_for_stale_fingerprint():
+    app = FastAPI()
+    app.include_router(TEMPLATES_ROUTER, prefix="/api/v1/ppt")
+    user = SimpleNamespace(id=uuid4())
+    app.dependency_overrides[get_current_user_or_api_key] = lambda: user
+    client = TestClient(app)
+    template = SimpleNamespace(id=uuid4(), is_system=True)
+
+    with patch(
+        "api.v1.ppt.endpoints.templates.template_service.get_by_slug",
+        new=AsyncMock(return_value=template),
+    ), patch(
+        "api.v1.ppt.endpoints.templates.template_prompt_profile_service.upsert",
+        new=AsyncMock(side_effect=PromptProfileConflictError("new-fingerprint")),
+    ) as mock_upsert:
+        response = client.patch(
+            "/api/v1/ppt/templates/general/prompt-profile",
+            json={
+                "template_prompt": "Updated prompt",
+                "expected_fingerprint": "stale-fingerprint",
+            },
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == {
+        "code": "prompt_profile_conflict",
+        "message": "The prompt profile changed since it was loaded.",
+        "current_fingerprint": "new-fingerprint",
+    }
+    assert mock_upsert.await_args.kwargs["expected_fingerprint"] == "stale-fingerprint"
+
+
+def test_prompt_profile_history_endpoint_keeps_pagination_contract():
+    app = FastAPI()
+    app.include_router(TEMPLATES_ROUTER, prefix="/api/v1/ppt")
+    client = TestClient(app)
+    revision_id = uuid4()
+    history = {
+        "items": [
+            {
+                "revision_id": revision_id,
+                "version": 3,
+                "fingerprint": "f" * 64,
+                "action": "update",
+                "change_count": 2,
+                "changed_layout_ids": ["hero-slide"],
+                "author": "Editor",
+                "created_at": datetime(2026, 7, 13, 8, 30, tzinfo=timezone.utc),
+                "is_current": True,
+                "restored_from_revision_id": None,
+            }
+        ],
+        "total": 3,
+        "limit": 1,
+        "offset": 2,
+    }
+
+    with patch(
+        "api.v1.ppt.endpoints.templates.template_prompt_profile_service.list_history",
+        new=AsyncMock(return_value=history),
+    ) as mock_list:
+        response = client.get(
+            "/api/v1/ppt/templates/general/prompt-profile/history?limit=1&offset=2"
+        )
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["revision_id"] == str(revision_id)
+    assert response.json()["items"][0]["created_at"] == "2026-07-13T08:30:00Z"
+    mock_list.assert_awaited_once_with(template_slug="general", limit=1, offset=2)
+
+
+def test_restore_prompt_profile_returns_conflict_without_mutating_current_profile():
+    app = FastAPI()
+    app.include_router(TEMPLATES_ROUTER, prefix="/api/v1/ppt")
+    user = SimpleNamespace(id=uuid4())
+    app.dependency_overrides[get_current_user_or_api_key] = lambda: user
+    client = TestClient(app)
+    revision_id = uuid4()
+
+    with patch(
+        "api.v1.ppt.endpoints.templates.template_prompt_profile_service.restore",
+        new=AsyncMock(side_effect=PromptProfileConflictError("current-fingerprint")),
+    ) as mock_restore:
+        response = client.post(
+            f"/api/v1/ppt/templates/general/prompt-profile/history/{revision_id}/restore",
+            json={"expected_current_fingerprint": "stale-fingerprint"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["current_fingerprint"] == "current-fingerprint"
+    mock_restore.assert_awaited_once_with(
+        template_slug="general",
+        revision_id=revision_id,
+        expected_current_fingerprint="stale-fingerprint",
+        restored_by_id=user.id,
+    )

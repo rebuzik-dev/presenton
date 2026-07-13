@@ -14,6 +14,7 @@ LEGACY_BASELINE_REVISION = "00b3c27a13bc"
 # Revision before 95b5127e93cd (template_create_infos); used when DB has theme but not that table.
 REVISION_BEFORE_TEMPLATE_CREATE_INFO = "82abdbc476a7"
 REVISION_TEMPLATE_CREATE_INFO = "95b5127e93cd"
+REVISION_BEFORE_PROMPT_HISTORY = "8b2f1d6c4e9a"
 
 
 async def migrate_database_on_startup() -> None:
@@ -92,8 +93,10 @@ def _repair_orphan_alembic_revision(config: Config, database_url: str) -> None:
 
 def _infer_revision_from_schema(inspector, tables: set[str], head_revision: str) -> str:
     """Best-effort: map existing SQLite/Postgres schema to our linear migration chain."""
-    if "chat_history_messages" in tables:
+    if "template_prompt_profile_revisions" in tables:
         return head_revision
+    if "chat_history_messages" in tables:
+        return REVISION_BEFORE_PROMPT_HISTORY
     if "template_create_infos" in tables:
         return REVISION_TEMPLATE_CREATE_INFO
     if "presentations" in tables:
@@ -145,6 +148,7 @@ def _is_unversioned_populated_database(database_url: str) -> bool:
         "webhook_subscriptions",
         "template_create_infos",
         "template_prompt_profiles",
+        "template_prompt_profile_revisions",
         "chat_history_messages",
     }
     engine = create_engine(database_url)

@@ -17,11 +17,74 @@ export interface CloneLayoutPayload {
 export interface TemplatePromptProfilePayload {
     is_active?: boolean;
     template_prompt?: string | null;
+    expected_fingerprint?: string;
     layout_prompts: Record<string, {
         layout_prompt?: string;
         field_prompts?: Record<string, string>;
         image_prompt_overrides?: Record<string, string>;
     }>;
+}
+
+export interface PromptProfileHistoryItem {
+    revision_id: string;
+    version: number;
+    fingerprint: string;
+    action: "baseline" | "update" | "restore";
+    change_count: number;
+    changed_layout_ids: string[];
+    author: string | null;
+    created_at: string;
+    is_current: boolean;
+    restored_from_revision_id: string | null;
+}
+
+export interface PromptProfileChange {
+    scope: "template" | "layout" | "field" | "image";
+    layout_id: string | null;
+    path: string;
+    action: "added" | "updated" | "removed";
+    before: unknown;
+    after: unknown;
+}
+
+export interface PromptProfileHistoryDetail extends PromptProfileHistoryItem {
+    changes: PromptProfileChange[];
+    snapshot: {
+        is_active: boolean;
+        template_prompt: string | null;
+        layout_prompts: TemplatePromptProfilePayload["layout_prompts"];
+    };
+}
+
+export interface PromptProfileHistoryPage {
+    items: PromptProfileHistoryItem[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export class TemplatePromptConflictError extends Error {
+    currentFingerprint: string | null;
+
+    constructor(currentFingerprint: string | null) {
+        super("This prompt profile changed in another session. The latest version has been loaded.");
+        this.name = "TemplatePromptConflictError";
+        this.currentFingerprint = currentFingerprint;
+    }
+}
+
+async function handlePromptProfileResponse(response: Response, defaultMessage: string) {
+    if (response.status === 409) {
+        let currentFingerprint: string | null = null;
+        try {
+            const payload = await response.json();
+            currentFingerprint = payload?.detail?.current_fingerprint || null;
+        } catch {
+            // Keep the conflict actionable even if the response body is malformed.
+        }
+        throw new TemplatePromptConflictError(currentFingerprint);
+    }
+    return ApiResponseHandler.handleResponse(response, defaultMessage);
 }
 
 class TemplateService {
@@ -108,11 +171,44 @@ class TemplateService {
                 body: JSON.stringify(payload),
                 credentials: "include",
             });
-            return await ApiResponseHandler.handleResponse(response, "Failed to update template prompt profile");
+            return await handlePromptProfileResponse(response, "Failed to update template prompt profile");
         } catch (error) {
             console.error("Failed to update template prompt profile", error);
             throw error;
         }
+    }
+
+    static async getTemplatePromptProfileHistory(slug: string, limit = 20, offset = 0): Promise<PromptProfileHistoryPage> {
+        const response = await fetch(
+            getApiUrl(`/api/v1/ppt/templates/${encodeURIComponent(slug)}/prompt-profile/history?limit=${limit}&offset=${offset}`),
+            { credentials: "include" }
+        );
+        return ApiResponseHandler.handleResponse(response, "Failed to get prompt profile history");
+    }
+
+    static async getTemplatePromptProfileHistoryRevision(slug: string, revisionId: string): Promise<PromptProfileHistoryDetail> {
+        const response = await fetch(
+            getApiUrl(`/api/v1/ppt/templates/${encodeURIComponent(slug)}/prompt-profile/history/${encodeURIComponent(revisionId)}`),
+            { credentials: "include" }
+        );
+        return ApiResponseHandler.handleResponse(response, "Failed to get prompt profile revision");
+    }
+
+    static async restoreTemplatePromptProfileRevision(
+        slug: string,
+        revisionId: string,
+        expectedCurrentFingerprint: string
+    ) {
+        const response = await fetch(
+            getApiUrl(`/api/v1/ppt/templates/${encodeURIComponent(slug)}/prompt-profile/history/${encodeURIComponent(revisionId)}/restore`),
+            {
+                method: "POST",
+                headers: getHeader(),
+                credentials: "include",
+                body: JSON.stringify({ expected_current_fingerprint: expectedCurrentFingerprint }),
+            }
+        );
+        return handlePromptProfileResponse(response, "Failed to restore prompt profile revision");
     }
 }
 

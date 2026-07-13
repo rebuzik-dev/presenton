@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import TemplateService from "../services/api/template";
+import TemplateService, { TemplatePromptConflictError } from "../services/api/template";
 
 export interface FieldSummary {
     path: string;
@@ -172,6 +172,7 @@ export function useTemplatePromptProfile(slug: string) {
             const payload = {
                 template_prompt: currentProfile?.template_prompt || null,
                 layout_prompts: clonedLayoutPrompts,
+                expected_fingerprint: data.revision.fingerprint,
             };
 
             const response = await TemplateService.updateTemplatePromptProfile(slug, payload);
@@ -180,12 +181,17 @@ export function useTemplatePromptProfile(slug: string) {
             return response;
         } catch (err: unknown) {
             console.error("Failed to update override:", err);
-            toast.error("Failed to save prompt override");
+            if (err instanceof TemplatePromptConflictError) {
+                await fetchProfile();
+                toast.error(err.message);
+            } else {
+                toast.error("Failed to save prompt override");
+            }
             throw err;
         } finally {
             setSaving(false);
         }
-    }, [slug, data]);
+    }, [slug, data, fetchProfile]);
 
     return {
         data,

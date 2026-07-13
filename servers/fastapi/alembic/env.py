@@ -27,6 +27,9 @@ from models.sql.slide import SlideModel  # noqa: F401, E402
 from models.sql.template import TemplateModel  # noqa: F401, E402
 from models.sql.template_create_info import TemplateCreateInfoModel  # noqa: F401, E402
 from models.sql.template_prompt_profile import TemplatePromptProfileModel  # noqa: F401, E402
+from models.sql.template_prompt_profile_revision import (  # noqa: F401, E402
+    TemplatePromptProfileRevisionModel,
+)
 from models.sql.webhook_subscription import WebhookSubscription  # noqa: F401, E402
 
 alembic_config = context.config

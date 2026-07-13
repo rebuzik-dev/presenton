@@ -8,11 +8,16 @@ from typing import Any, Optional
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 
 
-def build_prompt_profile_revision(profile: Any | None) -> dict[str, Optional[str]]:
+def build_prompt_profile_fingerprint(
+    *,
+    is_active: bool = True,
+    template_prompt: Optional[str] = None,
+    layout_prompts: dict[str, Any] | None = None,
+) -> str:
     payload = {
-        "is_active": bool(getattr(profile, "is_active", True)),
-        "template_prompt": getattr(profile, "template_prompt", None),
-        "layout_prompts": getattr(profile, "layout_prompts", None) or {},
+        "is_active": bool(is_active),
+        "template_prompt": template_prompt,
+        "layout_prompts": layout_prompts or {},
     }
     canonical = json.dumps(
         payload,
@@ -20,9 +25,17 @@ def build_prompt_profile_revision(profile: Any | None) -> dict[str, Optional[str
         sort_keys=True,
         separators=(",", ":"),
     )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def build_prompt_profile_revision(profile: Any | None) -> dict[str, Optional[str]]:
     updated_at = getattr(profile, "updated_at", None)
     return {
-        "fingerprint": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "fingerprint": build_prompt_profile_fingerprint(
+            is_active=bool(getattr(profile, "is_active", True)),
+            template_prompt=getattr(profile, "template_prompt", None),
+            layout_prompts=getattr(profile, "layout_prompts", None) or {},
+        ),
         "updated_at": updated_at.isoformat() if updated_at else None,
     }
 

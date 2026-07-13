@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 import migrations
 
 
-EXPECTED_HEAD = "8b2f1d6c4e9a"
+EXPECTED_HEAD = "f6d2b9a13c84"
 
 
 def _alembic_config(database_url: str) -> Config:
@@ -179,5 +179,62 @@ def test_upgrade_from_template_stamp_skips_existing_chat_history_table(tmp_path)
             "ix_chat_history_messages_position",
             "ix_chat_history_messages_presentation_id",
         }.issubset(indexes)
+    finally:
+        engine.dispose()
+
+
+def test_prompt_history_migration_creates_baseline_for_existing_profile(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'prompt-history-baseline.db'}"
+    config = _alembic_config(database_url)
+    command.upgrade(config, migrations.REVISION_BEFORE_PROMPT_HISTORY)
+
+    engine = create_engine(database_url)
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO template_prompt_profiles (
+                        id, template_slug, template_id, is_active, template_prompt,
+                        layout_prompts, created_at, updated_at, created_by_id
+                    ) VALUES (
+                        :id, :slug, NULL, 1, :template_prompt,
+                        :layout_prompts, :created_at, :updated_at, NULL
+                    )
+                    """
+                ),
+                {
+                    "id": "12345678123456781234567812345678",
+                    "slug": "history-fixture",
+                    "template_prompt": "Existing prompt",
+                    "layout_prompts": '{"hero":{"layout_prompt":"Existing layout"}}',
+                    "created_at": "2026-07-13 10:00:00+00:00",
+                    "updated_at": "2026-07-13 10:05:00+00:00",
+                },
+            )
+
+        command.upgrade(config, "head")
+
+        with engine.connect() as connection:
+            row = connection.execute(
+                text(
+                    """
+                    SELECT version, action, fingerprint, template_prompt, changes
+                    FROM template_prompt_profile_revisions
+                    WHERE template_slug = :slug
+                    """
+                ),
+                {"slug": "history-fixture"},
+            ).one()
+            current_revision = connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one()
+
+        assert current_revision == EXPECTED_HEAD
+        assert row.version == 1
+        assert row.action == "baseline"
+        assert len(row.fingerprint) == 64
+        assert row.template_prompt == "Existing prompt"
+        assert row.changes == "[]"
     finally:
         engine.dispose()

@@ -3,15 +3,20 @@ Templates API Endpoints
 CRUD operations for presentation templates.
 """
 
-from typing import Any, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, List, Literal, Optional, Tuple
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from models.block_map import TemplateBlockMapResponse
 from services.template_service import template_service
-from services.template_prompt_profile_service import template_prompt_profile_service
+from services.template_prompt_profile_service import (
+    PromptProfileConflictError,
+    PromptProfileRevisionNotFoundError,
+    template_prompt_profile_service,
+)
 from api.deps import get_current_user_or_api_key
 from models.sql.user import UserModel
 from utils.get_layout_by_name import get_layout_by_name
@@ -219,6 +224,62 @@ class UpdateTemplatePromptProfileRequest(BaseModel):
     template_prompt: Optional[str] = None
     layout_prompts: dict[str, Any] = Field(default_factory=dict)
     is_active: bool = True
+    expected_fingerprint: Optional[str] = None
+
+
+class PromptProfileChangeResponse(BaseModel):
+    scope: Literal["template", "layout", "field", "image"]
+    layout_id: Optional[str] = None
+    path: str
+    action: Literal["added", "updated", "removed"]
+    before: Any = None
+    after: Any = None
+
+
+class PromptProfileSnapshotResponse(BaseModel):
+    is_active: bool
+    template_prompt: Optional[str] = None
+    layout_prompts: dict[str, Any] = Field(default_factory=dict)
+
+
+class PromptProfileHistoryItemResponse(BaseModel):
+    revision_id: UUID
+    version: int
+    fingerprint: str
+    action: Literal["baseline", "update", "restore"]
+    change_count: int
+    changed_layout_ids: list[str] = Field(default_factory=list)
+    author: Optional[str] = None
+    created_at: datetime
+    is_current: bool
+    restored_from_revision_id: Optional[UUID] = None
+
+
+class PromptProfileHistoryDetailResponse(PromptProfileHistoryItemResponse):
+    changes: list[PromptProfileChangeResponse] = Field(default_factory=list)
+    snapshot: PromptProfileSnapshotResponse
+
+
+class PromptProfileHistoryListResponse(BaseModel):
+    items: list[PromptProfileHistoryItemResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class RestorePromptProfileRequest(BaseModel):
+    expected_current_fingerprint: Optional[str] = None
+
+
+def _prompt_profile_conflict(exc: PromptProfileConflictError) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail={
+            "code": "prompt_profile_conflict",
+            "message": str(exc),
+            "current_fingerprint": exc.current_fingerprint,
+        },
+    )
 
 
 def _extract_auth_context(http_request: Request) -> Tuple[Optional[str], Optional[str]]:
@@ -448,6 +509,42 @@ async def get_template_prompt_profile(slug: str, http_request: Request):
     return await _build_prompt_profile_response(slug, http_request)
 
 
+@TEMPLATES_ROUTER.get(
+    "/{slug}/prompt-profile/history",
+    response_model=PromptProfileHistoryListResponse,
+)
+async def list_template_prompt_profile_history(
+    slug: str,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+):
+    return await template_prompt_profile_service.list_history(
+        template_slug=slug,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@TEMPLATES_ROUTER.get(
+    "/{slug}/prompt-profile/history/{revision_id}",
+    response_model=PromptProfileHistoryDetailResponse,
+)
+async def get_template_prompt_profile_history_revision(
+    slug: str,
+    revision_id: UUID,
+):
+    try:
+        return await template_prompt_profile_service.get_history_revision(
+            template_slug=slug,
+            revision_id=revision_id,
+        )
+    except PromptProfileRevisionNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prompt profile revision not found",
+        ) from exc
+
+
 @TEMPLATES_ROUTER.patch(
     "/{slug}/prompt-profile",
     response_model=TemplatePromptProfileResponse,
@@ -468,14 +565,46 @@ async def update_template_prompt_profile(
             layout_prompts=request.layout_prompts,
         )
     )
-    await template_prompt_profile_service.upsert(
-        template_slug=slug,
-        template_id=template.id if template else None,
-        template_prompt=normalized_template_prompt,
-        layout_prompts=normalized_layout_prompts,
-        is_active=request.is_active,
-        created_by_id=current_user.id,
-    )
+    try:
+        await template_prompt_profile_service.upsert(
+            template_slug=slug,
+            template_id=template.id if template else None,
+            template_prompt=normalized_template_prompt,
+            layout_prompts=normalized_layout_prompts,
+            is_active=request.is_active,
+            created_by_id=current_user.id,
+            expected_fingerprint=request.expected_fingerprint,
+        )
+    except PromptProfileConflictError as exc:
+        raise _prompt_profile_conflict(exc) from exc
+    return await _build_prompt_profile_response(slug, http_request)
+
+
+@TEMPLATES_ROUTER.post(
+    "/{slug}/prompt-profile/history/{revision_id}/restore",
+    response_model=TemplatePromptProfileResponse,
+)
+async def restore_template_prompt_profile_history_revision(
+    slug: str,
+    revision_id: UUID,
+    request: RestorePromptProfileRequest,
+    http_request: Request,
+    current_user: UserModel = Depends(get_current_user_or_api_key),
+):
+    try:
+        await template_prompt_profile_service.restore(
+            template_slug=slug,
+            revision_id=revision_id,
+            expected_current_fingerprint=request.expected_current_fingerprint,
+            restored_by_id=current_user.id,
+        )
+    except PromptProfileConflictError as exc:
+        raise _prompt_profile_conflict(exc) from exc
+    except PromptProfileRevisionNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prompt profile revision not found",
+        ) from exc
     return await _build_prompt_profile_response(slug, http_request)
 
 
