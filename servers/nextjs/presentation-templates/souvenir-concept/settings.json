@@ -1,0 +1,18 @@
+{
+  "description": "Концепция сувенирной и раздаточной продукции по брифу: аудитория, ассортимент, визуальный код, материалы, производство и применение",
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "CoverBackgroundKickerTitleSlideLayout.tsx",
+    "HeaderQuoteTwoColumnsLinesSlideLayout.tsx",
+    "PaletteGridImageSlideLayout.tsx",
+    "TypographyTwoColumnsImageSlideLayout.tsx",
+    "MoodboardCollage4SlideLayout.tsx",
+    "HeaderParagraphPatternImageSlideLayout.tsx",
+    "DesignElementsMultiColumnSlideLayout.tsx",
+    "DesignElementsTextImageSwatchesSlideLayout.tsx",
+    "ProposalsTwoImagesSlideLayout.tsx",
+    "ProposalsThreeImagesSlideLayout.tsx",
+    "ProposalsCollageLeftRightStackSlideLayout.tsx"
+  ]
+}

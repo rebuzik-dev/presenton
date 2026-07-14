@@ -1,0 +1,14 @@
+{
+  "description": "Концепция кейтеринга по брифу: сервисная идея, гостевой путь, форматы обслуживания, ассортимент и визуальная подача без вымышленных фактов",
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "CoverKickerTitleSlideLayout.tsx",
+    "HeaderQuoteTwoColumnsSlideLayout.tsx",
+    "HeaderColorCardsImageSlideLayout.tsx",
+    "HeaderImageFactsListSlideLayout.tsx",
+    "HeaderTextBulletsImageSlideLayout.tsx",
+    "HeaderThreeImageCardsSlideLayout.tsx",
+    "HeaderMoodboardCollageSlideLayout.tsx"
+  ]
+}

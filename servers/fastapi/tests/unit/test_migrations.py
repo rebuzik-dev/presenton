@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 import migrations
 
 
-EXPECTED_HEAD = "f6d2b9a13c84"
+EXPECTED_HEAD = "a4c7e2f9b1d6"
 
 
 def _alembic_config(database_url: str) -> Config:

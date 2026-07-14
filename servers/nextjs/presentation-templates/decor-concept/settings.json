@@ -1,0 +1,15 @@
+{
+  "description": "Концепция декорационного оформления по брифу: пространственная идея, палитра, материалы, ключевые элементы, зоны и сценарии применения",
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "DecorCoverTitleSlideLayout.tsx",
+    "DecorConceptMissionKeyIdeasSlideLayout.tsx",
+    "DecorColorPaletteSlideLayout.tsx",
+    "DecorTypographySlideLayout.tsx",
+    "DecorElementsOverviewSlideLayout.tsx",
+    "DecorElementsAccentSlideLayout.tsx",
+    "StageDesignProposalsSlideLayout.tsx",
+    "PhotozoneDesignProposalsSlideLayout.tsx"
+  ]
+}

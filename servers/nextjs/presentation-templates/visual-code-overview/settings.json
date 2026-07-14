@@ -1,0 +1,14 @@
+{
+  "description": "Общий визуальный код мероприятия: идея, палитра, типографика, материалы, пространство, детали и точки контакта на основе фактов брифа",
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "CoverKickerTitleSlideLayout.tsx",
+    "HeaderQuoteTwoColumnsSlideLayout.tsx",
+    "HeaderColorCardsImageSlideLayout.tsx",
+    "HeaderImageFactsListSlideLayout.tsx",
+    "HeaderTextBulletsImageSlideLayout.tsx",
+    "HeaderThreeImageCardsSlideLayout.tsx",
+    "HeaderMoodboardCollageSlideLayout.tsx"
+  ]
+}

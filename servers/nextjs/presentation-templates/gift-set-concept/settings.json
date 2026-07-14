@@ -1,0 +1,18 @@
+{
+  "description": "Концепция подарочных наборов по брифу: назначение, получатели, состав, дизайн-код, материалы, упаковка и сценарий вручения",
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "CoverBackgroundKickerTitleSlideLayout.tsx",
+    "HeaderQuoteTwoColumnsLinesSlideLayout.tsx",
+    "PaletteGridImageSlideLayout.tsx",
+    "TypographyTwoColumnsImageSlideLayout.tsx",
+    "MoodboardCollage4SlideLayout.tsx",
+    "HeaderParagraphPatternImageSlideLayout.tsx",
+    "DesignElementsMultiColumnSlideLayout.tsx",
+    "DesignElementsTextImageSwatchesSlideLayout.tsx",
+    "ProposalsTwoImagesSlideLayout.tsx",
+    "ProposalsThreeImagesSlideLayout.tsx",
+    "ProposalsCollageLeftRightStackSlideLayout.tsx"
+  ]
+}

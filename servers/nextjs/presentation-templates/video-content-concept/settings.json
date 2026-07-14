@@ -1,0 +1,15 @@
+{
+  "description": "Концепция видеоконтента по брифу: задача, аудитория, форматы, тональность, драматургия, ключевые эпизоды и финальный посыл",
+  "ordered": true,
+  "default": false,
+  "layoutOrder": [
+    "TitleEventHeaderSlideLayout.tsx",
+    "ConceptMissionMoodSlideLayout.tsx",
+    "ColorPaletteListingSlideLayout.tsx",
+    "TypographySpecSlideLayout.tsx",
+    "StoryboardFrameDescriptionSlideLayout.tsx",
+    "StoryboardSplitVisualSlideLayout.tsx",
+    "StoryboardEventPointSlideLayout.tsx",
+    "StoryboardClimaxSlideLayout.tsx"
+  ]
+}

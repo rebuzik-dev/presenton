@@ -8,6 +8,10 @@ import {
   legacyFileTemplateGroups,
   legacyFileTemplateLayouts,
 } from "./legacyFileTemplates";
+import {
+  dedicatedFileTemplateGroups,
+  dedicatedFileTemplateLayouts,
+} from "./dedicatedFileTemplates";
 
 // TODO: Step 1: Import All templates Layouts Here (like the ones below)
 
@@ -3397,6 +3401,7 @@ export const allLayouts: TemplateWithData[] = [
   ...standardTemplates,
   ...swiftTemplates,
   ...legacyFileTemplateLayouts,
+  ...dedicatedFileTemplateLayouts,
   ...codeTemplates,
   ...educationTemplates,
   ...productOverviewTemplates,
@@ -3436,6 +3441,7 @@ export const templates: TemplateLayoutsWithSettings[] = [
     layouts: swiftTemplates,
   },
   ...legacyFileTemplateGroups,
+  ...dedicatedFileTemplateGroups,
   {
     id: "code",
     name: "Code",
