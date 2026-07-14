@@ -2,6 +2,7 @@
 import * as z from 'zod'
 import {
   resolveColor,
+  resolveContrastTextColor,
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
@@ -106,24 +107,6 @@ interface ColorPaletteListingProps {
   data?: Partial<ColorPaletteListingData>
 }
 
-const isDarkHex = (hex: string): boolean => {
-  const normalized = hex.replace('#', '')
-  const expanded = normalized.length === 3
-    ? normalized.split('').map((char) => `${char}${char}`).join('')
-    : normalized
-
-  if (expanded.length !== 6) {
-    return false
-  }
-
-  const r = parseInt(expanded.slice(0, 2), 16)
-  const g = parseInt(expanded.slice(2, 4), 16)
-  const b = parseInt(expanded.slice(4, 6), 16)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-
-  return luminance < 0.55
-}
-
 const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideData }) => {
   const primary = (slideData?.primaryColors || []).slice(0, 3)
   const secondary = (slideData?.secondaryColors || []).slice(0, 3)
@@ -135,9 +118,7 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
   const cardFont = resolveFontFamily(slideData, "color_card", rootFont, "body")
 
   const Card: React.FC<{ hex: string; label: string; pathPrefix: string; index: number }> = ({ hex, label, pathPrefix, index }) => {
-    const resolvedTextColor = isDarkHex(hex)
-      ? "#FFFFFF"
-      : resolveColor(slideData, "color_card", "color", "#3f3f3f", "text_primary")
+    const resolvedTextColor = resolveContrastTextColor(hex)
 
     return (
       <div className="h-[124px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>

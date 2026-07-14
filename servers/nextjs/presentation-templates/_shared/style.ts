@@ -73,6 +73,50 @@ function sanitizeFont(value?: string, fallback?: string): string | undefined {
   return fallback;
 }
 
+function parseHexColor(value: string): [number, number, number, number] | null {
+  const normalized = value.trim().replace(/^#/, "");
+  if (![3, 4, 6, 8].includes(normalized.length) || !/^[0-9a-f]+$/i.test(normalized)) {
+    return null;
+  }
+  const expanded = normalized.length <= 4
+    ? normalized.split("").map((character) => `${character}${character}`).join("")
+    : normalized;
+  const alpha = expanded.length === 8 ? parseInt(expanded.slice(6, 8), 16) / 255 : 1;
+  return [
+    parseInt(expanded.slice(0, 2), 16),
+    parseInt(expanded.slice(2, 4), 16),
+    parseInt(expanded.slice(4, 6), 16),
+    alpha,
+  ];
+}
+
+function relativeLuminance(channel: number): number {
+  const value = channel / 255;
+  return value <= 0.04045
+    ? value / 12.92
+    : Math.pow((value + 0.055) / 1.055, 2.4);
+}
+
+export function resolveContrastTextColor(
+  background: string,
+  darkText: string = "#000000",
+  lightText: string = "#FFFFFF",
+): string {
+  const color = parseHexColor(background);
+  if (!color) return darkText;
+
+  const [red, green, blue, alpha] = color;
+  const composite = (channel: number) => channel * alpha + 255 * (1 - alpha);
+  const luminance =
+    0.2126 * relativeLuminance(composite(red)) +
+    0.7152 * relativeLuminance(composite(green)) +
+    0.0722 * relativeLuminance(composite(blue));
+  const contrastWithBlack = (luminance + 0.05) / 0.05;
+  const contrastWithWhite = 1.05 / (luminance + 0.05);
+
+  return contrastWithWhite > contrastWithBlack ? lightText : darkText;
+}
+
 export function getSlideStyleConfig(data: any): SlideStyleConfig | null {
   const config = data?.__style__;
   if (!config || typeof config !== "object" || Array.isArray(config)) {

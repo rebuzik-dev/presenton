@@ -2,6 +2,7 @@
 import * as z from 'zod'
 import {
   resolveColor,
+  resolveContrastTextColor,
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
@@ -99,10 +100,7 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
   const cardFont = resolveFontFamily(slideData, "color_card", rootFont, "body")
 
   const Card: React.FC<{ hex: string; description: string; index: number }> = ({ hex, description, index }) => {
-    const isDark =
-      hex.toUpperCase() === "#7F8C8D" || hex.toUpperCase() === "#4F5D63" || hex.toUpperCase() === "#1A1C23"
-    const lightText = resolveColor(slideData, "color_card", "color", "#3f3f3f", "text_primary")
-    const resolvedTextColor = isDark ? "#FFFFFF" : lightText
+    const resolvedTextColor = resolveContrastTextColor(hex)
     return (
       <div className="h-[124px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>
         <div

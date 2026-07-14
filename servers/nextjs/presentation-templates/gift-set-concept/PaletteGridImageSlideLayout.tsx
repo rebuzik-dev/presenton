@@ -2,6 +2,7 @@
 import * as z from 'zod'
 import {
   resolveColor,
+  resolveContrastTextColor,
   resolveFontFamily,
   resolveRootStyle,
 } from '../_shared/style'
@@ -84,11 +85,8 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
   const titleFont = resolveFontFamily(slideData, "title", rootFont, "display")
   const sectionFont = resolveFontFamily(slideData, "section_title", rootFont, "heading")
   const cardFont = resolveFontFamily(slideData, "color_card", rootFont, "body")
-  const lightCardTextColor = resolveColor(slideData, "color_card", "color", "#3f3f3f", "text_primary")
-
   const ColorCard: React.FC<{ hex: string; name: string; pathPrefix: string; index: number }> = ({ hex, name, pathPrefix, index }) => {
-    const isDark = hex.toUpperCase() === "#1A1C23" || hex.toUpperCase() === "#5D7079" || hex.toUpperCase() === "#81919E"
-    const textColor = isDark ? "#FFFFFF" : lightCardTextColor
+    const textColor = resolveContrastTextColor(hex)
     return (
       <div className="h-[116px] px-5 py-4 flex flex-col justify-between" style={{ backgroundColor: hex }}>
         <div
@@ -98,7 +96,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
             name: `Color ${index + 1} hex`,
             description: "HEX-код цветового образца",
           })}
-          className={`text-[17px] leading-[21px] tracking-[0.4px] font-[700] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}
+          className="text-[17px] leading-[21px] tracking-[0.4px] font-[700]"
           style={{ color: textColor, fontFamily: cardFont }}
         >
           {hex}
@@ -110,7 +108,7 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
             name: `Color ${index + 1} name`,
             description: "Название или роль цвета",
           })}
-          className={`text-[18px] leading-[22px] font-[500] ${isDark ? "text-white" : "text-[var(--style-text-primary)]"}`}
+          className="text-[18px] leading-[22px] font-[500]"
           style={{ color: textColor, fontFamily: cardFont }}
         >
           {name}
