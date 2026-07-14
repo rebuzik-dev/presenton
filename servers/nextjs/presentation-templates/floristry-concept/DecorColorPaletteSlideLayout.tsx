@@ -170,45 +170,40 @@ const dynamicSlideLayout: React.FC<ColorPaletteListingProps> = ({ data: slideDat
             </span>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
-            <div className="min-h-0">
-              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-                <span
-                  {...promptTargetAttrs({
-                    path: "primaryTitle",
-                    type: "field",
-                    name: "Primary title",
-                    description: "Заголовок основных цветов",
-                  })}
-                >
-                  {slideData?.primaryTitle || "Основные цвета"}
-                </span>
-              </div>
-              <div className="mt-4 grid gap-6">
-                {primary.map((c, idx) => (
-                  <Card key={`p-${idx}`} hex={c.hex} label={c.label} pathPrefix="primaryColors" index={idx} />
-                ))}
-              </div>
+          <div className="mt-6 grid grid-cols-2 items-start gap-x-6 gap-y-4 min-h-0">
+            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+              <span
+                {...promptTargetAttrs({
+                  path: "primaryTitle",
+                  type: "field",
+                  name: "Primary title",
+                  description: "Заголовок основных цветов",
+                })}
+              >
+                {slideData?.primaryTitle || "Основные цвета"}
+              </span>
             </div>
-
-            <div className="min-h-0">
-              <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-                <span
-                  {...promptTargetAttrs({
-                    path: "secondaryTitle",
-                    type: "field",
-                    name: "Secondary title",
-                    description: "Заголовок дополнительных цветов",
-                  })}
-                >
-                  {slideData?.secondaryTitle || "Дополнительные цвета"}
-                </span>
-              </div>
-              <div className="mt-4 grid gap-6">
-                {secondary.map((c, idx) => (
-                  <Card key={`s-${idx}`} hex={c.hex} label={c.label} pathPrefix="secondaryColors" index={idx} />
-                ))}
-              </div>
+            <div className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+              <span
+                {...promptTargetAttrs({
+                  path: "secondaryTitle",
+                  type: "field",
+                  name: "Secondary title",
+                  description: "Заголовок дополнительных цветов",
+                })}
+              >
+                {slideData?.secondaryTitle || "Дополнительные цвета"}
+              </span>
+            </div>
+            <div className="grid gap-6 min-h-0">
+              {primary.map((c, idx) => (
+                <Card key={`p-${idx}`} hex={c.hex} label={c.label} pathPrefix="primaryColors" index={idx} />
+              ))}
+            </div>
+            <div className="grid gap-6 min-h-0">
+              {secondary.map((c, idx) => (
+                <Card key={`s-${idx}`} hex={c.hex} label={c.label} pathPrefix="secondaryColors" index={idx} />
+              ))}
             </div>
           </div>
         </div>

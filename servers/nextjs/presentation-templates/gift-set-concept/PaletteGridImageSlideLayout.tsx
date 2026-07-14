@@ -134,45 +134,40 @@ const dynamicSlideLayout: React.FC<PaletteGridImageSlideLayoutProps> = ({ data: 
             </span>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-5 h-[490px] content-start min-h-0">
-            <div className="min-h-0">
-              <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-                <span
-                  {...promptTargetAttrs({
-                    path: "leftHeader",
-                    type: "field",
-                    name: "Left header",
-                    description: "Заголовок основных цветов",
-                  })}
-                >
-                  {slideData?.leftHeader || "Основные цвета"}
-                </span>
-              </div>
-              <div className="mt-4 grid gap-5">
-                {primary.slice(0, 3).map((c, idx) => (
-                  <ColorCard key={`p-${idx}`} hex={c.hex} name={c.name} pathPrefix="primary" index={idx} />
-                ))}
-              </div>
+          <div className="mt-6 grid grid-cols-2 items-start gap-x-5 gap-y-4 h-[490px] content-start min-h-0">
+            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+              <span
+                {...promptTargetAttrs({
+                  path: "leftHeader",
+                  type: "field",
+                  name: "Left header",
+                  description: "Заголовок основных цветов",
+                })}
+              >
+                {slideData?.leftHeader || "Основные цвета"}
+              </span>
             </div>
-
-            <div className="min-h-0">
-              <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
-                <span
-                  {...promptTargetAttrs({
-                    path: "rightHeader",
-                    type: "field",
-                    name: "Right header",
-                    description: "Заголовок дополнительных цветов",
-                  })}
-                >
-                  {slideData?.rightHeader || "Дополнительные цвета"}
-                </span>
-              </div>
-              <div className="mt-4 grid gap-5">
-                {secondary.slice(0, 3).map((c, idx) => (
-                  <ColorCard key={`s-${idx}`} hex={c.hex} name={c.name} pathPrefix="secondary" index={idx} />
-                ))}
-              </div>
+            <div className="text-[22px] leading-[28px] text-[var(--style-text-primary)] font-[500]" style={{ color: titleColor, fontFamily: sectionFont }}>
+              <span
+                {...promptTargetAttrs({
+                  path: "rightHeader",
+                  type: "field",
+                  name: "Right header",
+                  description: "Заголовок дополнительных цветов",
+                })}
+              >
+                {slideData?.rightHeader || "Дополнительные цвета"}
+              </span>
+            </div>
+            <div className="grid gap-5 min-h-0">
+              {primary.slice(0, 3).map((c, idx) => (
+                <ColorCard key={`p-${idx}`} hex={c.hex} name={c.name} pathPrefix="primary" index={idx} />
+              ))}
+            </div>
+            <div className="grid gap-5 min-h-0">
+              {secondary.slice(0, 3).map((c, idx) => (
+                <ColorCard key={`s-${idx}`} hex={c.hex} name={c.name} pathPrefix="secondary" index={idx} />
+              ))}
             </div>
           </div>
         </div>

@@ -151,47 +151,42 @@ const dynamicSlideLayout: React.FC<HeaderColorCardsImageSlideLayoutProps> = ({ d
             {slideData?.title || "ЦВЕТОВАЯ ПАЛИТРА"}
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-6 min-h-0">
-            <div className="min-h-0">
-              <div
-                className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
-                style={{ color: titleColor, fontFamily: sectionFont }}
-                {...promptTargetAttrs({
-                  path: "primaryTitle",
-                  type: "field",
-                  name: "Заголовок основных цветов",
-                  description: "Название левой группы палитры",
-                  role: "primary_palette_title",
-                })}
-              >
-                {slideData?.primaryTitle || "Основные цвета"}
-              </div>
-              <div className="mt-4 grid gap-6">
-                {primary.slice(0, 3).map(({ card, index }) => (
-                  <Card key={`p-${index}`} hex={card.hex} description={card.description} index={index} />
-                ))}
-              </div>
+          <div className="mt-6 grid grid-cols-2 items-start gap-x-6 gap-y-4 min-h-0">
+            <div
+              className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
+              style={{ color: titleColor, fontFamily: sectionFont }}
+              {...promptTargetAttrs({
+                path: "primaryTitle",
+                type: "field",
+                name: "Заголовок основных цветов",
+                description: "Название левой группы палитры",
+                role: "primary_palette_title",
+              })}
+            >
+              {slideData?.primaryTitle || "Основные цвета"}
             </div>
-
-            <div className="min-h-0">
-              <div
-                className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
-                style={{ color: titleColor, fontFamily: sectionFont }}
-                {...promptTargetAttrs({
-                  path: "secondaryTitle",
-                  type: "field",
-                  name: "Заголовок дополнительных цветов",
-                  description: "Название правой группы палитры",
-                  role: "secondary_palette_title",
-                })}
-              >
-                {slideData?.secondaryTitle || "Дополнительные цвета"}
-              </div>
-              <div className="mt-4 grid gap-6">
-                {secondary.slice(0, 3).map(({ card, index }) => (
-                  <Card key={`s-${index}`} hex={card.hex} description={card.description} index={index} />
-                ))}
-              </div>
+            <div
+              className="text-[24px] leading-[32px] text-[var(--style-text-primary)] font-[500]"
+              style={{ color: titleColor, fontFamily: sectionFont }}
+              {...promptTargetAttrs({
+                path: "secondaryTitle",
+                type: "field",
+                name: "Заголовок дополнительных цветов",
+                description: "Название правой группы палитры",
+                role: "secondary_palette_title",
+              })}
+            >
+              {slideData?.secondaryTitle || "Дополнительные цвета"}
+            </div>
+            <div className="grid gap-6 min-h-0">
+              {primary.slice(0, 3).map(({ card, index }) => (
+                <Card key={`p-${index}`} hex={card.hex} description={card.description} index={index} />
+              ))}
+            </div>
+            <div className="grid gap-6 min-h-0">
+              {secondary.slice(0, 3).map(({ card, index }) => (
+                <Card key={`s-${index}`} hex={card.hex} description={card.description} index={index} />
+              ))}
             </div>
           </div>
         </div>
