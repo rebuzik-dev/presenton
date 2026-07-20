@@ -1,6 +1,7 @@
 import asyncio
 from typing import List
 from models.image_prompt import ImagePrompt
+from models.presentation_outline_model import PresentationImageStyle
 from models.sql.image_asset import ImageAsset
 from models.sql.slide import SlideModel
 from sqlalchemy.orm.attributes import flag_modified
@@ -43,7 +44,6 @@ def _extract_reference_images(reference_image_source: object) -> list[str]:
 
     return []
 
-
 def _image_identity(image_dict: dict) -> tuple[str, tuple[str, ...]]:
     prompt = image_dict.get("__image_prompt__", "")
     references = tuple(
@@ -52,11 +52,53 @@ def _image_identity(image_dict: dict) -> tuple[str, tuple[str, ...]]:
     return prompt, references
 
 
+def _build_image_theme_prompt(
+    image_style: PresentationImageStyle | None,
+) -> str | None:
+    if image_style is None:
+        return None
+
+    parts = [
+        image_style.style.strip(),
+        image_style.mood.strip(),
+        image_style.lighting.strip(),
+        image_style.composition_rules.strip(),
+    ]
+    parts.extend(
+        rule.strip()
+        for rule in image_style.consistency_rules
+        if isinstance(rule, str) and rule.strip()
+    )
+    if image_style.palette:
+        colors = [
+            color.strip()
+            for color in image_style.palette.primary + image_style.palette.secondary
+            if isinstance(color, str) and color.strip()
+        ]
+        if colors:
+            parts.append(f"Shared presentation palette: {', '.join(colors)}")
+
+    theme_prompt = ". ".join(part for part in parts if part)
+    return theme_prompt or None
+
+
+def _clean_image_prompt(value: object) -> str:
+    prompt = str(value or "").strip()
+    lowered = prompt.lower()
+    for marker in (", none", " none", ", null", " null", ", n/a", " n/a"):
+        if lowered.endswith(marker):
+            return prompt[: -len(marker)].rstrip(" ,.;")
+    return prompt
+
+
+
 async def process_slide_and_fetch_assets(
     image_generation_service: ImageGenerationService,
     slide: SlideModel,
+    image_style: PresentationImageStyle | None = None,
 ) -> List[ImageAsset]:
 
+    theme_prompt = _build_image_theme_prompt(image_style)
     async_tasks = []
     updated_content = _to_plain_data(slide.content)
     if not isinstance(updated_content, dict):
@@ -69,7 +111,7 @@ async def process_slide_and_fetch_assets(
 
     for image_path in image_paths:
         __image_prompt__parent = get_dict_at_path(updated_content, image_path)
-        prompt = __image_prompt__parent["__image_prompt__"]
+        prompt = _clean_image_prompt(__image_prompt__parent["__image_prompt__"])
         reference_images = _extract_reference_images(
             __image_prompt__parent.get("__reference_image_source__")
         )
@@ -78,6 +120,7 @@ async def process_slide_and_fetch_assets(
             image_generation_service.generate_image(
                 ImagePrompt(
                     prompt=prompt,
+                    theme_prompt=theme_prompt,
                     reference_images=reference_images,
                 )
             )

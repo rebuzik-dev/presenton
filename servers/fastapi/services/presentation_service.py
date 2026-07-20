@@ -416,7 +416,9 @@ class PresentationService:
 
                 # Start asset fetch tasks for just-generated slides
                 asset_tasks = [
-                    process_slide_and_fetch_assets(image_generation_service, slide)
+                    process_slide_and_fetch_assets(
+                        image_generation_service, slide, outline.image_style
+                    )
                     for slide in batch_slides
                 ]
                 async_assets_generation_tasks.extend(asset_tasks)

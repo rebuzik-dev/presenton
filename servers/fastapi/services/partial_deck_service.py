@@ -170,7 +170,9 @@ async def generate_selected_slides(
         }
         slide.html_content = None
         process_slide_add_placeholder_assets(slide)
-        asset_tasks.append(process_slide_and_fetch_assets(image_service, slide))
+        asset_tasks.append(
+            process_slide_and_fetch_assets(image_service, slide, outline.image_style)
+        )
 
     generated_assets_lists = await asyncio.gather(*asset_tasks)
     sql_session.add_all([slide for slide, _layout in selected])

@@ -36,6 +36,10 @@ def test_get_user_prompt_uses_autodetect_defaults():
     assert "Language: auto-detect" in prompt
     assert "Tone: professional" in prompt
     assert "Context: None" in prompt
+    system_prompt = outline_module.get_system_prompt()
+    assert "Populate image_style with one shared art direction" in system_prompt
+    assert "concrete project-specific subject" in system_prompt
+    assert "None/null/N/A suffixes" in system_prompt
 
 
 def test_generate_ppt_outline_streams_json_chunks_and_keeps_schema_shape():

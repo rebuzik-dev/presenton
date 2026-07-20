@@ -9,6 +9,7 @@ from sqlalchemy import inspect
 from sqlmodel import Session, SQLModel, create_engine
 
 from models.sql.presentation import PresentationModel
+from models.presentation_outline_model import ImagePalette, PresentationImageStyle
 from models.sql.slide import SlideModel
 
 
@@ -38,7 +39,7 @@ def test_process_slide_passes_reference_images_to_image_prompt():
         index=0,
         content={
             "image": {
-                "__image_prompt__": "Modern office exterior",
+                "__image_prompt__": "Modern office exterior, None",
                 "__reference_image_source__": "https://example.com/reference.png",
             }
         },
@@ -46,9 +47,22 @@ def test_process_slide_passes_reference_images_to_image_prompt():
         properties=None,
     )
 
-    asyncio.run(process_slide_and_fetch_assets(image_generation_service, slide))
+    image_style = PresentationImageStyle(
+        style="restrained institutional editorial photography",
+        mood="formal and premium",
+        lighting="soft natural light",
+        composition_rules="clear protocol-aware framing",
+        palette=ImagePalette(primary=["navy", "stone"], secondary=["warm white"]),
+    )
+    asyncio.run(
+        process_slide_and_fetch_assets(image_generation_service, slide, image_style)
+    )
 
     image_prompt = image_generation_service.generate_image.await_args.args[0]
+    assert image_prompt.prompt == "Modern office exterior"
+    assert image_prompt.theme_prompt is not None
+    assert "restrained institutional" in image_prompt.theme_prompt
+    assert "navy, stone, warm white" in image_prompt.theme_prompt
     assert image_prompt.reference_images == ["https://example.com/reference.png"]
     assert slide.content["image"]["__image_url__"] == "/static/images/generated.png"
 
